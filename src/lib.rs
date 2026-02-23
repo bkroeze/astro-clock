@@ -1,9 +1,13 @@
 pub mod chart;
 pub mod cli;
 pub mod config;
+pub mod ephemeris;
 pub mod errors;
 pub mod logging;
 pub mod renderer;
+#[cfg(feature = "db")]
+pub mod database;
+
 pub mod swiss_eph_impl;
 
 pub use chart::{
@@ -13,12 +17,8 @@ pub use chart::{
 pub use renderer::{Color, Point, Rect, Renderer, Size};
 pub use swiss_eph_impl::SwissEphChartCalculator;
 
-
-
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_swiss_eph_integration() {
         let config = crate::chart::ChartConfig::new(
