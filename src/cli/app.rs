@@ -79,12 +79,9 @@ impl App {
             tracing::Level::INFO
         };
 
-        let _ = tracing_subscriber::fmt()
-            .with_max_level(level)
-            .with_target(false)
-            .try_init();
+        crate::logging::init_logging(level);
 
-        let config = crate::config::AppConfig::from_file_or_default(self.cli.config.as_ref())?;
+        let _config = crate::config::AppConfig::from_file_or_default(self.cli.config.as_ref())?;
         tracing::info!("Starting Astro Clock");
         tracing::debug!("CLI arguments: {:#?}", self.cli);
 

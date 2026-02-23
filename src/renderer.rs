@@ -237,8 +237,8 @@ impl Renderer {
 
     fn draw_house_labels(
         &mut self,
-        center: Point,
-        radius: f32,
+        _center: Point,
+        _radius: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }

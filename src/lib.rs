@@ -13,12 +13,7 @@ pub use chart::{
 pub use renderer::{Color, Point, Rect, Renderer, Size};
 pub use swiss_eph_impl::SwissEphChartCalculator;
 
-fn init_logging() {
-    let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .with_target(false)
-        .try_init();
-}
+
 
 #[cfg(test)]
 mod tests {
