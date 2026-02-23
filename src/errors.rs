@@ -1,31 +1,24 @@
-use std::fmt;
+use crate::ChartError;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("Configuration error: {0}")]
     Config(String),
-    Io(std::io::Error),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Swiss Ephemeris error: {0}")]
     SwissEphemeris(String),
+    #[error("Rendering error: {0}")]
     Rendering(String),
+    #[error("HTTP server error: {0}")]
     HttpServer(String),
+    #[error("Database error: {0}")]
     Database(String),
+    #[error("Unknown error: {0}")]
     Unknown(String),
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::Config(msg) => write!(f, "Configuration error: {}", msg),
-            Error::Io(err) => write!(f, "IO error: {}", err),
-            Error::SwissEphemeris(msg) => write!(f, "Swiss Ephemeris error: {}", msg),
-            Error::Rendering(msg) => write!(f, "Rendering error: {}", msg),
-            Error::HttpServer(msg) => write!(f, "HTTP server error: {}", msg),
-            Error::Database(msg) => write!(f, "Database error: {}", msg),
-            Error::Unknown(msg) => write!(f, "Unknown error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
+pub type Result<T> = std::result::Result<T, Error>;
 
 impl From<ron::de::Error> for Error {
     fn from(err: ron::de::Error) -> Self {
@@ -33,26 +26,16 @@ impl From<ron::de::Error> for Error {
     }
 }
 
-impl From<anyhow::Error> for Error {
-    fn from(err: anyhow::Error) -> Self {
-        Error::Unknown(err.to_string())
-    }
-}
-
-impl From<String> for Error {
-    fn from(err: String) -> Self {
-        Error::Unknown(err)
-    }
-}
-
-impl From<&str> for Error {
-    fn from(err: &str) -> Self {
-        Error::Unknown(err.to_string())
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::Io(err)
+impl From<ChartError> for Error {
+    fn from(err: ChartError) -> Self {
+        match err {
+            ChartError::SwissEph(msg) => Error::SwissEphemeris(msg),
+            ChartError::InvalidParams(msg) => Error::Config(msg),
+            ChartError::MissingEphemerisData => {
+                Error::SwissEphemeris("Missing ephemeris data".into())
+            }
+            ChartError::UnknownPlanet(msg) => Error::SwissEphemeris(msg),
+            ChartError::CalculationFailed(msg) => Error::Unknown(msg),
+        }
     }
 }

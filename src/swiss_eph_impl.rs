@@ -144,6 +144,7 @@ impl ChartCalculator for SwissEphChartCalculator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::chart::GeoPos;
 
     #[test]
     fn test_swiss_eph_chart_calculator_creation() {

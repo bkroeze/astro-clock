@@ -75,18 +75,17 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use clap::CommandFactory;
 
     #[test]
     fn test_cli_parsing() {
-        let app = App::new();
-        assert!(true); // Basic test to ensure compilation
+        let _app = App::new();
+        assert!(true);
     }
 
     #[test]
     fn test_cli_help() {
-        let result = std::panic::catch_unwind(|| {
-            Cli::command().render_help(std::io::stdout()).unwrap();
-        });
-        assert!(result.is_ok());
+        let mut cmd = Cli::command();
+        let _help = cmd.render_help();
     }
 }
