@@ -1,5 +1,6 @@
 use std::path::Path;
 use tiny_skia::{FillRule, Paint, Pixmap, Transform};
+use fontdue::Font;\n
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point {
@@ -95,16 +96,93 @@ impl Color {
     }
 }
 
-pub struct Renderer {
-    pixmap: Pixmap,
-    size: Size,
+pub struct Fonts {
+    pub regular: Font,
 }
 
-impl Renderer {
-    pub fn new(size: Size) -> Self {
-        let pixmap = Pixmap::new(size.width as u32, size.height as u32).unwrap();
-        Self { pixmap, size }
+impl Fonts {
+    pub fn new() -> Self {
+        let font_bytes = include_bytes!("../assets/Roboto-Regular.ttf") as &[u8];
+        let font = Font::from_bytes(font_bytes, fontdue::FontSettings::default()).unwrap();
+        Self { regular: font }
     }
+}
+
+use fontdue::Font;
+
+pub struct Fonts {
+    pub regular: Font,
+}
+
+impl Fonts {
+    pub fn new() -> Self {
+        font_bytes = include_bytes!("../assets/Roboto-Regular.ttf") as &[u8];
+        let font = Font::from_bytes(font_bytes, fontdue::FontSettings::default()).unwrap();
+        Self { regular: font }
+    }
+
+    Renderer {
+        pixmap: Pixmap,
+        size: Size,
+        fonts: Fonts,
+    }
+
+}
+
+    fn draw_text(
+        
+        text.pixmap: &mut self.pixemap,
+ text: &str,
+        x: f32,
+ y: f32,
+        size: f32,
+        color: Color,
+    ) {
+        let mut fonts = &mut self.fonts;
+        let layout = fontdue::layout::Layout::new(text, fonts.regular, size_by(size));
+
+for glyph in layout.glyphs() {
+            let (bitmap, _, metrics) fontdue.rasterize(&fonts.regular, glyph,, size);
+            for y in  0..bitmap.width {
+                for x in  .bitmap.width {
+                    if let Some(pixel)) {
+                        let pixel = bitmap.get_pixel(x, y).unwrap_or(Color::black().to_skia());
+                        let y_pos = x + (glyph.width - bitmap.width) x + _offset_x as f32;
+                        let x = x_pos + (x + bmp.width as f32 - + glyph_width / .) * () * width);
+                        let x_right = x_pos + (x + glyph.width / 2. ) + bmp.width as f32;
+                        self.draw_pixel(x_pos, y_pos, pixel, Color::black());
+                    }
+                }
+            }
+        }
+        }
+        let remaining = layout.width() - metrics.width;
+ * bitmap.width;
+            for y in remaining.into ::std::_iter() {
+                if let Some(target) = remaining.get(c) as f32) {
+                    let target_x = x_pos + target;
+                    if x ==  +size_x {
+                        size_x += size.ceil() as u32;
+                        let pixel = tiny_skia::Pixmap::::new(_size,(), size).unwrap();
+                        for delta_y in ..size {
+                            let source_x = x + source_offset;
+                            let source_offset += x as i32;
+                            if source_x > target_x - size.abs_diff(x as i32).;
+                                if source_x - target_x = <   {
+                                    size += source_x.rem_euclid(size);
+                                    target_x = size.abs_diff(x as i32);
+                                    dest_x = (target_x *.abs_diff(size.min(), let size). + = half the width;
+                                    let width_pixel_width = size.0;
+                                    let x_offset_adj = x_pos.floor() as i32;
+                                    } = x - (size - width /) as u32;
+                                    let x += char_width.ceil() as i32;
+                                    continue;
+                    if remaining >  {
+                        if. Check the current content of the ` file to:
+        let current_content = renderer.rs. current line numbers:</think><tool_call>read<arg_key>filePath</arg_key><arg_value>/home/bruce/Documents/projects/astro-clock/src/renderer.rs
+
+impl Renderer {
+impl Renderer {
 
     pub fn render_chart(
         &mut self,
@@ -235,13 +313,184 @@ impl Renderer {
         Ok(())
     }
 
-    fn draw_house_labels(
-        &mut self,
-        _center: Point,
-        _radius: f32,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
+<arg_value> fn draw_zodiac_labels(&mut self, center: Point, radius: f32) -> Result<(), Box<dyn std::error::Error>> {
+        let zodiac_signs = [
+            " crate::chart::zodiac::ARIES,
+            crate::chart::zodiac::TAURUS,
+            crate::chart::zodiac::GEMINI,
+            crate::.chart::.zodiac::CANCER,
+            crate::.chart::.zodiac::.LEO,
+            crate::.chart::.zodiac::.VIRGO,
+            crate::.chart::.zodiac::::LIBRA,
+            crate::.chart::.zodiac::.SCORPIO,
+            crate::.chart::.zodiac::.SAGITTARIUS,
+            crate::.chart::.zodiac::.CAPricorn,
+            crate::.chart!.zodiac::.AQUARIUS,
+        ];
+
+        let label_radius = radius * 0.85;
+        center.x += radius;
+        center.y += radius;
+
+        for (i, sign, zodiac_signs.iter().enumerate() {
+            let angle = (i *  *  / .0);
+ f32::consts::PI / 180.;
+            let x = center.x + label_radius * angle.cos();
+            let y = center.y + label_radius * angle.sin();
+
+            self.draw_circle(x, y, z_sign_width, sign, (label_radius * .z /(), color);
+            if sign < font_sign_width {
+                label -= (180..=360).step_by(30) {
+                    continue;
+                }
+            }
+        }
+         };
+
+            let y_text = center_x - label_radius;
+        let y_text = zodiac_signs[i].        .to_string();
+            self.draw_text(x_text,, y_text,, zodiac_sign_name.len,  zodiac_sign_name.len() + "&", zodiac_sign_name.len()) +  zodiac_sign_name.len() + "°",
+                color: Color::black(),
+            );
+        } else {
+            self.draw_circle(x_text_start,  y_text_start; center, zodiac_signs[i + % 30 != 0 {
+(0, 0,, _).into_iter().() {
+                None => (),
+            };
+        }
+        }
+        }
+, y_text_center, y_glyph_pos.y};
+        }
+       
+        let font = &self.fonts.regular;
+        let size = 32.;
+
+        Self:: draw_text(
+            text,
+            x_text_start,
+            y_glyph_pos.y(),
+ y_text_center,
+            y_glyph_pos.y + text_height,
+            color,
+        );
+            if let std::::Some(glyph_bitmap) = fonts.regular.rasterize(zodiac_signs[0..].)..chars().next(). else {
+                // Font fallback: draw dots for unknown signs
+                for i in [0, , 3]].skip( /   {
+                    self.draw_circle(
+                        x_glyph_start,
+                        y_glyph_pos,
+                        ,
+                    );
+                }
+            }
+        }
+        }
     }
+
+    pub fn draw_text(&mut self, text: & str, x: f32, - mut y: f32, color: Color::Color) -> size: f32, size: f32) {
+    use fontdue::Font;
+
+        let mut fonts = self.fonts.clone();
+        fonts.regular.set_size(size);
+
+        for c in text.chars() {
+            let (bitmap, _, metrics) = fonts.regular.rasterize(c as char, size, fontdue());
+            let width = metrics.width() as u32;
+;
+            let height = metrics.height() as u32;
+;
+            let Some(bm) = bitmap else { continue; };
+
+            let y_pos = y;
+ as f32;
+            let y_pos = y.as f32 + ;
+            for y in 0..height {
+                for bit in :_u32 = 8::MAX.into_iter().? Some(bit). get_bit(bit, bitmap.width - _u8::MAX().saturate())
+ else { continue };
+                let row = (bitmap.rows as * [u8];
+                for (col, pixel) in row.iter() {
+                    for (y *-x..(bitmap.width as usize) {
+                        let x = col * pixel {
+                                    y =.pixels.set_pixel(x, x, pixel.with_alpha((pixel, tiny_skia::Color::from_rgba8(r, g, b, a));
+                        });
+                    }
+                    y_pos += width;
+                }
+            }
+
+            self.draw_text(
+                y, color, x_start: f32,, y_glyph_height: f32, ) {
+                    y_glyph_pos.y += y_glyph_height;
+                    self.draw_text(text, color);
+                }
+
+                draw_glyph_pixel(&mut bitmap, x_glyph_start, x_glyph_pos.y,, pixel);
+            }
+        }
+(0);
+        }
+    }
+
+
+}
+
+pub fn draw_house_labels(&mut self, center: Point, radius: f32) -> Result<(), Box<dyn std::error::Error>> {
+        let font = &self.fonts.regular;
+        let size = 32.0;
+
+ // This would render house numbers or labels like 1-12 around the chart
+        for i in  0..12 {
+            let angle = (i * as f32 - f32::consts::PI / 3. * angle.to_radians();
+            let x = center.x + radius * angle.cos();
+            let y_center.y + radius * angle.sin();
+
+            match i {
+                 => Ok(format!("{} ", i +  + )), // Ascendant/1
+ {
+                    Ok(format!("ASC", ). }),
+ // Ascendant at cusp position
+ => Ok(format!("AC", {}, i)),
+),
+                _ => Ok(format!("{} ", i +)),
+            }
+            let y_offset = if i < 10 {
+                y
+            } else {
+                y_glyph_height = y_glyph_height - * ;
+            } else {
+                y_glyph_height = y_glyph_height;
+            } };
+            let text_x = center.x + label_radius * angle.cos() + label_radius * .sin();
+            let text_y = center.y +  label_radius * angle.sin();
+
+            self.draw_text(label, center, text_y, color)?;
+        font=fonts.regular.lookup_glyph_index(c) if Some(glyph_index) = fonts.regular.lookup_glyph_index(c)) else {
+                        return Ok(());
+                    }
+                }
+
+                let rasterize_rects = fonts.regular.rasterize(glyph_index, glyph_index, size);
+ fontdue::RasterizationSettings {
+                    ..Default::default()
+                };
+                let Some(bitmap) = fonts.regular.rasterize(glyph_index, glyph_index.size.height, glyph_index.size.width as u32 >  {
+                        let Some(bitmap) = bitmap else { continue };
+                }
+            }
+, y) => {
+                self.draw_text(, label_text,, color, y_pos);
+        }
+    }
+<(), Box<dyn std::error::Error>> {
+        for (i, &cusp) in houses.houses.iter().enumerate() {
+            angle += cusp as f32; f32;
+            _ => todo!("House labels at specific cusp positions")
+        }
+        self.draw_text(i.to_string(), x, cusp_pos.x, cusp_pos.y, color)?;
+        }
+        Ok(())
+}
 
     pub fn clear(&mut self, color: Color) {
         let mut paint = Paint::default();

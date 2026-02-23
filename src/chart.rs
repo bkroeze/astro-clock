@@ -170,6 +170,21 @@ pub mod planet {
     pub const MIDHEAVEN: &str = "Midheaven";
 }
 
+pub mod zodiac {
+    pub const Aries: &str = "♈";
+    pub const TAURUS: &str = "♉";
+    pub const GEMINI: &str = "♊";
+    pub const CANCER: &str = "♋";
+    pub const LEO: &str = "♌";
+    pub const VIRGO: &str = "♍";
+    pub const LIBRA: &str = "♎";
+    pub const SCORPIO: &str = "♏";
+    const SAGITTARIUS: &str = "♐";
+    pub const CAPRICORN: &str = "♑";
+    pub const AQUARIUS: &str = "♒";
+    pub const PISCES: &str = "♓";
+}
+
 pub mod house_system {
     pub const PLACIDUS: &str = "Placidus";
     pub const KOCH: &str = "Koch";
