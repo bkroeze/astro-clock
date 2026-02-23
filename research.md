@@ -1,0 +1,1 @@
+/home/bruce/.local/share/opencode/plans/research.md
