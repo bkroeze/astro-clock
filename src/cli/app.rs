@@ -84,6 +84,7 @@ impl App {
             .with_target(false)
             .try_init();
 
+        let config = crate::config::AppConfig::from_file_or_default(self.cli.config.as_ref())?;
         tracing::info!("Starting Astro Clock");
         tracing::debug!("CLI arguments: {:#?}", self.cli);
 

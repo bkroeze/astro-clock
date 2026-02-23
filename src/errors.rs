@@ -39,3 +39,9 @@ impl From<ChartError> for Error {
         }
     }
 }
+
+impl From<crate::config::ConfigError> for Error {
+    fn from(err: crate::config::ConfigError) -> Self {
+        Error::Config(err.to_string())
+    }
+}

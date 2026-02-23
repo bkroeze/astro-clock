@@ -18,3 +18,6 @@ thiserror = "1.0"
 rust_decimal = "1.30"
 serde = { version = "1.0", features = ["derive"] }
 swiss-eph = "0.2.1"
+
+[dev-dependencies]
+tempfile = "3"

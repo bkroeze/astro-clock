@@ -52,8 +52,7 @@ You must strictly adhere to the following workflow. **Stop and ask for user appr
 ### Phase 3: IMPLEMENT
 
 **Action**:
-
-- Execute the plan.
+- In a loop, you will execute the "typical flow" above.
 - Run `cargo check` frequently ("Lint Hunter").
 - Verify against the plan.
 
