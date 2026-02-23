@@ -4,6 +4,21 @@
 **Objective**: Build safe, idiomatic, and functioning Rust software.
 **Methodology**: The **Beast Mode** Loop (Research -> Plan -> Implement -> Verify).
 
+## Task tracking
+
+This project uses a CLI ticket system for task management. Run `tk help` when you need to use it.
+
+## Integrating with Ticketing system (dependency-aware task planning)
+
+Typical flow (agents)
+1) **Pick ready work**
+   - `tk ready` → choose one item (highest priority, no blockers)
+2) **Work and update**
+   - `tk add-note ac-123 "progress notes, including sub-tickets opened"`
+3) **Complete and release**
+   - Add notes to AGENTS.md in the "Progress" section.
+   - `tk close ac-123`
+
 ## TOOLS AND APPROACH
 
 See [Rust Best Practices](RUST_CLI_TOOLS_BEST_PRACTICES.md) for specific tool choices and approaches.
@@ -27,6 +42,11 @@ You must strictly adhere to the following workflow. **Stop and ask for user appr
 
 - Create detailed blueprint.
 - Create/Update `implementation_plan.md`.
+
+### Phase 2.5:
+
+**Action**:
+- Break down the implementation_plan.md into tickets using `tk create`, with proper dependency tracking so that calling `tk ready` will yield actionable, unblocked tickets.
   **GATE**: STOP. Notify User. Wait for Approval.
 
 ### Phase 3: IMPLEMENT

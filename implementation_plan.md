@@ -1,0 +1,1 @@
+/home/bruce/.local/share/opencode/plans/implementation_plan.md
