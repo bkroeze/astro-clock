@@ -1,6 +1,19 @@
 use std::path::Path;
 use tiny_skia::{FillRule, Paint, Pixmap, Transform};
 
+pub struct FontState {
+    pub font: fontdue::Font,
+}
+
+impl FontState {
+    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+        let font_bytes = include_bytes!("../assets/Roboto-Regular.ttf");
+        let font =
+            fontdue::Font::from_bytes(font_bytes.as_slice(), fontdue::FontSettings::default())?;
+        Ok(Self { font })
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Point {
     pub x: f32,
@@ -98,12 +111,18 @@ impl Color {
 pub struct Renderer {
     pixmap: Pixmap,
     size: Size,
+    font_state: FontState,
 }
 
 impl Renderer {
-    pub fn new(size: Size) -> Self {
+    pub fn new(size: Size) -> Result<Self, Box<dyn std::error::Error>> {
         let pixmap = Pixmap::new(size.width as u32, size.height as u32).unwrap();
-        Self { pixmap, size }
+        let font_state = FontState::load()?;
+        Ok(Self {
+            pixmap,
+            size,
+            font_state,
+        })
     }
 
     pub fn render_chart(
@@ -113,12 +132,13 @@ impl Renderer {
         self.clear(Color::gray(0.95));
 
         let center = self.size.center();
-        let radius = f32::min(self.size.width, self.size.height) * 0.4;
+        let radius = f32::min(self.size.width, self.size.height) * 0.35;
 
         self.draw_zodiac_wheel(center, radius)?;
+        self.draw_zodiac_sign_labels(center, radius)?;
         self.draw_house_cusps(center, radius, &chart_data.houses)?;
         self.draw_planets(center, radius, &chart_data.planets)?;
-        self.draw_house_labels(center, radius)?;
+        self.draw_house_degree_labels(center, radius, &chart_data.houses)?;
 
         Ok(())
     }
@@ -133,9 +153,13 @@ impl Renderer {
         for degree in 0..360 {
             let angle = (degree as f32).to_radians();
             let length = if degree % 30 == 0 {
-                radius * 0.9
-            } else {
+                radius * 0.88
+            } else if degree % 10 == 0 {
+                radius * 0.92
+            } else if degree % 5 == 0 {
                 radius * 0.95
+            } else {
+                continue;
             };
 
             let start = Point::new(
@@ -147,7 +171,34 @@ impl Renderer {
                 center.y + length * angle.sin(),
             );
 
-            self.draw_line(start, end, Color::gray(0.7), 1.0);
+            let stroke_width = if degree % 30 == 0 { 2.0 } else { 1.0 };
+            self.draw_line(start, end, Color::gray(0.5), stroke_width);
+        }
+
+        Ok(())
+    }
+
+    fn draw_zodiac_sign_labels(
+        &mut self,
+        center: Point,
+        radius: f32,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let signs = [
+            "Ari", "Tau", "Gem", "Cnc", "Leo", "Vir", "Lib", "Sco", "Sgr", "Cap", "Aqr", "Psc",
+        ];
+
+        for (i, sign) in signs.iter().enumerate() {
+            let sign_mid = ((i * 30 + 15) as f32 + 180.0).to_radians();
+            let label_radius = radius * 1.05;
+            let label_x = center.x + label_radius * sign_mid.cos();
+            let label_y = center.y + label_radius * sign_mid.sin();
+
+            let font_size = 12.0;
+            let text_width = self.text_width(sign, font_size);
+            let text_x = label_x - text_width / 2.0;
+            let text_y = label_y + font_size / 3.0;
+
+            self.draw_text(sign, text_x, text_y, font_size, Color::black());
         }
 
         Ok(())
@@ -167,8 +218,8 @@ impl Renderer {
                 center.y + radius * angle.sin(),
             );
             let end = Point::new(
-                center.x + (radius * 0.8) * angle.cos(),
-                center.y + (radius * 0.8) * angle.sin(),
+                center.x + (radius * 0.7) * angle.cos(),
+                center.y + (radius * 0.7) * angle.sin(),
             );
 
             let color = match i {
@@ -177,7 +228,7 @@ impl Renderer {
                 _ => Color::black(),
             };
 
-            self.draw_line(start, end, color, 2.0);
+            self.draw_line(start, end, color, 1.5);
         }
 
         Ok(())
@@ -192,7 +243,7 @@ impl Renderer {
         for planet in planets {
             let position = planet.position.longitude;
             let angle = (position as f32).to_radians();
-            let planet_radius = radius * 0.7;
+            let planet_radius = radius * 0.75;
 
             let planet_pos = Point::new(
                 center.x + planet_radius * angle.cos(),
@@ -230,16 +281,47 @@ impl Renderer {
             };
 
             self.draw_circle(planet_pos, size, color);
+
+            let font_size = 8.0;
+            let label = &planet.name;
+            let text_width = self.text_width(label, font_size);
+            let label_x = planet_pos.x - text_width / 2.0;
+            let label_y = planet_pos.y + size + font_size;
+            self.draw_text(label, label_x, label_y, font_size, Color::black());
         }
 
         Ok(())
     }
 
-    fn draw_house_labels(
+    fn draw_house_degree_labels(
         &mut self,
         center: Point,
         radius: f32,
+        houses: &crate::chart::HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let house_cusps = houses.houses;
+
+        for (_i, &cusp) in house_cusps.iter().enumerate() {
+            let angle = (cusp as f32).to_radians();
+            let label_radius = radius * 0.6;
+            let label_x = center.x + label_radius * angle.cos();
+            let label_y = center.y + label_radius * angle.sin();
+
+            let degree_in_sign = cusp % 30.0;
+            let sign_index = (cusp / 30.0) as usize % 12;
+            let sign_names = [
+                "Ari", "Tau", "Gem", "Cnc", "Leo", "Vir", "Lib", "Sco", "Sgr", "Cap", "Aqr", "Psc",
+            ];
+            let label = format!("{}{:.0}°", sign_names[sign_index], degree_in_sign);
+
+            let font_size = 9.0;
+            let text_width = self.text_width(&label, font_size);
+            let text_x = label_x - text_width / 2.0;
+            let text_y = label_y + font_size / 3.0;
+
+            self.draw_text(&label, text_x, text_y, font_size, Color::gray(0.3));
+        }
+
         Ok(())
     }
 
@@ -297,6 +379,62 @@ impl Renderer {
         }
     }
 
+    pub fn draw_text(&mut self, text: &str, x: f32, y: f32, size: f32, color: Color) {
+        let mut current_x = x;
+        let width = self.size.width as usize;
+        let height = self.size.height as usize;
+        let pixels = self.pixmap.pixels_mut();
+
+        for c in text.chars() {
+            let (metrics, bitmap) = self.font_state.font.rasterize(c, size);
+
+            let glyph_x = current_x + metrics.xmin as f32;
+            let glyph_y = y - metrics.ymin as f32;
+
+            for (row_idx, row) in bitmap.chunks(metrics.width).enumerate() {
+                for (col_idx, &alpha) in row.iter().enumerate() {
+                    if alpha == 0 {
+                        continue;
+                    }
+
+                    let px = glyph_x as i32 + col_idx as i32;
+                    let py = glyph_y as i32 + row_idx as i32;
+
+                    if px >= 0 && (px as usize) < width && py >= 0 && (py as usize) < height {
+                        let idx = py as usize * width + px as usize;
+                        let alpha_f = alpha as f32 / 255.0;
+
+                        let old_r = pixels[idx].red() as f32;
+                        let old_g = pixels[idx].green() as f32;
+                        let old_b = pixels[idx].blue() as f32;
+
+                        let new_r =
+                            (color.r * alpha_f * 255.0 + old_r * (1.0 - alpha_f)).min(255.0) as u8;
+                        let new_g =
+                            (color.g * alpha_f * 255.0 + old_g * (1.0 - alpha_f)).min(255.0) as u8;
+                        let new_b =
+                            (color.b * alpha_f * 255.0 + old_b * (1.0 - alpha_f)).min(255.0) as u8;
+
+                        pixels[idx] =
+                            tiny_skia::PremultipliedColorU8::from_rgba(new_r, new_g, new_b, 255)
+                                .unwrap();
+                    }
+                }
+            }
+
+            current_x += metrics.advance_width;
+        }
+    }
+
+    pub fn text_width(&self, text: &str, size: f32) -> f32 {
+        let mut width = 0.0;
+        for c in text.chars() {
+            let (metrics, _) = self.font_state.font.rasterize(c, size);
+            width += metrics.advance_width;
+        }
+        width
+    }
+
     pub fn save(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
         let path = Path::new(path);
         self.pixmap.save_png(path)?;
@@ -312,15 +450,31 @@ mod tests {
     #[test]
     fn test_renderer_creation() {
         let size = Size::new(800.0, 800.0);
-        let renderer = Renderer::new(size);
+        let renderer = Renderer::new(size).unwrap();
         assert_eq!(renderer.size.width, 800.0);
         assert_eq!(renderer.size.height, 800.0);
     }
 
     #[test]
+    fn test_text_rendering() {
+        let size = Size::new(400.0, 200.0);
+        let mut renderer = Renderer::new(size).unwrap();
+        renderer.clear(Color::white());
+        renderer.draw_text("Hello", 10.0, 50.0, 24.0, Color::black());
+
+        let width = renderer.text_width("Hello", 24.0);
+        assert!(width > 0.0);
+
+        renderer.save("test_text.png").unwrap();
+        let path = std::path::Path::new("test_text.png");
+        assert!(path.exists());
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn test_chart_rendering() {
         let size = Size::new(800.0, 800.0);
-        let mut renderer = Renderer::new(size);
+        let mut renderer = Renderer::new(size).unwrap();
 
         let chart_data = ChartData {
             geo_pos: GeoPos::new(40.7128, -74.0060, 0.0),
