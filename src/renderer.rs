@@ -1,5 +1,5 @@
 use std::path::Path;
-use tiny_skia::{Canvas, Paint, Pixmap, Transform};
+use tiny_skia::{FillRule, Paint, Pixmap, Transform};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point {
@@ -22,6 +22,10 @@ pub struct Size {
 impl Size {
     pub fn new(width: f32, height: f32) -> Self {
         Self { width, height }
+    }
+
+    pub fn center(&self) -> Point {
+        Point::new(self.width / 2.0, self.height / 2.0)
     }
 }
 
@@ -80,50 +84,40 @@ impl Color {
     pub fn blue() -> Self {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
+
+    fn to_skia(&self) -> tiny_skia::Color {
+        tiny_skia::Color::from_rgba8(
+            (self.r * 255.0) as u8,
+            (self.g * 255.0) as u8,
+            (self.b * 255.0) as u8,
+            (self.a * 255.0) as u8,
+        )
+    }
 }
 
 pub struct Renderer {
-    canvas: Canvas,
-    paint: Paint,
+    pixmap: Pixmap,
     size: Size,
 }
 
 impl Renderer {
     pub fn new(size: Size) -> Self {
         let pixmap = Pixmap::new(size.width as u32, size.height as u32).unwrap();
-        let canvas = Canvas::from(pixmap);
-
-        let mut paint = Paint::default();
-        paint.set_anti_alias(true);
-
-        Self {
-            canvas,
-            paint,
-            size,
-        }
+        Self { pixmap, size }
     }
 
     pub fn render_chart(
         &mut self,
         chart_data: &crate::chart::ChartData,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Clear background
         self.clear(Color::gray(0.95));
 
-        // Calculate center and radius
         let center = self.size.center();
         let radius = f32::min(self.size.width, self.size.height) * 0.4;
 
-        // Draw zodiac wheel
         self.draw_zodiac_wheel(center, radius)?;
-
-        // Draw house cusps
         self.draw_house_cusps(center, radius, &chart_data.houses)?;
-
-        // Draw planets
         self.draw_planets(center, radius, &chart_data.planets)?;
-
-        // Draw house labels
         self.draw_house_labels(center, radius)?;
 
         Ok(())
@@ -134,10 +128,8 @@ impl Renderer {
         center: Point,
         radius: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Draw outer circle
         self.draw_circle(center, radius, Color::black());
 
-        // Draw zodiac degree lines
         for degree in 0..360 {
             let angle = (degree as f32).to_radians();
             let length = if degree % 30 == 0 {
@@ -167,7 +159,6 @@ impl Renderer {
         radius: f32,
         houses: &crate::chart::HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Draw house cusp lines
         let house_cusps = houses.houses;
         for (i, &cusp) in house_cusps.iter().enumerate() {
             let angle = (cusp as f32).to_radians();
@@ -180,7 +171,6 @@ impl Renderer {
                 center.y + (radius * 0.8) * angle.sin(),
             );
 
-            // Different colors for different house systems
             let color = match i {
                 0 | 3 | 6 | 9 => Color::red(),
                 1 | 4 | 7 | 10 => Color::blue(),
@@ -209,7 +199,6 @@ impl Renderer {
                 center.y + planet_radius * angle.sin(),
             );
 
-            // Different sizes for different planets
             let size = match planet.name.as_str() {
                 crate::chart::planet::SUN => 12.0,
                 crate::chart::planet::MOON => 10.0,
@@ -225,27 +214,22 @@ impl Renderer {
                 _ => 5.0,
             };
 
-            // Color based on planet type
             let color = match planet.name.as_str() {
-                crate::chart::planet::SUN => Color::new(1.0, 0.8, 0.0, 1.0), // Yellow
-                crate::chart::planet::MOON => Color::new(0.8, 0.8, 1.0, 1.0), // Light blue
-                crate::chart::planet::MERCURY => Color::new(0.8, 0.8, 0.8, 1.0), // Gray
-                crate::chart::planet::VENUS => Color::new(1.0, 0.5, 0.5, 1.0), // Pink
-                crate::chart::planet::MARS => Color::new(1.0, 0.0, 0.0, 1.0), // Red
-                crate::chart::planet::JUPITER => Color::new(0.8, 0.6, 0.2, 1.0), // Orange
-                crate::chart::planet::SATURN => Color::new(0.6, 0.5, 0.4, 1.0), // Brown
-                crate::chart::planet::URANUS => Color::new(0.0, 0.8, 1.0, 1.0), // Cyan
-                crate::chart::planet::NEPTUNE => Color::new(0.3, 0.3, 1.0, 1.0), // Blue
-                crate::chart::planet::PLUTO => Color::new(0.5, 0.3, 0.7, 1.0), // Purple
-                crate::chart::planet::CHIRON => Color::new(0.8, 0.4, 0.2, 1.0), // Orange-brown
+                crate::chart::planet::SUN => Color::new(1.0, 0.8, 0.0, 1.0),
+                crate::chart::planet::MOON => Color::new(0.8, 0.8, 1.0, 1.0),
+                crate::chart::planet::MERCURY => Color::new(0.8, 0.8, 0.8, 1.0),
+                crate::chart::planet::VENUS => Color::new(1.0, 0.5, 0.5, 1.0),
+                crate::chart::planet::MARS => Color::new(1.0, 0.0, 0.0, 1.0),
+                crate::chart::planet::JUPITER => Color::new(0.8, 0.6, 0.2, 1.0),
+                crate::chart::planet::SATURN => Color::new(0.6, 0.5, 0.4, 1.0),
+                crate::chart::planet::URANUS => Color::new(0.0, 0.8, 1.0, 1.0),
+                crate::chart::planet::NEPTUNE => Color::new(0.3, 0.3, 1.0, 1.0),
+                crate::chart::planet::PLUTO => Color::new(0.5, 0.3, 0.7, 1.0),
+                crate::chart::planet::CHIRON => Color::new(0.8, 0.4, 0.2, 1.0),
                 _ => Color::black(),
             };
 
             self.draw_circle(planet_pos, size, color);
-
-            // Draw planet name
-            let text_pos = Point::new(planet_pos.x + size + 3.0, planet_pos.y + 4.0);
-            self.draw_text(&planet.name, text_pos, Color::black(), 10.0);
         }
 
         Ok(())
@@ -256,75 +240,74 @@ impl Renderer {
         center: Point,
         radius: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        for house in 1..=12 {
-            let angle = ((house as f32 - 0.5) * 30.0).to_radians();
-            let label_pos = Point::new(
-                center.x + (radius * 0.6) * angle.cos(),
-                center.y + (radius * 0.6) * angle.sin(),
-            );
-
-            let text = format!("House {}", house);
-            self.draw_text(&text, label_pos, Color::black(), 8.0);
-        }
-
         Ok(())
     }
 
     pub fn clear(&mut self, color: Color) {
-        self.paint.set_color(tiny_skia::Color::from_rgba8(
-            (color.r * 255.0) as u8,
-            (color.g * 255.0) as u8,
-            (color.b * 255.0) as u8,
-            (color.a * 255.0) as u8,
-        ));
-        self.canvas.fill_rect(
-            tiny_skia::Rect::from_xywh(0.0, 0.0, self.size.width, self.size.height),
-            &self.paint,
-        );
+        let mut paint = Paint::default();
+        paint.set_color(color.to_skia());
+        paint.anti_alias = true;
+
+        let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, self.size.width, self.size.height).unwrap();
+        self.pixmap
+            .fill_rect(rect, &paint, Transform::identity(), None);
     }
 
     pub fn draw_circle(&mut self, center: Point, radius: f32, color: Color) {
-        self.paint.set_color(tiny_skia::Color::from_rgba8(
-            (color.r * 255.0) as u8,
-            (color.g * 255.0) as u8,
-            (color.b * 255.0) as u8,
-            (color.a * 255.0) as u8,
-        ));
+        let mut paint = Paint::default();
+        paint.set_color(color.to_skia());
+        paint.anti_alias = true;
 
-        self.canvas
-            .fill_circle(center.x, center.y, radius, &self.paint);
+        let mut path = tiny_skia::PathBuilder::new();
+        path.push_circle(center.x, center.y, radius);
+        let path = path.finish().unwrap();
+
+        self.pixmap.fill_path(
+            &path,
+            &paint,
+            FillRule::Winding,
+            Transform::identity(),
+            None,
+        );
     }
 
     pub fn draw_line(&mut self, start: Point, end: Point, color: Color, stroke_width: f32) {
-        self.paint.set_color(tiny_skia::Color::from_rgba8(
-            (color.r * 255.0) as u8,
-            (color.g * 255.0) as u8,
-            (color.b * 255.0) as u8,
-            (color.a * 255.0) as u8,
-        ));
+        let mut paint = Paint::default();
+        paint.set_color(color.to_skia());
+        paint.anti_alias = true;
 
-        self.canvas
-            .stroke_line(start.x, start.y, end.x, end.y, &self.paint, stroke_width);
+        let mut path = tiny_skia::PathBuilder::new();
+        path.move_to(start.x, start.y);
+        path.line_to(end.x, end.y);
+        let path = path.finish().unwrap();
+
+        let stroke = tiny_skia::Stroke {
+            width: stroke_width,
+            ..Default::default()
+        };
+
+        if let Some(stroked) = path.stroke(&stroke, 1.0) {
+            self.pixmap.fill_path(
+                &stroked,
+                &paint,
+                FillRule::Winding,
+                Transform::identity(),
+                None,
+            );
+        }
     }
 
-    pub fn draw_text(&mut self, text: &str, position: Point, color: Color, font_size: f32) {
-        self.paint.set_color(tiny_skia::Color::from_rgba8(
-            (color.r * 255.0) as u8,
-            (color.g * 255.0) as u8,
-            (color.b * 255.0) as u8,
-            (color.a * 255.0) as u8,
-        ));
-
-        // Note: For simplicity, this example doesn't include font loading
-        // In a real implementation, you would load a font and use text drawing methods
-        // self.canvas.draw_text(text, position.x, position.y, font, &self.paint);
+    pub fn save(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let path = Path::new(path);
+        self.pixmap.save_png(path)?;
+        Ok(())
     }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::chart::*;
-    use chrono::{TimeZone, Utc};
 
     #[test]
     fn test_renderer_creation() {
@@ -339,36 +322,33 @@ mod tests {
         let size = Size::new(800.0, 800.0);
         let mut renderer = Renderer::new(size);
 
-        // Create sample chart data
         let chart_data = ChartData {
             geo_pos: GeoPos::new(40.7128, -74.0060, 0.0),
             julian_day: 2451545.0,
             planets: vec![
-                PlanetPosition::new("Sun", Position::new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0), false),
-                PlanetPosition::new("Moon", Position::new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0), false),
+                PlanetPosition::new("Sun", Position::new(280.0, 0.0, 0.0, 0.0, 0.0, 0.0), false),
+                PlanetPosition::new("Moon", Position::new(45.0, 0.0, 0.0, 0.0, 0.0, 0.0), false),
             ],
             houses: HouseCusps {
-                asc: 0.0,
-                mc: 0.0,
+                asc: 180.0,
+                mc: 90.0,
                 dc: 0.0,
-                ic: 0.0,
-                houses: [0.0; 12],
+                ic: 270.0,
+                houses: [
+                    180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 0.0, 30.0, 60.0, 90.0, 120.0, 150.0,
+                ],
                 system: HouseSystem::Placidus,
             },
             sidereal_time: 0.0,
         };
 
-        // Test rendering
         let result = renderer.render_chart(&chart_data);
         assert!(result.is_ok());
 
-        // Test saving
-        renderer.save("test_chart.png");
+        renderer.save("test_chart.png").unwrap();
         let path = std::path::Path::new("test_chart.png");
         assert!(path.exists());
 
-        // Clean up test file
         std::fs::remove_file(path).unwrap();
     }
 }
-

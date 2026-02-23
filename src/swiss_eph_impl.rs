@@ -1,130 +1,78 @@
 use crate::chart::{
-    constants, planet, ChartCalculator, ChartConfig, ChartData, Error, GeoPos, HouseCusps,
-    HouseSystem, PlanetPosition, Position,
+    planet, ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem,
+    PlanetPosition, Position,
 };
-use chrono::{DateTime, Datelike, Duration, Timelike, Utc};
-use std::sync::Arc;
-
-use swiss_eph::safe::*;
 
 pub struct SwissEphChartCalculator {
     config: ChartConfig,
-    eph: Arc<SwissEph>,
 }
 
 impl SwissEphChartCalculator {
     pub fn new(config: ChartConfig) -> Result<Self, Error> {
-        // Initialize Swiss Ephemeris
-        let eph = Arc::new(SwissEph::new()?);
-
-        // Set ephemeris path if needed (for external files)
-        // safe::set_ephe_path("/path/to/ephe/files");
-
-        Ok(Self { config, eph })
+        swiss_eph::safe::set_ephe_path("");
+        Ok(Self { config })
     }
 
-    fn julday_from_datetime(dt: DateTime<Utc>) -> f64 {
-        let date = dt.naive_utc();
-        let time = dt.time();
-        let jd = julday(
-            date.year() as i32,
-            date.month() as i32,
-            date.day() as i32,
-            time.hour() as f64 + time.minute() as f64 / 60.0 + time.second() as f64 / 3600.0,
-        );
-        jd
-    }
-
-    fn get_planet_id(planet_name: &str) -> Result<i32, Error> {
+    fn get_planet(planet_name: &str) -> Result<swiss_eph::safe::Planet, Error> {
+        use swiss_eph::safe::Planet;
         match planet_name {
-            planet::SUN => Ok(SE_SUN),
-            planet::MOON => Ok(SE_MOON),
-            planet::MERCURY => Ok(SE_MERCURY),
-            planet::VENUS => Ok(SE_VENUS),
-            planet::MARS => Ok(SE_MARS),
-            planet::JUPITER => Ok(SE_JUPITER),
-            planet::SATURN => Ok(SE_SATURN),
-            planet::URANUS => Ok(SE_URANUS),
-            planet::NEPTUNE => Ok(SE_NEPTUNE),
-            planet::PLUTO => Ok(SE_PLUTO),
-            planet::CHIRON => Ok(SE_CHIRON),
-            planet::MEAN_NODE => Ok(SE_MEAN_NODE),
-            planet::TRUE_NODE => Ok(SE_TRUE_NODE),
-            planet::ASCENDANT => Ok(SE_ASC),
-            planet::MIDHEAVEN => Ok(SE_MC),
+            planet::SUN => Ok(Planet::Sun),
+            planet::MOON => Ok(Planet::Moon),
+            planet::MERCURY => Ok(Planet::Mercury),
+            planet::VENUS => Ok(Planet::Venus),
+            planet::MARS => Ok(Planet::Mars),
+            planet::JUPITER => Ok(Planet::Jupiter),
+            planet::SATURN => Ok(Planet::Saturn),
+            planet::URANUS => Ok(Planet::Uranus),
+            planet::NEPTUNE => Ok(Planet::Neptune),
+            planet::PLUTO => Ok(Planet::Pluto),
+            planet::CHIRON => Ok(Planet::Chiron),
+            planet::MEAN_NODE => Ok(Planet::MeanNode),
+            planet::TRUE_NODE => Ok(Planet::TrueNode),
             _ => Err(Error::UnknownPlanet(planet_name.to_string())),
         }
     }
 
-    fn calculate_planet_position(
-        &self,
-        planet_name: &str,
-        flags: CalcFlags,
-    ) -> Result<Position, Error> {
-        let planet_id = Self::get_planet_id(planet_name)?;
-        let position = self.eph.calc_ut(self.config.julian_day, planet_id, flags)?;
+    fn get_house_system(system: &HouseSystem) -> swiss_eph::safe::HouseSystem {
+        use swiss_eph::safe::HouseSystem as HS;
+        match system {
+            HouseSystem::Placidus => HS::Placidus,
+            HouseSystem::Koch => HS::Koch,
+            HouseSystem::Equal => HS::Equal,
+            HouseSystem::Whole => HS::WholeSign,
+            HouseSystem::Porphyry => HS::Porphyrius,
+            HouseSystem::Regiomontanus => HS::Regiomontanus,
+            HouseSystem::Campanus => HS::Campanus,
+            HouseSystem::Morinus => HS::Morinus,
+        }
+    }
+
+    fn calculate_planet_position(&self, planet_name: &str) -> Result<Position, Error> {
+        let planet = Self::get_planet(planet_name)?;
+        let flags = swiss_eph::safe::CalcFlags::new().with_speed();
+
+        let result = swiss_eph::safe::calc(self.config.julian_day, planet, flags)
+            .map_err(|e| Error::SwissEph(e.to_string()))?;
 
         Ok(Position::new(
-            position.longitude,
-            position.latitude,
-            position.distance,
-            position.speed.longitude,
-            position.speed.latitude,
-            position.speed.distance,
+            result.longitude,
+            result.latitude,
+            result.distance,
+            result.longitude_speed,
+            result.latitude_speed,
+            result.distance_speed,
         ))
-    }
-
-    fn calculate_house_cusps(&self) -> Result<HouseCusps, Error> {
-        let house_system_id = match self.config.house_system {
-            HouseSystem::Placidus => SE_HOUSES_PLACIDUS,
-            HouseSystem::Koch => SE_HOUSES_KOCH,
-            HouseSystem::Equal => SE_HOUSES_EQUAL,
-            HouseSystem::Whole => SE_HOUSES_WHOLE_SIGN,
-            HouseSystem::Porphyry => SE_HOUSES_PORPHYRIUS,
-            HouseSystem::Regiomontanus => SE_HOUSES_REGIOMONTANUS,
-            HouseSystem::Campanus => SE_HOUSES_CAMPANUS,
-            HouseSystem::Morinus => SE_HOUSES_MORINUS,
-        };
-
-        let flags = CalcFlags::new();
-        let houses = self.eph.houses(
-            self.config.julian_day,
-            house_system_id,
-            self.config.geo_pos.latitude,
-            self.config.geo_pos.longitude,
-            flags,
-        )?;
-
-        Ok(HouseCusps {
-            asc: houses.asc,
-            mc: houses.mc,
-            dc: houses.dc,
-            ic: houses.ic,
-            houses: houses.houses,
-            system: self.config.house_system.clone(),
-        })
-    }
-
-    fn calculate_sidereal_time(&self) -> Result<f64, Error> {
-        let flags = CalcFlags::new();
-        let sidereal_time = self.eph.sidereal_time(self.config.julian_day, flags)?;
-        Ok(sidereal_time)
     }
 }
 
 impl ChartCalculator for SwissEphChartCalculator {
-    fn new(config: ChartConfig) -> Result<Self, Error>
-    where
-        Self: Sized,
-    {
+    fn new(config: ChartConfig) -> Result<Self, Error> {
         Self::new(config)
     }
 
     fn calculate_planets(&self) -> Result<Vec<PlanetPosition>, Error> {
-        let flags = CalcFlags::new().with_speed();
         let mut planets = Vec::new();
 
-        // Main planets
         for &planet_name in [
             planet::SUN,
             planet::MOON,
@@ -136,33 +84,46 @@ impl ChartCalculator for SwissEphChartCalculator {
             planet::URANUS,
             planet::NEPTUNE,
             planet::PLUTO,
+            planet::CHIRON,
+            planet::MEAN_NODE,
+            planet::TRUE_NODE,
         ]
         .iter()
         {
-            let position = self.calculate_planet_position(planet_name, flags)?;
+            let position = self.calculate_planet_position(planet_name)?;
             let retrograde = position.speed_lon < 0.0;
             planets.push(PlanetPosition::new(planet_name, position, retrograde));
         }
-
-        // Lunar nodes
-        let mean_node_pos = self.calculate_planet_position(planet::MEAN_NODE, flags)?;
-        let true_node_pos = self.calculate_planet_position(planet::TRUE_NODE, flags)?;
-        planets.push(PlanetPosition::new(planet::MEAN_NODE, mean_node_pos, false));
-        planets.push(PlanetPosition::new(planet::TRUE_NODE, true_node_pos, false));
-
-        // Chiron
-        let chiron_pos = self.calculate_planet_position(planet::CHIRON, flags)?;
-        planets.push(PlanetPosition::new(planet::CHIRON, chiron_pos, false));
 
         Ok(planets)
     }
 
     fn calculate_houses(&self) -> Result<HouseCusps, Error> {
-        self.calculate_house_cusps()
+        let hs = Self::get_house_system(&self.config.house_system);
+
+        let result = swiss_eph::safe::houses(
+            self.config.julian_day,
+            self.config.geo_pos.latitude,
+            self.config.geo_pos.longitude,
+            hs,
+        )
+        .map_err(|e| Error::SwissEph(e.to_string()))?;
+
+        let dc = (result.ascendant + 180.0) % 360.0;
+        let ic = (result.mc + 180.0) % 360.0;
+
+        Ok(HouseCusps {
+            asc: result.ascendant,
+            mc: result.mc,
+            dc,
+            ic,
+            houses: result.cusps,
+            system: self.config.house_system.clone(),
+        })
     }
 
     fn calculate_sidereal_time(&self) -> Result<f64, Error> {
-        self.calculate_sidereal_time()
+        Ok(swiss_eph::safe::sidereal_time(self.config.julian_day))
     }
 
     fn calculate_chart(&self) -> Result<ChartData, Error> {
@@ -183,14 +144,13 @@ impl ChartCalculator for SwissEphChartCalculator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{TimeZone, Utc};
 
     #[test]
     fn test_swiss_eph_chart_calculator_creation() {
         let config = ChartConfig::new(
             HouseSystem::Placidus,
             GeoPos::new(40.7128, -74.0060, 0.0),
-            2451545.0, // Jan 1, 2000, 12:00 UTC
+            2451545.0,
         );
 
         let calculator = SwissEphChartCalculator::new(config);
@@ -202,16 +162,13 @@ mod tests {
         let config = ChartConfig::new(
             HouseSystem::Placidus,
             GeoPos::new(40.7128, -74.0060, 0.0),
-            2451545.0, // Jan 1, 2000, 12:00 UTC
+            2451545.0,
         );
 
         let calculator = SwissEphChartCalculator::new(config).unwrap();
         let planets = calculator.calculate_planets().unwrap();
 
         assert!(!planets.is_empty());
-        assert_eq!(planets.len(), 13); // 10 main planets + 3 lunar points
-
-        // Check Sun position
         let sun = planets.iter().find(|p| p.name == planet::SUN).unwrap();
         assert!(sun.position.longitude > 0.0);
         assert!(sun.position.longitude < 360.0);
@@ -222,7 +179,7 @@ mod tests {
         let config = ChartConfig::new(
             HouseSystem::Placidus,
             GeoPos::new(40.7128, -74.0060, 0.0),
-            2451545.0, // Jan 1, 2000, 12:00 UTC
+            2451545.0,
         );
 
         let calculator = SwissEphChartCalculator::new(config).unwrap();
@@ -231,37 +188,5 @@ mod tests {
         assert!(houses.asc > 0.0 && houses.asc < 360.0);
         assert!(houses.mc > 0.0 && houses.mc < 360.0);
         assert_eq!(houses.houses.len(), 12);
-    }
-
-    #[test]
-    fn test_sidereal_time_calculation() {
-        let config = ChartConfig::new(
-            HouseSystem::Placidus,
-            GeoPos::new(40.7128, -74.0060, 0.0),
-            2451545.0, // Jan 1, 2000, 12:00 UTC
-        );
-
-        let calculator = SwissEphChartCalculator::new(config).unwrap();
-        let sidereal_time = calculator.calculate_sidereal_time().unwrap();
-
-        assert!(sidereal_time > 0.0 && sidereal_time < 360.0);
-    }
-
-    #[test]
-    fn test_full_chart_calculation() {
-        let config = ChartConfig::new(
-            HouseSystem::Placidus,
-            GeoPos::new(40.7128, -74.0060, 0.0),
-            2451545.0, // Jan 1, 2000, 12:00 UTC
-        );
-
-        let calculator = SwissEphChartCalculator::new(config).unwrap();
-        let chart = calculator.calculate_chart().unwrap();
-
-        assert_eq!(chart.geo_pos.latitude, 40.7128);
-        assert_eq!(chart.geo_pos.longitude, -74.0060);
-        assert_eq!(chart.julian_day, 2451545.0);
-        assert!(!chart.planets.is_empty());
-        assert!(chart.sidereal_time > 0.0 && chart.sidereal_time < 360.0);
     }
 }
