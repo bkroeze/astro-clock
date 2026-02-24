@@ -1,6 +1,8 @@
 use std::path::Path;
 use tiny_skia::{FillRule, Paint, Pixmap, Transform};
 
+use crate::aspects::{find_aspects, AspectConfig, AspectType};
+
 pub struct FontState {
     pub font: fontdue::Font,
     pub symbol_font: Option<fontdue::Font>,
@@ -166,6 +168,7 @@ impl Renderer {
         self.draw_zodiac_wheel(center, radius)?;
         self.draw_zodiac_sign_labels(center, radius)?;
         self.draw_house_cusps(center, radius, &chart_data.houses)?;
+        self.draw_aspects(center, radius, &chart_data.planets)?;
         self.draw_planets(center, radius, &chart_data.planets)?;
         self.draw_house_degree_labels(center, radius, &chart_data.houses)?;
 
@@ -257,6 +260,67 @@ impl Renderer {
 
             // All house cusps are black
             self.draw_line(start, end, Color::black(), 1.5);
+        }
+
+        Ok(())
+    }
+
+    fn draw_aspects(
+        &mut self,
+        center: Point,
+        radius: f32,
+        planets: &[crate::chart::PlanetPosition],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // Find aspects with default 3° orb
+        let config = AspectConfig::new(3.0);
+        let aspects = find_aspects(planets, config);
+
+        // Draw aspect lines inside the chart wheel
+        let aspect_radius = radius * 0.5; // Draw aspects in the inner circle
+
+        for aspect in aspects {
+            // Find the two planets involved
+            let planet1 = planets.iter().find(|p| p.name == aspect.planet1);
+            let planet2 = planets.iter().find(|p| p.name == aspect.planet2);
+
+            if let (Some(p1), Some(p2)) = (planet1, planet2) {
+                // Calculate positions on the aspect circle
+                let pos1 = (p1.position.longitude + 180.0) % 360.0;
+                let pos2 = (p2.position.longitude + 180.0) % 360.0;
+
+                let angle1 = (pos1 as f32).to_radians();
+                let angle2 = (pos2 as f32).to_radians();
+
+                let start = Point::new(
+                    center.x + aspect_radius * angle1.cos(),
+                    center.y + aspect_radius * angle1.sin(),
+                );
+                let end = Point::new(
+                    center.x + aspect_radius * angle2.cos(),
+                    center.y + aspect_radius * angle2.sin(),
+                );
+
+                // Color based on aspect type
+                let color = match aspect.aspect_type {
+                    AspectType::Conjunction => Color::new(0.8, 0.8, 0.8, 1.0), // Light gray
+                    AspectType::Opposition => Color::new(1.0, 0.0, 0.0, 1.0),  // Red
+                    AspectType::Square => Color::new(1.0, 0.0, 0.0, 1.0),      // Red
+                    AspectType::Trine => Color::new(0.0, 0.5, 1.0, 1.0),       // Blue
+                    AspectType::Sextile => Color::new(0.0, 0.8, 0.0, 1.0),     // Green
+                    AspectType::GrandTrine => Color::new(0.0, 0.5, 1.0, 1.0),  // Blue
+                };
+
+                // Line width based on orb (tighter orb = thicker line)
+                let stroke_width = if aspect.orb < 1.0 {
+                    2.0
+                } else if aspect.orb < 2.0 {
+                    1.5
+                } else {
+                    1.0
+                };
+
+                self.draw_line(start, end, color, stroke_width);
+            }
         }
 
         Ok(())
