@@ -198,3 +198,35 @@ tree:
 # Verify project structure is valid
 verify:
     cargo check && cargo test && cargo fmt -- --check && cargo clippy
+
+# ============================================================================
+# Ephemeris Data
+# ============================================================================
+
+# Download Swiss Ephemeris data files from GitHub (if not already present)
+download-ephemeris:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    DATA_DIR="{{justfile_directory()}}/data"
+    mkdir -p "$DATA_DIR"
+    
+    BASE_URL="https://raw.githubusercontent.com/aloistr/swisseph/master/ephe"
+    FILES="sepl_18.se1 semo_18.se1 seas_18.se1"
+    
+    for file in $FILES; do
+        if [ -f "$DATA_DIR/$file" ]; then
+            echo "✓ $file already exists"
+        else
+            echo "↓ Downloading $file..."
+            curl -sL "$BASE_URL/$file" -o "$DATA_DIR/$file"
+            if [ -f "$DATA_DIR/$file" ] && [ -s "$DATA_DIR/$file" ]; then
+                echo "✓ Downloaded $file ($(stat -c%s "$DATA_DIR/$file" | numfmt --to=iec))"
+            else
+                echo "✗ Failed to download $file"
+                rm -f "$DATA_DIR/$file"
+                exit 1
+            fi
+        fi
+    done
+    echo ""
+    echo "Ephemeris data ready in $DATA_DIR"

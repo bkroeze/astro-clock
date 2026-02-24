@@ -129,7 +129,7 @@ impl Renderer {
         &mut self,
         chart_data: &crate::chart::ChartData,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.clear(Color::gray(0.95));
+        self.clear(Color::white());
 
         let center = self.size.center();
         let radius = f32::min(self.size.width, self.size.height) * 0.35;
@@ -183,17 +183,18 @@ impl Renderer {
         center: Point,
         radius: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Zodiac symbols
         let signs = [
-            "Ari", "Tau", "Gem", "Cnc", "Leo", "Vir", "Lib", "Sco", "Sgr", "Cap", "Aqr", "Psc",
+            "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓",
         ];
 
         for (i, sign) in signs.iter().enumerate() {
             let sign_mid = ((i * 30 + 15) as f32 + 180.0).to_radians();
-            let label_radius = radius * 1.05;
+            let label_radius = radius * 1.08;
             let label_x = center.x + label_radius * sign_mid.cos();
             let label_y = center.y + label_radius * sign_mid.sin();
 
-            let font_size = 12.0;
+            let font_size = 16.0;
             let text_width = self.text_width(sign, font_size);
             let text_x = label_x - text_width / 2.0;
             let text_y = label_y + font_size / 3.0;
@@ -211,7 +212,7 @@ impl Renderer {
         houses: &crate::chart::HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let house_cusps = houses.houses;
-        for (i, &cusp) in house_cusps.iter().enumerate() {
+        for (_i, &cusp) in house_cusps.iter().enumerate() {
             let angle = (cusp as f32).to_radians();
             let start = Point::new(
                 center.x + radius * angle.cos(),
@@ -222,13 +223,8 @@ impl Renderer {
                 center.y + (radius * 0.7) * angle.sin(),
             );
 
-            let color = match i {
-                0 | 3 | 6 | 9 => Color::red(),
-                1 | 4 | 7 | 10 => Color::blue(),
-                _ => Color::black(),
-            };
-
-            self.draw_line(start, end, color, 1.5);
+            // All house cusps are black
+            self.draw_line(start, end, Color::black(), 1.5);
         }
 
         Ok(())
@@ -240,6 +236,26 @@ impl Renderer {
         radius: f32,
         planets: &[crate::chart::PlanetPosition],
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Planet symbols mapping
+        let planet_symbols: std::collections::HashMap<&str, &str> = [
+            (crate::chart::planet::SUN, "☉"),
+            (crate::chart::planet::MOON, "☽"),
+            (crate::chart::planet::MERCURY, "☿"),
+            (crate::chart::planet::VENUS, "♀"),
+            (crate::chart::planet::MARS, "♂"),
+            (crate::chart::planet::JUPITER, "♃"),
+            (crate::chart::planet::SATURN, "♄"),
+            (crate::chart::planet::URANUS, "♅"),
+            (crate::chart::planet::NEPTUNE, "♆"),
+            (crate::chart::planet::PLUTO, "♇"),
+            (crate::chart::planet::TRUE_NODE, "☊"),
+            (crate::chart::planet::MEAN_NODE, "☊"),
+            (crate::chart::planet::CHIRON, "⚷"),
+        ]
+        .iter()
+        .cloned()
+        .collect();
+
         for planet in planets {
             let position = planet.position.longitude;
             let angle = (position as f32).to_radians();
@@ -250,44 +266,26 @@ impl Renderer {
                 center.y + planet_radius * angle.sin(),
             );
 
-            let size = match planet.name.as_str() {
-                crate::chart::planet::SUN => 12.0,
-                crate::chart::planet::MOON => 10.0,
-                crate::chart::planet::MERCURY => 6.0,
-                crate::chart::planet::VENUS => 8.0,
-                crate::chart::planet::MARS => 7.0,
-                crate::chart::planet::JUPITER => 9.0,
-                crate::chart::planet::SATURN => 8.0,
-                crate::chart::planet::URANUS => 7.0,
-                crate::chart::planet::NEPTUNE => 7.0,
-                crate::chart::planet::PLUTO => 6.0,
-                crate::chart::planet::CHIRON => 6.0,
-                _ => 5.0,
-            };
+            // Get the symbol for this planet
+            let name_str = planet.name.clone();
+            let default_symbol = name_str.as_str();
+            let symbol = planet_symbols
+                .get(planet.name.as_str())
+                .unwrap_or(&default_symbol);
 
-            let color = match planet.name.as_str() {
-                crate::chart::planet::SUN => Color::new(1.0, 0.8, 0.0, 1.0),
-                crate::chart::planet::MOON => Color::new(0.8, 0.8, 1.0, 1.0),
-                crate::chart::planet::MERCURY => Color::new(0.8, 0.8, 0.8, 1.0),
-                crate::chart::planet::VENUS => Color::new(1.0, 0.5, 0.5, 1.0),
-                crate::chart::planet::MARS => Color::new(1.0, 0.0, 0.0, 1.0),
-                crate::chart::planet::JUPITER => Color::new(0.8, 0.6, 0.2, 1.0),
-                crate::chart::planet::SATURN => Color::new(0.6, 0.5, 0.4, 1.0),
-                crate::chart::planet::URANUS => Color::new(0.0, 0.8, 1.0, 1.0),
-                crate::chart::planet::NEPTUNE => Color::new(0.3, 0.3, 1.0, 1.0),
-                crate::chart::planet::PLUTO => Color::new(0.5, 0.3, 0.7, 1.0),
-                crate::chart::planet::CHIRON => Color::new(0.8, 0.4, 0.2, 1.0),
-                _ => Color::black(),
-            };
+            // Draw the planetary symbol
+            let font_size = 14.0;
+            let text_width = self.text_width(symbol, font_size);
+            let text_x = planet_pos.x - text_width / 2.0;
+            let text_y = planet_pos.y + font_size / 3.0;
+            self.draw_text(symbol, text_x, text_y, font_size, Color::black());
 
-            self.draw_circle(planet_pos, size, color);
-
-            let font_size = 8.0;
-            let label = &planet.name;
-            let text_width = self.text_width(label, font_size);
-            let label_x = planet_pos.x - text_width / 2.0;
-            let label_y = planet_pos.y + size + font_size;
-            self.draw_text(label, label_x, label_y, font_size, Color::black());
+            // Draw retrograde indicator if applicable
+            if planet.retrograde {
+                let retro_x = planet_pos.x + text_width / 2.0 + 3.0;
+                let retro_y = planet_pos.y - font_size / 3.0;
+                self.draw_text("r", retro_x, retro_y, 8.0, Color::black());
+            }
         }
 
         Ok(())
@@ -300,6 +298,10 @@ impl Renderer {
         houses: &crate::chart::HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let house_cusps = houses.houses;
+        // Zodiac symbols
+        let zodiac_symbols = [
+            "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓",
+        ];
 
         for (_i, &cusp) in house_cusps.iter().enumerate() {
             let angle = (cusp as f32).to_radians();
@@ -309,17 +311,17 @@ impl Renderer {
 
             let degree_in_sign = cusp % 30.0;
             let sign_index = (cusp / 30.0) as usize % 12;
-            let sign_names = [
-                "Ari", "Tau", "Gem", "Cnc", "Leo", "Vir", "Lib", "Sco", "Sgr", "Cap", "Aqr", "Psc",
-            ];
-            let label = format!("{}{:.0}°", sign_names[sign_index], degree_in_sign);
+            let sign_symbol = zodiac_symbols[sign_index];
+            let deg = degree_in_sign as i32;
+            let min = ((degree_in_sign - deg as f64) * 60.0) as i32;
+            let label = format!("{}{:02}°{:02}'", sign_symbol, deg, min);
 
-            let font_size = 9.0;
+            let font_size = 8.0;
             let text_width = self.text_width(&label, font_size);
             let text_x = label_x - text_width / 2.0;
             let text_y = label_y + font_size / 3.0;
 
-            self.draw_text(&label, text_x, text_y, font_size, Color::gray(0.3));
+            self.draw_text(&label, text_x, text_y, font_size, Color::black());
         }
 
         Ok(())
