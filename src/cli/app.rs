@@ -48,6 +48,10 @@ pub enum Commands {
         /// Output format (png/webp/md)
         #[arg(short, long, value_name = "FORMAT", default_value = "png")]
         format: String,
+
+        /// Maximum orb for aspect detection in markdown output (in degrees)
+        #[arg(long, value_name = "ORB")]
+        orb: Option<f64>,
     },
 
     /// Serve charts over HTTP
@@ -59,6 +63,25 @@ pub enum Commands {
         /// Host to bind to
         #[arg(long, default_value = "127.0.0.1")]
         host: String,
+    },
+
+    /// Analyze chart aspects
+    Aspects {
+        /// Latitude for chart calculation (-90 to 90)
+        #[arg(long, value_name = "LAT")]
+        lat: Option<f64>,
+
+        /// Longitude for chart calculation (-180 to 180)
+        #[arg(long, value_name = "LON")]
+        lon: Option<f64>,
+
+        /// Time for chart calculation (ISO 8601 format, defaults to now)
+        #[arg(short, long, value_name = "TIME")]
+        time: Option<String>,
+
+        /// Maximum orb for aspect detection (in degrees)
+        #[arg(short, long, value_name = "ORB", default_value = "3")]
+        orb: f64,
     },
 }
 
@@ -95,6 +118,7 @@ impl App {
                 time,
                 output,
                 format,
+                orb,
             } => {
                 tracing::info!("Running chart generation mode");
                 tracing::debug!(
@@ -162,9 +186,96 @@ impl App {
                     .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
 
                 // Save chart using output handler
-                OutputHandler::save_chart(&chart_data, output_format, &output_path)?;
+                if output_format == OutputFormat::Markdown {
+                    // Use orb value from CLI or config, default to 3.0
+                    let orb_value = orb.unwrap_or(config.chart.orb);
+                    OutputHandler::save_markdown_with_orb(&chart_data, &output_path, orb_value)?;
+                } else {
+                    OutputHandler::save_chart(&chart_data, output_format, &output_path)?;
+                }
 
                 println!("Chart saved to: {}", output_path.display());
+
+                Ok(())
+            }
+            Commands::Aspects { lat, lon, time, orb } => {
+                tracing::info!("Running aspects analysis mode");
+
+                // Parse time or use current time
+                let julian_day = match time {
+                    Some(time_str) => {
+                        let datetime = chrono::DateTime::parse_from_rfc3339(time_str)
+                            .map_err(|e| crate::errors::Error::Config(format!("Invalid time format: {}", e)))?;
+                        crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc))
+                    }
+                    None => {
+                        let now = chrono::Utc::now();
+                        crate::ephemeris::julian_day_from_chrono(now)
+                    }
+                };
+
+                // Get coordinates from CLI args, config, or default to 0,0
+                let latitude = lat.or(config.chart.location.latitude).unwrap_or(0.0);
+                let longitude = lon.or(config.chart.location.longitude).unwrap_or(0.0);
+                let orb_value = *orb;
+
+                tracing::info!(
+                    "Analyzing aspects for lat={}, lon={}, jd={}, orb={}",
+                    latitude,
+                    longitude,
+                    julian_day,
+                    orb_value
+                );
+
+                // Create chart config
+                let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
+                let chart_config = crate::chart::ChartConfig::new(
+                    crate::chart::HouseSystem::Placidus,
+                    geo_pos,
+                    julian_day,
+                );
+
+                // Calculate chart data
+                let calculator = crate::swiss_eph_impl::SwissEphChartCalculator::new(chart_config)
+                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+                let chart_data = calculator
+                    .calculate_chart()
+                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+
+                // Analyze aspects
+                use crate::aspects::{analyze_aspects, AspectConfig};
+                let analysis = analyze_aspects(&chart_data.planets, AspectConfig::new(orb_value));
+
+                // Print results
+                println!("\n## Aspects (orb: {}°)\n", orb_value);
+
+                if let Some(void_info) = &analysis.moon_void_of_course {
+                    println!("**{}**\n", void_info);
+                }
+
+                if !analysis.aspects.is_empty() {
+                    println!("| Aspect | Planet 1 | Planet 2 | Orb |");
+                    println!("|--------|----------|----------|-----|");
+                    for aspect in &analysis.aspects {
+                        println!(
+                            "| {} {} | {} | {} | {:.2}° |",
+                            aspect.aspect_type.symbol(),
+                            aspect.aspect_type.name(),
+                            aspect.planet1,
+                            aspect.planet2,
+                            aspect.orb
+                        );
+                    }
+                } else {
+                    println!("*No major aspects within orb*");
+                }
+
+                if !analysis.grand_trines.is_empty() {
+                    println!("\n### Grand Trines\n");
+                    for gt in &analysis.grand_trines {
+                        println!("- {} △ {} △ {}", gt.planet1, gt.planet2, gt.planet3);
+                    }
+                }
 
                 Ok(())
             }

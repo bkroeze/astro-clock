@@ -86,6 +86,8 @@ pub struct ChartConfig {
     pub zodiac_color: String,
     #[serde(default)]
     pub location: LocationConfig,
+    #[serde(default = "default_orb")]
+    pub orb: f64,
 }
 
 impl ChartConfig {
@@ -100,6 +102,12 @@ impl ChartConfig {
             return Err(ConfigError::InvalidValue(format!(
                 "chart height must be 100-4096, got {}",
                 self.height
+            )));
+        }
+        if self.orb < 0.0 || self.orb > 15.0 {
+            return Err(ConfigError::InvalidValue(format!(
+                "aspect orb must be 0-15 degrees, got {}",
+                self.orb
             )));
         }
         self.location.validate()?;
@@ -135,6 +143,10 @@ fn default_zodiac_color() -> String {
     "#444444".to_string()
 }
 
+fn default_orb() -> f64 {
+    3.0
+}
+
 impl Default for ChartConfig {
     fn default() -> Self {
         Self {
@@ -146,6 +158,7 @@ impl Default for ChartConfig {
             planet_color: default_planet_color(),
             zodiac_color: default_zodiac_color(),
             location: LocationConfig::default(),
+            orb: default_orb(),
         }
     }
 }

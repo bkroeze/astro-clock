@@ -1,3 +1,4 @@
+use crate::aspects::{self, AspectConfig};
 use crate::chart::{planet, ChartData, HouseCusps};
 use std::collections::HashMap;
 use std::path::Path;
@@ -72,12 +73,22 @@ impl OutputHandler {
         chart_data: &ChartData,
         output_path: &Path,
     ) -> Result<(), crate::errors::Error> {
-        let content = Self::format_markdown_table(chart_data);
+        let content = Self::format_markdown_table(chart_data, None);
         std::fs::write(output_path, content).map_err(|e| crate::errors::Error::Io(e))?;
         Ok(())
     }
 
-    fn format_markdown_table(chart_data: &ChartData) -> String {
+    pub fn save_markdown_with_orb(
+        chart_data: &ChartData,
+        output_path: &Path,
+        orb: f64,
+    ) -> Result<(), crate::errors::Error> {
+        let content = Self::format_markdown_table(chart_data, Some(orb));
+        std::fs::write(output_path, content).map_err(|e| crate::errors::Error::Io(e))?;
+        Ok(())
+    }
+
+    fn format_markdown_table(chart_data: &ChartData, orb: Option<f64>) -> String {
         // Convert Julian Day to datetime
         let (year, month, day, hour) =
             crate::ephemeris::datetime_from_julian_day(chart_data.julian_day);
@@ -192,6 +203,47 @@ impl OutputHandler {
                 "| {} {} | {} | {} | {} | {} |\n",
                 symbol, name, deg, sign_symbol, position, house
             ));
+        }
+
+        // Add aspects section
+        let config = AspectConfig::new(orb.unwrap_or(3.0));
+        let analysis = aspects::analyze_aspects(&chart_data.planets, config);
+
+        md.push_str("\n## Aspects\n\n");
+
+        // Moon void of course
+        if let Some(void_info) = &analysis.moon_void_of_course {
+            md.push_str(&format!("**{}**\n\n", void_info));
+        }
+
+        // Aspects table
+        if !analysis.aspects.is_empty() {
+            md.push_str("| Aspect | Planet 1 | Planet 2 | Orb |\n");
+            md.push_str("|--------|----------|----------|-----|\n");
+
+            for aspect in &analysis.aspects {
+                md.push_str(&format!(
+                    "| {} {} | {} | {} | {:.2}° |\n",
+                    aspect.aspect_type.symbol(),
+                    aspect.aspect_type.name(),
+                    aspect.planet1,
+                    aspect.planet2,
+                    aspect.orb
+                ));
+            }
+        } else {
+            md.push_str("*No major aspects within orb*\n");
+        }
+
+        // Grand Trines
+        if !analysis.grand_trines.is_empty() {
+            md.push_str("\n### Grand Trines\n\n");
+            for gt in &analysis.grand_trines {
+                md.push_str(&format!(
+                    "- {} △ {} △ {}\n",
+                    gt.planet1, gt.planet2, gt.planet3
+                ));
+            }
         }
 
         md

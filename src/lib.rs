@@ -1,3 +1,4 @@
+pub mod aspects;
 pub mod chart;
 pub mod cli;
 pub mod config;
