@@ -44,12 +44,12 @@ async fn health_handler() -> Json<serde_json::Value> {
     Json(serde_json::json!({"status": "healthy"}))
 }
 
-#[derive(serde::Deserialize)]
-struct ChartParams {
-    lat: Option<f64>,
-    lon: Option<f64>,
-    time: Option<String>,
-}
+// #[derive(serde::Deserialize)]
+// struct ChartParams {
+//     lat: Option<f64>,
+//     lon: Option<f64>,
+//     time: Option<String>,
+// }
 
 #[derive(serde::Deserialize)]
 struct ChartQuery {

@@ -5,6 +5,7 @@ pub mod ephemeris;
 pub mod errors;
 pub mod logging;
 pub mod renderer;
+pub mod server;
 #[cfg(feature = "db")]
 pub mod database;
 

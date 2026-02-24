@@ -2,6 +2,7 @@ use crate::chart::{
     planet, ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem,
     PlanetPosition, Position,
 };
+use crate::ephemeris::Ephemeris;
 
 pub struct SwissEphChartCalculator {
     config: ChartConfig,
@@ -9,7 +10,7 @@ pub struct SwissEphChartCalculator {
 
 impl SwissEphChartCalculator {
     pub fn new(config: ChartConfig) -> Result<Self, Error> {
-        swiss_eph::safe::set_ephe_path("");
+        Ephemeris::ensure_initialized()?;
         Ok(Self { config })
     }
 

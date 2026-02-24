@@ -103,14 +103,16 @@ impl App {
                     format
                 );
                 println!("Chart generation mode");
+                Ok(())
             }
             Commands::Serve { port, host } => {
                 tracing::info!("Starting HTTP server on {}:{}", host, port);
-                println!("Server mode not yet implemented");
+                let server = crate::server::Server::new(host.clone(), *port);
+                tokio::runtime::Runtime::new()?
+                    .block_on(async { server.run().await })?;
+                Ok(())
             }
         }
-
-        Ok(())
     }
 }
 

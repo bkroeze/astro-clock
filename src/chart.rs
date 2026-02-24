@@ -171,7 +171,7 @@ pub mod planet {
 }
 
 pub mod zodiac {
-    pub const Aries: &str = "♈";
+    pub const ARIEST: &str = "♈";
     pub const TAURUS: &str = "♉";
     pub const GEMINI: &str = "♊";
     pub const CANCER: &str = "♋";
@@ -179,7 +179,7 @@ pub mod zodiac {
     pub const VIRGO: &str = "♍";
     pub const LIBRA: &str = "♎";
     pub const SCORPIO: &str = "♏";
-    const SAGITTARIUS: &str = "♐";
+    pub const SAGITTARIUS: &str = "♐";
     pub const CAPRICORN: &str = "♑";
     pub const AQUARIUS: &str = "♒";
     pub const PISCES: &str = "♓";
