@@ -18,7 +18,10 @@ ron = "0.8"
 thiserror = "1.0"
 rust_decimal = "1.30"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 swiss-eph = "0.2.1"
+image-webp = "0.2.4"
+png = "0.17"
 
 [features]
 default = []
@@ -32,3 +35,6 @@ default-features = false
 
 [dev-dependencies]
 tempfile = "3"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+http = "1.0"

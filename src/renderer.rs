@@ -440,6 +440,31 @@ impl Renderer {
         self.pixmap.save_png(path)?;
         Ok(())
     }
+
+    pub fn export_png(&self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let width = self.pixmap.width();
+        let height = self.pixmap.height();
+        let pixels = self.pixmap.pixels();
+
+        let mut buffer = Vec::new();
+        {
+            let mut encoder = png::Encoder::new(&mut buffer, width, height);
+            encoder.set_color(png::ColorType::Rgba);
+            encoder.set_depth(png::BitDepth::Eight);
+            let mut writer = encoder.write_header()?;
+
+            let mut rgba_data = Vec::with_capacity((width * height * 4) as usize);
+            for pixel in pixels {
+                rgba_data.push(pixel.red());
+                rgba_data.push(pixel.green());
+                rgba_data.push(pixel.blue());
+                rgba_data.push(pixel.alpha());
+            }
+
+            writer.write_image_data(&rgba_data)?;
+        }
+        Ok(buffer)
+    }
 }
 
 #[cfg(test)]
