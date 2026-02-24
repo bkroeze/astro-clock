@@ -29,17 +29,17 @@ clean:
 # Development Commands
 # ============================================================================
 
-# Run the CLI application with default settings
+# Run the CLI application with default settings (e.g., just run chart --lat 0 --lon 0)
 run *ARGS:
-    cargo run --bin astro-clock -- {{ARGS}}
+    cargo run {{ARGS}}
 
 # Run the HTTP server
 run-server:
-    cargo run --bin astro-clock -- server
+    cargo run serve
 
 # Run with database feature
 run-db *ARGS:
-    cargo run --features db --bin astro-clock -- {{ARGS}}
+    cargo run --features db {{ARGS}}
 
 # Check code without building
 check:
@@ -144,17 +144,17 @@ audit:
 watch:
     cargo watch -x check
 
-# Run the application with hot reload (requires cargo-watch)
+# Run the application with hot reload (requires cargo-watch) (e.g., just watch-run chart --lat 0 --lon 0)
 watch-run *ARGS:
-    cargo watch -x "run -- {{ARGS}}"
+    cargo watch -x "run {{ARGS}}"
 
-# Build and run with tracing output
+# Build and run with tracing output (e.g., just run-trace chart --lat 0 --lon 0)
 run-trace *ARGS:
-    RUST_LOG=trace cargo run -- {{ARGS}}
+    RUST_LOG=trace cargo run {{ARGS}}
 
-# Run with debug logging
+# Run with debug logging (e.g., just run-debug chart --lat 0 --lon 0)
 run-debug *ARGS:
-    RUST_LOG=debug cargo run -- {{ARGS}}
+    RUST_LOG=debug cargo run {{ARGS}}
 
 # ============================================================================
 # Database (requires db feature)
@@ -170,7 +170,7 @@ migrate-new NAME:
 
 # Check database connection
 db-check:
-    cargo run --features db -- db-check 2>/dev/null || echo "Database feature not configured"
+    cargo run --features db db-check 2>/dev/null || echo "Database feature not configured"
 
 # ============================================================================
 # Project Maintenance

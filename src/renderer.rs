@@ -3,6 +3,7 @@ use tiny_skia::{FillRule, Paint, Pixmap, Transform};
 
 pub struct FontState {
     pub font: fontdue::Font,
+    pub symbol_font: Option<fontdue::Font>,
 }
 
 impl FontState {
@@ -10,7 +11,35 @@ impl FontState {
         let font_bytes = include_bytes!("../assets/Roboto-Regular.ttf");
         let font =
             fontdue::Font::from_bytes(font_bytes.as_slice(), fontdue::FontSettings::default())?;
-        Ok(Self { font })
+
+        // Try to load system symbol font
+        let symbol_font = Self::load_symbol_font();
+
+        Ok(Self { font, symbol_font })
+    }
+
+    fn load_symbol_font() -> Option<fontdue::Font> {
+        // Try common system paths for Noto Sans Symbols
+        let paths = [
+            "/usr/share/fonts/noto/NotoSansSymbols-Regular.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansSymbols-Regular.ttf",
+            "/usr/share/fonts/noto/NotoSansSymbols2-Regular.ttf",
+        ];
+
+        for path in &paths {
+            if let Ok(bytes) = std::fs::read(path) {
+                if let Ok(font) = fontdue::Font::from_bytes(bytes, fontdue::FontSettings::default())
+                {
+                    return Some(font);
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn has_symbol_support(&self) -> bool {
+        self.symbol_font.is_some()
     }
 }
 
@@ -148,7 +177,8 @@ impl Renderer {
         center: Point,
         radius: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        self.draw_circle(center, radius, Color::black());
+        // Draw the outer circle outline (not filled)
+        self.draw_circle_outline(center, radius, Color::black(), 2.0);
 
         for degree in 0..360 {
             let angle = (degree as f32).to_radians();
@@ -172,7 +202,7 @@ impl Renderer {
             );
 
             let stroke_width = if degree % 30 == 0 { 2.0 } else { 1.0 };
-            self.draw_line(start, end, Color::gray(0.5), stroke_width);
+            self.draw_line(start, end, Color::black(), stroke_width);
         }
 
         Ok(())
@@ -213,7 +243,9 @@ impl Renderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let house_cusps = houses.houses;
         for (_i, &cusp) in house_cusps.iter().enumerate() {
-            let angle = (cusp as f32).to_radians();
+            // Add 180° to rotate so 0° Aries is at the left (9 o'clock)
+            let rotated_cusp = (cusp + 180.0) % 360.0;
+            let angle = (rotated_cusp as f32).to_radians();
             let start = Point::new(
                 center.x + radius * angle.cos(),
                 center.y + radius * angle.sin(),
@@ -257,7 +289,8 @@ impl Renderer {
         .collect();
 
         for planet in planets {
-            let position = planet.position.longitude;
+            // Add 180° to rotate so 0° Aries is at the left (9 o'clock)
+            let position = (planet.position.longitude + 180.0) % 360.0;
             let angle = (position as f32).to_radians();
             let planet_radius = radius * 0.75;
 
@@ -304,7 +337,9 @@ impl Renderer {
         ];
 
         for (_i, &cusp) in house_cusps.iter().enumerate() {
-            let angle = (cusp as f32).to_radians();
+            // Add 180° to rotate so 0° Aries is at the left (9 o'clock)
+            let rotated_cusp = (cusp + 180.0) % 360.0;
+            let angle = (rotated_cusp as f32).to_radians();
             let label_radius = radius * 0.6;
             let label_x = center.x + label_radius * angle.cos();
             let label_y = center.y + label_radius * angle.sin();
@@ -355,6 +390,37 @@ impl Renderer {
         );
     }
 
+    pub fn draw_circle_outline(
+        &mut self,
+        center: Point,
+        radius: f32,
+        color: Color,
+        stroke_width: f32,
+    ) {
+        let mut paint = Paint::default();
+        paint.set_color(color.to_skia());
+        paint.anti_alias = true;
+
+        let mut path = tiny_skia::PathBuilder::new();
+        path.push_circle(center.x, center.y, radius);
+        let path = path.finish().unwrap();
+
+        let stroke = tiny_skia::Stroke {
+            width: stroke_width,
+            ..Default::default()
+        };
+
+        if let Some(stroked) = path.stroke(&stroke, 1.0) {
+            self.pixmap.fill_path(
+                &stroked,
+                &paint,
+                FillRule::Winding,
+                Transform::identity(),
+                None,
+            );
+        }
+    }
+
     pub fn draw_line(&mut self, start: Point, end: Point, color: Color, stroke_width: f32) {
         let mut paint = Paint::default();
         paint.set_color(color.to_skia());
@@ -388,7 +454,15 @@ impl Renderer {
         let pixels = self.pixmap.pixels_mut();
 
         for c in text.chars() {
-            let (metrics, bitmap) = self.font_state.font.rasterize(c, size);
+            // Use symbol font for astrological symbols (U+2600 to U+26FF range)
+            let is_symbol = c as u32 >= 0x2600 && c as u32 <= 0x26FF;
+            let font = if is_symbol && self.font_state.symbol_font.is_some() {
+                self.font_state.symbol_font.as_ref().unwrap()
+            } else {
+                &self.font_state.font
+            };
+
+            let (metrics, bitmap) = font.rasterize(c, size);
 
             // Skip characters with no bitmap data
             if metrics.width == 0 || bitmap.is_empty() {
