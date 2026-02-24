@@ -1,9 +1,12 @@
 use std::env;
-use std::sync::Once;
+// use std::sync::Mutex;
+
+use chrono::Datelike;
+use chrono::Timelike;
 
 use crate::chart::Error;
 
-static EPHE_INIT: Once = Once::new();
+// static EPHE_PATH: Mutex<Option<String>> = Mutex::new(None);
 
 pub fn julian_day_from_datetime(year: i32, month: i32, day: i32, hour: f64) -> f64 {
     swiss_eph::safe::julday(year, month, day, hour)
@@ -23,6 +26,16 @@ pub fn julian_day_from_ymdh(
 ) -> f64 {
     let hour_decimal = hour as f64 + minute as f64 / 60.0 + second as f64 / 3600.0;
     julian_day_from_datetime(year, month, day, hour_decimal)
+}
+
+pub fn julian_day_from_chrono(datetime: chrono::DateTime<chrono::Utc>) -> f64 {
+    let year = datetime.year();
+    let month = datetime.month() as i32;
+    let day = datetime.day() as i32;
+    let hour = datetime.hour() as f64
+        + datetime.minute() as f64 / 60.0
+        + datetime.second() as f64 / 3600.0;
+    julian_day_from_datetime(year, month, day, hour)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -95,9 +108,14 @@ impl Ephemeris {
     }
 
     pub fn ensure_initialized() -> Result<(), Error> {
-        EPHE_INIT.call_once(|| {
+        // Always set the path to ensure we're using the correct data directory
+        // This is necessary because other tests may have set a different path
+        let data_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("data");
+        if data_dir.exists() {
+            let _ = Self::with_path(Some(data_dir.to_str().unwrap()));
+        } else {
             let _ = Self::new();
-        });
+        }
         Ok(())
     }
 

@@ -388,6 +388,12 @@ impl Renderer {
         for c in text.chars() {
             let (metrics, bitmap) = self.font_state.font.rasterize(c, size);
 
+            // Skip characters with no bitmap data
+            if metrics.width == 0 || bitmap.is_empty() {
+                current_x += metrics.advance_width;
+                continue;
+            }
+
             let glyph_x = current_x + metrics.xmin as f32;
             let glyph_y = y - metrics.ymin as f32;
 
@@ -464,6 +470,32 @@ impl Renderer {
             writer.write_image_data(&rgba_data)?;
         }
         Ok(buffer)
+    }
+
+    pub fn save_webp(&self, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+        use std::fs::File;
+        use std::io::BufWriter;
+
+        let width = self.pixmap.width();
+        let height = self.pixmap.height();
+        let pixels = self.pixmap.pixels();
+
+        // Convert to RGBA8 format
+        let mut rgba_data = Vec::with_capacity((width * height * 4) as usize);
+        for pixel in pixels {
+            rgba_data.push(pixel.red());
+            rgba_data.push(pixel.green());
+            rgba_data.push(pixel.blue());
+            rgba_data.push(pixel.alpha());
+        }
+
+        // Encode to WebP
+        let file = File::create(path)?;
+        let writer = BufWriter::new(file);
+        let encoder = image_webp::WebPEncoder::new(writer);
+        encoder.encode(&rgba_data, width, height, image_webp::ColorType::Rgba8)?;
+
+        Ok(())
     }
 }
 

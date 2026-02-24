@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+use crate::chart::ChartCalculator;
+
 #[derive(Parser, Debug)]
 #[command(name = "astro-clock")]
 #[command(about = "An astrological chart rendering application", long_about = None)]
@@ -42,8 +44,8 @@ pub enum Commands {
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
 
-        /// Output format (human/json/plain)
-        #[arg(short, long, value_name = "FORMAT", default_value = "human")]
+        /// Output format (png/webp)
+        #[arg(short, long, value_name = "FORMAT", default_value = "png")]
         format: String,
     },
 
@@ -102,7 +104,88 @@ impl App {
                     output,
                     format
                 );
-                println!("Chart generation mode");
+
+                // Determine output filename
+                let output_path = match output {
+                    Some(path) => path.clone(),
+                    None => {
+                        let now = chrono::Local::now();
+                        let format_lower = format.to_lowercase();
+                        let ext = if format_lower == "webp" { "webp" } else { "png" };
+                        let filename = format!("{}.{}", now.format("%m%d%y-%H%M%S"), ext);
+                        std::path::PathBuf::from(filename)
+                    }
+                };
+
+                // Parse time or use current time
+                let julian_day = match time {
+                    Some(time_str) => {
+                        // Parse ISO 8601 format
+                        let datetime = chrono::DateTime::parse_from_rfc3339(time_str)
+                            .map_err(|e| crate::errors::Error::Config(format!("Invalid time format: {}", e)))?;
+                        crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc))
+                    }
+                    None => {
+                        let now = chrono::Utc::now();
+                        crate::ephemeris::julian_day_from_chrono(now)
+                    }
+                };
+
+                // Get coordinates (default to 0,0 if not provided)
+                let latitude = lat.unwrap_or(0.0);
+                let longitude = lon.unwrap_or(0.0);
+
+                tracing::info!("Generating chart for lat={}, lon={}, jd={}", latitude, longitude, julian_day);
+
+                // Create chart config
+                let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
+                let chart_config = crate::chart::ChartConfig::new(
+                    crate::chart::HouseSystem::Placidus,
+                    geo_pos,
+                    julian_day,
+                );
+
+                // Calculate chart data
+                let calculator = crate::swiss_eph_impl::SwissEphChartCalculator::new(chart_config)
+                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+                let chart_data = calculator.calculate_chart()
+                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+
+                // Render chart
+                let size = crate::renderer::Size::new(800.0, 800.0);
+                let mut renderer = crate::renderer::Renderer::new(size)
+                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+                renderer.render_chart(&chart_data)
+                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+
+                // Save based on format
+                let format_lower = format.to_lowercase();
+                match format_lower.as_str() {
+                    "webp" => {
+                        let output_str = output_path.to_string_lossy();
+                        let output_str = if output_str.ends_with(".webp") {
+                            output_str.to_string()
+                        } else {
+                            format!("{}.webp", output_str)
+                        };
+                        renderer.save_webp(&output_str)
+                            .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+                        println!("Chart saved to: {}", output_str);
+                    }
+                    _ => {
+                        // Default to PNG
+                        let output_str = output_path.to_string_lossy();
+                        let output_str = if output_str.ends_with(".png") {
+                            output_str.to_string()
+                        } else {
+                            format!("{}.png", output_str)
+                        };
+                        renderer.save(&output_str)
+                            .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+                        println!("Chart saved to: {}", output_str);
+                    }
+                }
+
                 Ok(())
             }
             Commands::Serve { port, host } => {

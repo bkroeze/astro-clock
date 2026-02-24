@@ -14,6 +14,8 @@ pub enum Error {
     HttpServer(String),
     #[error("Database error: {0}")]
     Database(String),
+    #[error("Chart error: {0}")]
+    Chart(String),
     #[error("Unknown error: {0}")]
     Unknown(String),
 }
