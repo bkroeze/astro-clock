@@ -30,6 +30,45 @@ impl From<ron::error::SpannedError> for ConfigError {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LocationConfig {
+    #[serde(default)]
+    pub latitude: Option<f64>,
+    #[serde(default)]
+    pub longitude: Option<f64>,
+}
+
+impl Default for LocationConfig {
+    fn default() -> Self {
+        Self {
+            latitude: None,
+            longitude: None,
+        }
+    }
+}
+
+impl LocationConfig {
+    pub fn validate(&self) -> Result<(), ConfigError> {
+        if let Some(lat) = self.latitude {
+            if lat < -90.0 || lat > 90.0 {
+                return Err(ConfigError::InvalidValue(format!(
+                    "latitude must be between -90 and 90, got {}",
+                    lat
+                )));
+            }
+        }
+        if let Some(lon) = self.longitude {
+            if lon < -180.0 || lon > 180.0 {
+                return Err(ConfigError::InvalidValue(format!(
+                    "longitude must be between -180 and 180, got {}",
+                    lon
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ChartConfig {
     #[serde(default = "default_width")]
     pub width: u32,
@@ -45,6 +84,8 @@ pub struct ChartConfig {
     pub planet_color: String,
     #[serde(default = "default_zodiac_color")]
     pub zodiac_color: String,
+    #[serde(default)]
+    pub location: LocationConfig,
 }
 
 impl ChartConfig {
@@ -61,6 +102,7 @@ impl ChartConfig {
                 self.height
             )));
         }
+        self.location.validate()?;
         Ok(())
     }
 }
@@ -103,6 +145,7 @@ impl Default for ChartConfig {
             house_color: default_house_color(),
             planet_color: default_planet_color(),
             zodiac_color: default_zodiac_color(),
+            location: LocationConfig::default(),
         }
     }
 }

@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 use crate::chart::ChartCalculator;
+use crate::output_handler::{OutputFormat, OutputHandler};
 
 #[derive(Parser, Debug)]
 #[command(name = "astro-clock")]
@@ -44,7 +45,7 @@ pub enum Commands {
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
 
-        /// Output format (png/webp)
+        /// Output format (png/webp/md)
         #[arg(short, long, value_name = "FORMAT", default_value = "png")]
         format: String,
     },
@@ -83,7 +84,7 @@ impl App {
 
         crate::logging::init_logging(level);
 
-        let _config = crate::config::AppConfig::from_file_or_default(self.cli.config.as_ref())?;
+        let config = crate::config::AppConfig::from_file_or_default(self.cli.config.as_ref())?;
         tracing::info!("Starting Astro Clock");
         tracing::debug!("CLI arguments: {:#?}", self.cli);
 
@@ -98,29 +99,32 @@ impl App {
                 tracing::info!("Running chart generation mode");
                 tracing::debug!(
                     "Chart options: lat={:?}, lon={:?}, time={:?}, output={:?}, format={}",
-                    lat,
-                    lon,
-                    time,
-                    output,
-                    format
+                    lat, lon, time, output, format
                 );
+
+                // Parse format
+                let output_format = OutputFormat::from_str(format);
 
                 // Determine output filename
                 let output_path = match output {
                     Some(path) => path.clone(),
                     None => {
                         let now = chrono::Local::now();
-                        let format_lower = format.to_lowercase();
-                        let ext = if format_lower == "webp" { "webp" } else { "png" };
-                        let filename = format!("{}.{}", now.format("%m%d%y-%H%M%S"), ext);
+                        let filename = format!(
+                            "{}.{}",
+                            now.format("%m%d%y-%H%M%S"),
+                            output_format.extension()
+                        );
                         std::path::PathBuf::from(filename)
                     }
                 };
 
+                // Ensure correct extension
+                let output_path = Self::ensure_extension(output_path, output_format.extension());
+
                 // Parse time or use current time
                 let julian_day = match time {
                     Some(time_str) => {
-                        // Parse ISO 8601 format
                         let datetime = chrono::DateTime::parse_from_rfc3339(time_str)
                             .map_err(|e| crate::errors::Error::Config(format!("Invalid time format: {}", e)))?;
                         crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc))
@@ -131,11 +135,16 @@ impl App {
                     }
                 };
 
-                // Get coordinates (default to 0,0 if not provided)
-                let latitude = lat.unwrap_or(0.0);
-                let longitude = lon.unwrap_or(0.0);
+                // Get coordinates from CLI args, config, or default to 0,0
+                let latitude = lat.or(config.chart.location.latitude).unwrap_or(0.0);
+                let longitude = lon.or(config.chart.location.longitude).unwrap_or(0.0);
 
-                tracing::info!("Generating chart for lat={}, lon={}, jd={}", latitude, longitude, julian_day);
+                tracing::info!(
+                    "Generating chart for lat={}, lon={}, jd={}",
+                    latitude,
+                    longitude,
+                    julian_day
+                );
 
                 // Create chart config
                 let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
@@ -148,53 +157,43 @@ impl App {
                 // Calculate chart data
                 let calculator = crate::swiss_eph_impl::SwissEphChartCalculator::new(chart_config)
                     .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
-                let chart_data = calculator.calculate_chart()
+                let chart_data = calculator
+                    .calculate_chart()
                     .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
 
-                // Render chart
-                let size = crate::renderer::Size::new(800.0, 800.0);
-                let mut renderer = crate::renderer::Renderer::new(size)
-                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
-                renderer.render_chart(&chart_data)
-                    .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
+                // Save chart using output handler
+                OutputHandler::save_chart(&chart_data, output_format, &output_path)?;
 
-                // Save based on format
-                let format_lower = format.to_lowercase();
-                match format_lower.as_str() {
-                    "webp" => {
-                        let output_str = output_path.to_string_lossy();
-                        let output_str = if output_str.ends_with(".webp") {
-                            output_str.to_string()
-                        } else {
-                            format!("{}.webp", output_str)
-                        };
-                        renderer.save_webp(&output_str)
-                            .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
-                        println!("Chart saved to: {}", output_str);
-                    }
-                    _ => {
-                        // Default to PNG
-                        let output_str = output_path.to_string_lossy();
-                        let output_str = if output_str.ends_with(".png") {
-                            output_str.to_string()
-                        } else {
-                            format!("{}.png", output_str)
-                        };
-                        renderer.save(&output_str)
-                            .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
-                        println!("Chart saved to: {}", output_str);
-                    }
-                }
+                println!("Chart saved to: {}", output_path.display());
 
                 Ok(())
             }
             Commands::Serve { port, host } => {
                 tracing::info!("Starting HTTP server on {}:{}", host, port);
                 let server = crate::server::Server::new(host.clone(), *port);
-                tokio::runtime::Runtime::new()?
-                    .block_on(async { server.run().await })?;
+                tokio::runtime::Runtime::new()?.block_on(async { server.run().await })?;
                 Ok(())
             }
+        }
+    }
+
+    fn ensure_extension(path: PathBuf, extension: &str) -> PathBuf {
+        let path_str = path.to_string_lossy();
+        let expected_ext = format!(".{}", extension);
+        if path_str.ends_with(&expected_ext) {
+            path
+        } else {
+            // Remove any existing extension and add the correct one
+            let mut new_path = path;
+            if let Some(existing_ext) = new_path.extension() {
+                let existing_ext = existing_ext.to_string_lossy();
+                if existing_ext != extension {
+                    new_path.set_extension(extension);
+                }
+            } else {
+                new_path.set_extension(extension);
+            }
+            new_path
         }
     }
 }
@@ -226,5 +225,24 @@ mod tests {
             .find_subcommand_mut("serve")
             .expect("serve subcommand exists");
         let _help = serve_cmd.render_help();
+    }
+
+    #[test]
+    fn test_ensure_extension() {
+        let path = PathBuf::from("myfile");
+        let result = App::ensure_extension(path, "png");
+        assert_eq!(result.to_string_lossy(), "myfile.png");
+
+        let path = PathBuf::from("myfile.png");
+        let result = App::ensure_extension(path, "png");
+        assert_eq!(result.to_string_lossy(), "myfile.png");
+
+        let path = PathBuf::from("myfile");
+        let result = App::ensure_extension(path, "md");
+        assert_eq!(result.to_string_lossy(), "myfile.md");
+
+        let path = PathBuf::from("myfile.txt");
+        let result = App::ensure_extension(path, "md");
+        assert_eq!(result.to_string_lossy(), "myfile.md");
     }
 }

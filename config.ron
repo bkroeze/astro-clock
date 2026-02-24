@@ -1,0 +1,10 @@
+(
+    chart: (
+        width: 1024,
+        height: 1024,
+        location: (
+            latitude: Some(45.89091),
+            longitude: Some(-123.96239),
+        ),
+    ),
+)
