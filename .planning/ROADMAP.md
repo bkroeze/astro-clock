@@ -63,10 +63,18 @@ Plans:
 6. Background pre-fetching loads adjacent chunks
 
 **Key Deliverables:**
-- `src/database/chunk_manager.rs`
-- `src/database/cache.rs`
-- `src/database/loader.rs`
-- Chunk data structures with compact memory layout
+- `src/database/chunk.rs` — Compact chunk data structures
+- `src/database/chunk_manager.rs` — LRU cache and database loading
+- `src/database/chunk_generator.rs` — Swiss Ephemeris integration
+- Chunk data structures with compact memory layout (~4.5× size reduction)
+
+**Plans:** 4 plans in 4 waves
+
+Plans:
+- [ ] 02-01-PLAN.md — Create compact chunk data structures and add LRU dependency
+- [ ] 02-02-PLAN.md — Implement ChunkManager with LRU cache and database loading
+- [ ] 02-03-PLAN.md — Implement Swiss Ephemeris generation and database persistence
+- [ ] 02-04-PLAN.md — Add background pre-fetching of adjacent chunks
 
 ---
 
@@ -153,4 +161,4 @@ Phase 4 (Performance) — depends on query system for benchmarking
 ---
 
 *Roadmap created: 2026-02-24*
-*Last updated: 2026-02-25 after completing Plan 01-02*
+*Last updated: 2026-02-25 after creating Phase 2 plans*
