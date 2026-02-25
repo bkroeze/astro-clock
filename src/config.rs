@@ -88,6 +88,8 @@ pub struct ChartConfig {
     pub location: LocationConfig,
     #[serde(default = "default_orb")]
     pub orb: f64,
+    #[serde(default = "default_house_system")]
+    pub house_system: String,
 }
 
 impl ChartConfig {
@@ -108,6 +110,27 @@ impl ChartConfig {
             return Err(ConfigError::InvalidValue(format!(
                 "aspect orb must be 0-15 degrees, got {}",
                 self.orb
+            )));
+        }
+        // Validate house system
+        let valid_systems = [
+            "Placidus",
+            "Koch",
+            "Equal",
+            "Whole",
+            "Porphyry",
+            "Regiomontanus",
+            "Campanus",
+            "Morinus",
+            "Alcabitus",
+            "Topocentric",
+            "Vehlow",
+        ];
+        if !valid_systems.contains(&self.house_system.as_str()) {
+            return Err(ConfigError::InvalidValue(format!(
+                "invalid house system: {}. Valid options: {}",
+                self.house_system,
+                valid_systems.join(", ")
             )));
         }
         self.location.validate()?;
@@ -147,6 +170,10 @@ fn default_orb() -> f64 {
     3.0
 }
 
+fn default_house_system() -> String {
+    "Placidus".to_string()
+}
+
 impl Default for ChartConfig {
     fn default() -> Self {
         Self {
@@ -159,6 +186,7 @@ impl Default for ChartConfig {
             zodiac_color: default_zodiac_color(),
             location: LocationConfig::default(),
             orb: default_orb(),
+            house_system: default_house_system(),
         }
     }
 }

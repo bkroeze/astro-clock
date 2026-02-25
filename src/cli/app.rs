@@ -52,6 +52,10 @@ pub enum Commands {
         /// Maximum orb for aspect detection in markdown output (in degrees)
         #[arg(long, value_name = "ORB")]
         orb: Option<f64>,
+
+        /// House system for chart calculation (Placidus, Koch, Equal, Whole, Porphyry, Regiomontanus, Campanus, Morinus, Alcabitus, Topocentric, Vehlow)
+        #[arg(long, value_name = "SYSTEM")]
+        house: Option<String>,
     },
 
     /// Serve charts over HTTP
@@ -82,6 +86,10 @@ pub enum Commands {
         /// Maximum orb for aspect detection (in degrees)
         #[arg(short, long, value_name = "ORB", default_value = "3")]
         orb: f64,
+
+        /// House system for chart calculation (Placidus, Koch, Equal, Whole, Porphyry, Regiomontanus, Campanus, Morinus, Alcabitus, Topocentric, Vehlow)
+        #[arg(long, value_name = "SYSTEM")]
+        house: Option<String>,
     },
 }
 
@@ -119,6 +127,7 @@ impl App {
                 output,
                 format,
                 orb,
+                house,
             } => {
                 tracing::info!("Running chart generation mode");
                 tracing::debug!(
@@ -163,17 +172,24 @@ impl App {
                 let latitude = lat.or(config.chart.location.latitude).unwrap_or(0.0);
                 let longitude = lon.or(config.chart.location.longitude).unwrap_or(0.0);
 
+                // Get house system from CLI or config
+                let house_system_str = house.as_ref()
+                    .map(|s| s.as_str())
+                    .unwrap_or_else(|| config.chart.house_system.as_str());
+                let house_system = Self::parse_house_system(house_system_str)?;
+
                 tracing::info!(
-                    "Generating chart for lat={}, lon={}, jd={}",
+                    "Generating chart for lat={}, lon={}, jd={}, house_system={}",
                     latitude,
                     longitude,
-                    julian_day
+                    julian_day,
+                    house_system
                 );
 
                 // Create chart config
                 let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
                 let chart_config = crate::chart::ChartConfig::new(
-                    crate::chart::HouseSystem::Placidus,
+                    house_system,
                     geo_pos,
                     julian_day,
                 );
@@ -198,7 +214,7 @@ impl App {
 
                 Ok(())
             }
-            Commands::Aspects { lat, lon, time, orb } => {
+            Commands::Aspects { lat, lon, time, orb, house } => {
                 tracing::info!("Running aspects analysis mode");
 
                 // Parse time or use current time
@@ -219,18 +235,25 @@ impl App {
                 let longitude = lon.or(config.chart.location.longitude).unwrap_or(0.0);
                 let orb_value = *orb;
 
+                // Get house system from CLI or config
+                let house_system_str = house.as_ref()
+                    .map(|s| s.as_str())
+                    .unwrap_or_else(|| config.chart.house_system.as_str());
+                let house_system = Self::parse_house_system(house_system_str)?;
+
                 tracing::info!(
-                    "Analyzing aspects for lat={}, lon={}, jd={}, orb={}",
+                    "Analyzing aspects for lat={}, lon={}, jd={}, orb={}, house_system={}",
                     latitude,
                     longitude,
                     julian_day,
-                    orb_value
+                    orb_value,
+                    house_system
                 );
 
                 // Create chart config
                 let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
                 let chart_config = crate::chart::ChartConfig::new(
-                    crate::chart::HouseSystem::Placidus,
+                    house_system,
                     geo_pos,
                     julian_day,
                 );
@@ -285,6 +308,26 @@ impl App {
                 tokio::runtime::Runtime::new()?.block_on(async { server.run().await })?;
                 Ok(())
             }
+        }
+    }
+
+    fn parse_house_system(s: &str) -> Result<crate::chart::HouseSystem, crate::errors::Error> {
+        match s.to_lowercase().as_str() {
+            "placidus" => Ok(crate::chart::HouseSystem::Placidus),
+            "koch" => Ok(crate::chart::HouseSystem::Koch),
+            "equal" => Ok(crate::chart::HouseSystem::Equal),
+            "whole" | "wholesign" | "whole_sign" => Ok(crate::chart::HouseSystem::Whole),
+            "porphyry" => Ok(crate::chart::HouseSystem::Porphyry),
+            "regiomontanus" => Ok(crate::chart::HouseSystem::Regiomontanus),
+            "campanus" => Ok(crate::chart::HouseSystem::Campanus),
+            "morinus" => Ok(crate::chart::HouseSystem::Morinus),
+            "alcabitus" => Ok(crate::chart::HouseSystem::Alcabitus),
+            "topocentric" => Ok(crate::chart::HouseSystem::Topocentric),
+            "vehlow" => Ok(crate::chart::HouseSystem::Vehlow),
+            _ => Err(crate::errors::Error::Config(format!(
+                "Invalid house system: '{}'. Valid options: Placidus, Koch, Equal, Whole, Porphyry, Regiomontanus, Campanus, Morinus, Alcabitus, Topocentric, Vehlow",
+                s
+            ))),
         }
     }
 

@@ -67,6 +67,9 @@ pub enum HouseSystem {
     Regiomontanus,
     Campanus,
     Morinus,
+    Alcabitus,
+    Topocentric,
+    Vehlow,
 }
 
 impl fmt::Display for HouseSystem {
@@ -80,6 +83,9 @@ impl fmt::Display for HouseSystem {
             HouseSystem::Regiomontanus => write!(f, "Regiomontanus"),
             HouseSystem::Campanus => write!(f, "Campanus"),
             HouseSystem::Morinus => write!(f, "Morinus"),
+            HouseSystem::Alcabitus => write!(f, "Alcabitus"),
+            HouseSystem::Topocentric => write!(f, "Topocentric"),
+            HouseSystem::Vehlow => write!(f, "Vehlow"),
         }
     }
 }
@@ -194,6 +200,9 @@ pub mod house_system {
     pub const REGIOMONTANUS: &str = "Regiomontanus";
     pub const CAMPANUS: &str = "Campanus";
     pub const MORINUS: &str = "Morinus";
+    pub const ALCABITUS: &str = "Alcabitus";
+    pub const TOPOCENTRIC: &str = "Topocentric";
+    pub const VEHLOW: &str = "Vehlow";
 }
 
 pub mod constants {

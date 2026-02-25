@@ -177,6 +177,7 @@ impl OutputHandler {
         let mut md = String::new();
         md.push_str("## Current Planets\n\n");
         md.push_str(&format!("**{}**\n\n", date_str));
+        md.push_str(&format!("*House System: {}*\n\n", chart_data.houses.system));
         md.push_str("| Planet | Deg | Sign | Position | House |\n");
         md.push_str("|--------|-----|------|----------|-------|\n");
 

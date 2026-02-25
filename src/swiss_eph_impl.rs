@@ -45,6 +45,9 @@ impl SwissEphChartCalculator {
             HouseSystem::Regiomontanus => HS::Regiomontanus,
             HouseSystem::Campanus => HS::Campanus,
             HouseSystem::Morinus => HS::Morinus,
+            HouseSystem::Alcabitus => HS::Alcabitus,
+            HouseSystem::Topocentric => HS::Topocentric,
+            HouseSystem::Vehlow => HS::Vehlow,
         }
     }
 
