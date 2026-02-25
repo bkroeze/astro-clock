@@ -40,11 +40,11 @@
 
 ### Query System (Phase 3)
 
-- [ ] **QUERY-01**: Find optimal wedding dates (Venus aspects, Moon sign, no VoC)
-- [ ] **QUERY-02**: Find void-of-course Moon periods
-- [ ] **QUERY-03**: Find planetary retrograde periods
-- [ ] **QUERY-04**: Find exact aspects within date range
-- [ ] **QUERY-05**: Query completes in <100ms for 60-day ranges (cached)
+- [x] **QUERY-01**: Find optimal wedding dates (Venus aspects, Moon sign, no VoC)
+- [x] **QUERY-02**: Find void-of-course Moon periods
+- [x] **QUERY-03**: Find planetary retrograde periods
+- [x] **QUERY-04**: Find exact aspects within date range
+- [x] **QUERY-05**: Query completes in <100ms for 60-day ranges (cached)
 
 ### Performance (Phase 4)
 
@@ -104,11 +104,11 @@
 | LOAD-03 | Phase 2 | Complete |
 | LOAD-04 | Phase 2 | Complete |
 | LOAD-05 | Phase 2 | Complete |
-| QUERY-01 | Phase 3 | Pending |
-| QUERY-02 | Phase 3 | Pending |
-| QUERY-03 | Phase 3 | Pending |
-| QUERY-04 | Phase 3 | Pending |
-| QUERY-05 | Phase 3 | Pending |
+| QUERY-01 | Phase 3 | Complete |
+| QUERY-02 | Phase 3 | Complete |
+| QUERY-03 | Phase 3 | Complete |
+| QUERY-04 | Phase 3 | Complete |
+| QUERY-05 | Phase 3 | Complete |
 | PERF-01 | Phase 4 | Pending |
 | PERF-02 | Phase 4 | Pending |
 | PERF-03 | Phase 4 | Pending |

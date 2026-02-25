@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 **Core value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
-**Current focus:** Phase 2 — Data Loading (Plan 04 of 04 complete)
+**Current focus:** Phase 3 — Query System (Plan 02 in progress)
 
 ## Phase Status
 
@@ -16,58 +16,35 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 |-------|--------|--------------|----------|
 | 1 — Database Schema | ✓ Complete | 6 | 100% |
 | 2 — Data Loading | ✓ Complete | 5 | 100% |
-| 3 — Query System | ○ Pending | 5 | 0% |
+| 3 — Query System | ○ In Progress | 5 | 40% |
 | 4 — Performance | ○ Pending | 4 | 0% |
 
 ## Current Phase
 
-**Phase 2: Data Loading** ○ IN PROGRESS
+**Phase 3: Query System** ○ IN PROGRESS
 
-Goal: Implement chunk-based loading with LRU cache and Swiss Ephemeris integration
+Goal: Implement wedding date queries, VoC period queries, and retrograde tracking
 
-Requirements: LOAD-01 to LOAD-05 (5 of 5 complete)
-
-**Completed Plans:**
-- ✓ 02-01: Compact Chunk Data Structures (2026-02-25)
-  - ChunkKey, ChunkData, and compact position types
-  - ~4.5× memory reduction through packed representations
-  - lru crate dependency added
-- ✓ 02-02: ChunkManager with LRU Cache (2026-02-25)
-  - ChunkManager with 30-chunk LRU cache and database loading
-  - Thread-safe access via RwLock
-  - Cache-first lookup with database fallback
-- ✓ 02-03: Swiss Ephemeris Integration (2026-02-25)
-  - ChunkGenerator with Swiss Ephemeris integration for all 10 bodies
-  - Aspect calculation for 5 major aspects with 10° orb
-  - Lunar conditions with moon phase and VoC detection
-  - Batch database persistence using UNNEST
-  - Three-tier lookup: cache → database → generation
+Requirements: QUERY-01 to QUERY-05 (2 of 5 complete)
 
 **Completed Plans:**
-- ✓ 02-01: Compact Chunk Data Structures (2026-02-25)
-  - ChunkKey, ChunkData, and compact position types
-  - ~4.5× memory reduction through packed representations
-  - lru crate dependency added
-- ✓ 02-02: ChunkManager with LRU Cache (2026-02-25)
-  - ChunkManager with 30-chunk LRU cache and database loading
-  - Thread-safe access via RwLock
-  - Cache-first lookup with database fallback
-- ✓ 02-03: Swiss Ephemeris Integration (2026-02-25)
-  - ChunkGenerator with Swiss Ephemeris integration for all 10 bodies
-  - Aspect calculation for 5 major aspects with 10° orb
-  - Lunar conditions with moon phase and VoC detection
-  - Batch database persistence using UNNEST
-  - Three-tier lookup: cache → database → generation
-- ✓ 02-04: Background Pre-fetching (2026-02-25)
-  - Pre-fetching of adjacent day chunks (±1 day)
-  - Configurable via ChunkManagerConfig
-  - Performance statistics tracking
-  - Batch loading via get_chunk_range
+- ✓ 03-01: Query Types and Error Handling (2026-02-25)
+  - QueryResult<T> wrapper with metadata
+  - WeddingCriteria, VoCCriteria, RetrogradeCriteria validation
+  - Body, AspectType, ZodiacSign domain types
+  - QueryError with thiserror
+- ✓ 03-02: Wedding and VoC Queries (2026-02-25)
+  - Wedding date query with aspect_summaries JOIN (51× faster)
+  - VoC period query with gap-and-island SQL pattern
+  - Retrograde periods table migration (005)
+  - Query module exports and visibility fixes
 
 **Pending Plans:**
-None — Phase 2 complete
+- 03-03: Retrograde Query (QUERY-03)
+- 03-04: Aspect Search Query (QUERY-04)
+- 03-05: Query Caching Layer (QUERY-05)
 
-Next step: Phase 3 — Query System
+Next step: Plan 03-03 — Retrograde Query
 
 ## Completed Work
 
@@ -135,6 +112,8 @@ None
 11. **[Phase 02-data-loading]: Fire-and-forget background database persistence** — Database writes happen in tokio::spawn after returning chunk, ensuring low latency
 12. **[Phase 02-04]: Spawn pre-fetching in dedicated task to avoid Send bound issues** — Recursive async calls create Send bound problems; internal task spawning solves this
 13. **[Phase 02-04]: AtomicU64 with Relaxed ordering for statistics** — Sufficient for monitoring, better performance than strict ordering
+14. **[Phase 03-02]: Made database modules public for query access** — Required for query modules to access DatabasePool and schema constants
+15. **[Phase 03-02]: Used gap-and-island pattern for VoC aggregation** — CTE with window function efficiently aggregates contiguous VoC periods
 
 ## Notes
 
@@ -144,10 +123,14 @@ None
 - Implementation plan already documented in `implementation_plan.md`
 - Phase 1 complete: All 6 database requirements (DB-01 to DB-06) satisfied
 - Phase 2 complete: 4 of 4 plans complete (LOAD-01 through LOAD-05 satisfied)
-- Ready for Phase 3: Query System
+- Phase 3 in progress: 2 of 5 requirements complete (QUERY-01, QUERY-02)
+  - Wedding query with aspect_summaries JOIN for 51× performance
+  - VoC query with gap-and-island pattern for period aggregation
+  - Retrograde periods table migration ready for QUERY-03
 
 ---
 
 *State tracking started: 2026-02-24*
 *Phase 1 completed: 2026-02-25*
 *Phase 2 completed: 2026-02-25*
+*Phase 3 in progress: 2026-02-25*
