@@ -23,12 +23,12 @@
 
 ### Database Schema (Phase 1)
 
-- [ ] **DB-01**: Create aspect_summaries table for pre-aggregated aspect counts
-- [ ] **DB-02**: Add composite indexes for common query patterns
-- [ ] **DB-03**: Refactor house_cusps with normalized locations table
-- [ ] **DB-04**: Create planet_positions hypertable with TimescaleDB
-- [ ] **DB-05**: Create aspects hypertable for aspect data
-- [ ] **DB-06**: Create lunar_conditions hypertable for Moon data
+- [x] **DB-01**: Create aspect_summaries table for pre-aggregated aspect counts
+- [x] **DB-02**: Add composite indexes for common query patterns
+- [x] **DB-03**: Refactor house_cusps with normalized locations table
+- [x] **DB-04**: Create planet_positions hypertable with TimescaleDB
+- [x] **DB-05**: Create aspects hypertable for aspect data
+- [x] **DB-06**: Create lunar_conditions hypertable for Moon data
 
 ### Data Loading (Phase 2)
 
@@ -93,12 +93,12 @@
 | SRV-01 | Existing | Complete |
 | SRV-02 | Existing | Complete |
 | SRV-03 | Existing | Complete |
-| DB-01 | Phase 1 | Pending |
-| DB-02 | Phase 1 | Pending |
-| DB-03 | Phase 1 | Pending |
-| DB-04 | Phase 1 | Pending |
-| DB-05 | Phase 1 | Pending |
-| DB-06 | Phase 1 | Pending |
+| DB-01 | Phase 1 | Complete |
+| DB-02 | Phase 1 | Complete |
+| DB-03 | Phase 1 | Complete |
+| DB-04 | Phase 1 | Complete |
+| DB-05 | Phase 1 | Complete |
+| DB-06 | Phase 1 | Complete |
 | LOAD-01 | Phase 2 | Pending |
 | LOAD-02 | Phase 2 | Pending |
 | LOAD-03 | Phase 2 | Pending |
@@ -121,4 +121,4 @@
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initialization*
+*Last updated: 2026-02-25 after completing Plan 01-01*

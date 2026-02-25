@@ -42,7 +42,7 @@
 **Plans:** 3 plans in 3 waves
 
 Plans:
-- [ ] 01-01-PLAN.md — Create core hypertables and indexes
+- [x] 01-01-PLAN.md — Create core hypertables and indexes (Complete: 2026-02-25)
 - [ ] 01-02-PLAN.md — Set up sqlx migration tooling
 - [ ] 01-03-PLAN.md — Verify schema and update Rust types
 
@@ -153,4 +153,4 @@ Phase 4 (Performance) — depends on query system for benchmarking
 ---
 
 *Roadmap created: 2026-02-24*
-*Last updated: 2026-02-24 after initialization*
+*Last updated: 2026-02-25 after completing Plan 01-01*

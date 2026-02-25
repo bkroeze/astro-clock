@@ -1,7 +1,7 @@
 # Project State: Astro Clock
 
-**Status:** Initialized — Ready for Phase 1
-**Last Updated:** 2026-02-24
+**Status:** Phase 1 In Progress — Plan 1 Complete
+**Last Updated:** 2026-02-25
 
 ## Project Reference
 
@@ -14,7 +14,7 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
-| 1 — Database Schema | ○ Ready | 6 | 0% |
+| 1 — Database Schema | ○ In Progress | 6 | 25% |
 | 2 — Data Loading | ○ Pending | 5 | 0% |
 | 3 — Query System | ○ Pending | 5 | 0% |
 | 4 — Performance | ○ Pending | 4 | 0% |
@@ -27,7 +27,9 @@ Goal: Create optimized TimescaleDB schema for time-series astrological data
 
 Requirements: DB-01 to DB-06
 
-Next step: Run `/gsd-plan-phase 1` to create detailed implementation plan
+**Current Plan:** 01-01 — TimescaleDB Hypertables and Indexes ✓ Complete
+
+Next step: Continue with Plan 01-02 or execute next plan
 
 ## Completed Work
 
@@ -36,6 +38,17 @@ Next step: Run `/gsd-plan-phase 1` to create detailed implementation plan
 - ✓ Roadmap created (4 phases)
 - ✓ Codebase mapped (7 documents)
 - ✓ Phase 1 context gathered (2026-02-24)
+- ✓ Plan 01-01: TimescaleDB hypertables and indexes (2026-02-25)
+  - 4 hypertables with 1-day chunks
+  - 13 composite/partial indexes
+  - Normalized locations table
+  - Aspect summaries table for 51× query speedup
+
+## Decisions
+
+1. **SMALLINT for body IDs** (2026-02-25): Saves 2 bytes per row vs INTEGER, sufficient for 0-9 range
+2. **DECIMAL(8,4) for coordinates** (2026-02-25): 0.0001° precision adequate for astrological calculations
+3. **1-day chunk intervals** (2026-02-25): Aligns with chunk manager design and natural daily query patterns
 
 ## Blockers
 
