@@ -1,8 +1,9 @@
-use chrono::{NaiveDate, Utc};
+use chrono::NaiveDate;
 use lru::LruCache;
+use rust_decimal::Decimal;
+use sqlx::Row;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use std::time::Instant;
 use thiserror::Error;
 use tokio::sync::RwLock;
 
@@ -107,8 +108,9 @@ impl ChunkManager {
             })?
             .and_utc();
 
-        // Load planet positions
-        let positions = sqlx::query_as::<_, schema::PlanetPosition>(
+        // Load planet positions using sqlx::query and manual mapping
+        // Using f64 for database values and converting to Decimal
+        let rows = sqlx::query(
             r#"
             SELECT time, body_id, longitude, latitude, distance, speed_lon, retrograde, zodiac_sign
             FROM planet_positions
@@ -121,8 +123,31 @@ impl ChunkManager {
         .fetch_all(self.db_pool.pool())
         .await?;
 
+        let mut positions = Vec::with_capacity(rows.len());
+        for row in rows {
+            let longitude: f64 = row.try_get(2)?;
+            let latitude: f64 = row.try_get(3)?;
+            let distance: f64 = row.try_get(4)?;
+            let speed_lon: f64 = row.try_get(5)?;
+            
+            positions.push(schema::PlanetPosition {
+                time: row.try_get(0)?,
+                body_id: row.try_get(1)?,
+                longitude: Decimal::from_f64_retain(longitude)
+                    .ok_or_else(|| ChunkManagerError::Conversion("longitude".to_string()))?,
+                latitude: Decimal::from_f64_retain(latitude)
+                    .ok_or_else(|| ChunkManagerError::Conversion("latitude".to_string()))?,
+                distance: Decimal::from_f64_retain(distance)
+                    .ok_or_else(|| ChunkManagerError::Conversion("distance".to_string()))?,
+                speed_lon: Decimal::from_f64_retain(speed_lon)
+                    .ok_or_else(|| ChunkManagerError::Conversion("speed_lon".to_string()))?,
+                retrograde: row.try_get(6)?,
+                zodiac_sign: row.try_get(7)?,
+            });
+        }
+
         // Load aspects
-        let aspects = sqlx::query_as::<_, schema::Aspect>(
+        let rows = sqlx::query(
             r#"
             SELECT time, body1_id, body2_id, aspect_type, orb, applying
             FROM aspects
@@ -135,8 +160,23 @@ impl ChunkManager {
         .fetch_all(self.db_pool.pool())
         .await?;
 
+        let mut aspects = Vec::with_capacity(rows.len());
+        for row in rows {
+            let orb: f64 = row.try_get(4)?;
+            
+            aspects.push(schema::Aspect {
+                time: row.try_get(0)?,
+                body1_id: row.try_get(1)?,
+                body2_id: row.try_get(2)?,
+                aspect_type: row.try_get(3)?,
+                orb: Decimal::from_f64_retain(orb)
+                    .ok_or_else(|| ChunkManagerError::Conversion("orb".to_string()))?,
+                applying: row.try_get(5)?,
+            });
+        }
+
         // Load lunar conditions
-        let lunar = sqlx::query_as::<_, schema::LunarCondition>(
+        let rows = sqlx::query(
             r#"
             SELECT time, moon_phase, moon_sign, moon_phase_angle, moon_illumination,
                    is_void_of_course, voc_start, voc_end
@@ -149,6 +189,25 @@ impl ChunkManager {
         .bind(end_time)
         .fetch_all(self.db_pool.pool())
         .await?;
+
+        let mut lunar = Vec::with_capacity(rows.len());
+        for row in rows {
+            let moon_phase_angle: f64 = row.try_get(3)?;
+            let moon_illumination: f64 = row.try_get(4)?;
+            
+            lunar.push(schema::LunarCondition {
+                time: row.try_get(0)?,
+                moon_phase: row.try_get(1)?,
+                moon_sign: row.try_get(2)?,
+                moon_phase_angle: Decimal::from_f64_retain(moon_phase_angle)
+                    .ok_or_else(|| ChunkManagerError::Conversion("moon_phase_angle".to_string()))?,
+                moon_illumination: Decimal::from_f64_retain(moon_illumination)
+                    .ok_or_else(|| ChunkManagerError::Conversion("moon_illumination".to_string()))?,
+                is_void_of_course: row.try_get(5)?,
+                voc_start: row.try_get(6)?,
+                voc_end: row.try_get(7)?,
+            });
+        }
 
         // Convert to compact format
         ChunkData::from_schema_data(date, &positions, &aspects, &lunar)
