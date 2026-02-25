@@ -160,13 +160,72 @@ run-debug *ARGS:
 # Database (requires db feature)
 # ============================================================================
 
-# Run database migrations (requires sqlx-cli)
+# Run database migrations (requires sqlx-cli and PG_URL env var)
 migrate:
-    sqlx migrate run
+    @if [ -z "${PG_URL:-}" ]; then \
+        echo "Error: PG_URL environment variable is not set"; \
+        echo "Set it with: export PG_URL=postgresql://user:password@host:port/database"; \
+        exit 1; \
+    fi
+    sqlx migrate run --database-url "${PG_URL}"
 
 # Create a new migration (requires sqlx-cli)
-migrate-new NAME:
+migrate-create NAME:
     sqlx migrate add {{NAME}}
+
+# Revert the last migration (requires sqlx-cli and PG_URL env var)
+migrate-revert:
+    @if [ -z "${PG_URL:-}" ]; then \
+        echo "Error: PG_URL environment variable is not set"; \
+        echo "Set it with: export PG_URL=postgresql://user:password@host:port/database"; \
+        exit 1; \
+    fi
+    sqlx migrate revert --database-url "${PG_URL}"
+
+# Show migration status (requires sqlx-cli and PG_URL env var)
+migrate-info:
+    @if [ -z "${PG_URL:-}" ]; then \
+        echo "Error: PG_URL environment variable is not set"; \
+        echo "Set it with: export PG_URL=postgresql://user:password@host:port/database"; \
+        exit 1; \
+    fi
+    sqlx migrate info --database-url "${PG_URL}"
+
+# Set up database: verify PG_URL, run migrations, and check connection
+db-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    echo "=== Database Setup ==="
+    echo ""
+    
+    # Check PG_URL is set
+    if [ -z "${PG_URL:-}" ]; then
+        echo "Error: PG_URL environment variable is not set"
+        echo ""
+        echo "To set it, run:"
+        echo "  export PG_URL=postgresql://user:password@host:port/database"
+        echo ""
+        echo "Example for local development:"
+        echo "  export PG_URL=postgresql://postgres:password@localhost:5432/astrology"
+        exit 1
+    fi
+    
+    echo "✓ PG_URL is set"
+    echo "  Database: $(echo "${PG_URL}" | sed 's/.*@//; s/:.*//')"
+    echo ""
+    
+    # Run migrations
+    echo "Running migrations..."
+    sqlx migrate run --database-url "${PG_URL}"
+    echo ""
+    
+    # Verify connection by checking migration status
+    echo "Migration status:"
+    sqlx migrate info --database-url "${PG_URL}"
+    echo ""
+    
+    echo "=== Database setup complete ==="
 
 # Check database connection
 db-check:
