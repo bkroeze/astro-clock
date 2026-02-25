@@ -71,8 +71,8 @@ Plans:
 **Plans:** 4 plans in 4 waves
 
 Plans:
-- [ ] 02-01-PLAN.md — Create compact chunk data structures and add LRU dependency
-- [ ] 02-02-PLAN.md — Implement ChunkManager with LRU cache and database loading
+- [x] 02-01-PLAN.md — Create compact chunk data structures and add LRU dependency (Complete: 2026-02-25)
+- [x] 02-02-PLAN.md — Implement ChunkManager with LRU cache and database loading (Complete: 2026-02-25)
 - [ ] 02-03-PLAN.md — Implement Swiss Ephemeris generation and database persistence
 - [ ] 02-04-PLAN.md — Add background pre-fetching of adjacent chunks
 
@@ -161,4 +161,4 @@ Phase 4 (Performance) — depends on query system for benchmarking
 ---
 
 *Roadmap created: 2026-02-24*
-*Last updated: 2026-02-25 after creating Phase 2 plans*
+*Last updated: 2026-02-25 after completing Plan 02-02*

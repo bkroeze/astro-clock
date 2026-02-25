@@ -8,14 +8,14 @@
 See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 **Core value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
-**Current focus:** Phase 2 — Data Loading (Plan 01 of 04 complete)
+**Current focus:** Phase 2 — Data Loading (Plan 02 of 04 complete)
 
 ## Phase Status
 
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
 | 1 — Database Schema | ✓ Complete | 6 | 100% |
-| 2 — Data Loading | ○ In Progress | 5 | 20% |
+| 2 — Data Loading | ○ In Progress | 5 | 40% |
 | 3 — Query System | ○ Pending | 5 | 0% |
 | 4 — Performance | ○ Pending | 4 | 0% |
 
@@ -25,20 +25,23 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 Goal: Implement chunk-based loading with LRU cache and Swiss Ephemeris integration
 
-Requirements: LOAD-01 to LOAD-05 (1 of 5 complete)
+Requirements: LOAD-01 to LOAD-05 (2 of 5 complete)
 
 **Completed Plans:**
 - ✓ 02-01: Compact Chunk Data Structures (2026-02-25)
   - ChunkKey, ChunkData, and compact position types
   - ~4.5× memory reduction through packed representations
   - lru crate dependency added
+- ✓ 02-02: ChunkManager with LRU Cache (2026-02-25)
+  - ChunkManager with 30-chunk LRU cache and database loading
+  - Thread-safe access via RwLock
+  - Cache-first lookup with database fallback
 
 **Pending Plans:**
-- ○ 02-02: ChunkManager with LRU Cache
 - ○ 02-03: Swiss Ephemeris Integration
 - ○ 02-04: Background Pre-fetching
 
-Next step: Plan 02-02 — ChunkManager implementation
+Next step: Plan 02-03 — Swiss Ephemeris Integration
 
 ## Completed Work
 
@@ -65,6 +68,10 @@ Next step: Plan 02-02 — ChunkManager implementation
   - ChunkKey, ChunkData, CompactPlanetPosition, CompactAspect, CompactLunarCondition
   - ~4.5× memory reduction (16 bytes vs 72 bytes per position)
   - lru crate for LRU cache implementation
+- ✓ Plan 02-02: ChunkManager with LRU Cache (2026-02-25)
+  - ChunkManager with RwLock-protected LRU cache
+  - Database loading from three hypertables
+  - f64 to Decimal conversion for sqlx compatibility
 
 ## Decisions
 
@@ -76,6 +83,7 @@ Next step: Plan 02-02 — ChunkManager implementation
 6. **rust_decimal for DECIMAL types** (2026-02-25): Preserves exact precision required for astrological calculations
 - [Phase 02-data-loading]: Used lru crate instead of custom implementation for cache correctness — Per CONTEXT.md discretion, using battle-tested crate saves development time and ensures O(1) operations
 - [Phase 02-data-loading]: Packed struct representation with integer encoding for memory efficiency — Millidegrees and permille encoding achieves ~4.5× size reduction while maintaining sufficient precision
+- [Phase 02-data-loading]: Manual f64 to Decimal conversion for sqlx compatibility — rust_decimal doesn't implement sqlx traits, so we query as f64 and convert using Decimal::from_f64_retain()
 
 ## Blockers
 
@@ -88,8 +96,8 @@ None
 - Database connection string in `.env` as `PG_URL`
 - Implementation plan already documented in `implementation_plan.md`
 - Phase 1 complete: All 6 database requirements (DB-01 to DB-06) satisfied
-- Phase 2 in progress: 1 of 4 plans complete (LOAD-01 satisfied)
-- Ready for Plan 02-02: ChunkManager with LRU Cache
+- Phase 2 in progress: 2 of 4 plans complete (LOAD-01, LOAD-02 satisfied)
+- Ready for Plan 02-03: Swiss Ephemeris Integration
 
 ---
 
