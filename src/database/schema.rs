@@ -206,6 +206,28 @@ pub struct AspectSummary {
     pub total_challenging: i16,
 }
 
+/// Planetary retrograde period with optional shadow periods
+///
+/// Maps to the `retrograde_periods` table.
+/// Stores calculated retrograde periods for all planets.
+#[derive(Debug, Clone, FromRow)]
+pub struct RetrogradePeriod {
+    /// Unique period ID
+    pub id: i32,
+    /// Body ID (0-9 for Sun through Pluto)
+    pub body_id: i16,
+    /// Start of retrograde motion
+    pub retrograde_start: chrono::DateTime<chrono::Utc>,
+    /// End of retrograde motion
+    pub retrograde_end: chrono::DateTime<chrono::Utc>,
+    /// Start of pre-retrograde shadow period (null if not tracked)
+    pub pre_shadow_start: Option<chrono::DateTime<chrono::Utc>>,
+    /// End of post-retrograde shadow period (null if not tracked)
+    pub post_shadow_end: Option<chrono::DateTime<chrono::Utc>>,
+    /// When this record was created
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
 // ============================================================================
 // SCHEMA HELPER
 // ============================================================================
