@@ -22,6 +22,7 @@ serde_json = "1.0"
 swiss-eph = "0.2.1"
 image-webp = "0.2.4"
 png = "0.17"
+lru = "0.12"
 
 [features]
 default = []
