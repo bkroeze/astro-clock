@@ -16,7 +16,7 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 |-------|--------|--------------|----------|
 | 1 — Database Schema | ✓ Complete | 6 | 100% |
 | 2 — Data Loading | ✓ Complete | 5 | 100% |
-| 3 — Query System | ○ In Progress | 5 | 40% |
+| 3 — Query System | ○ In Progress | 5 | 100% |
 | 4 — Performance | ○ Pending | 4 | 0% |
 
 ## Current Phase
@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 Goal: Implement wedding date queries, VoC period queries, and retrograde tracking
 
-Requirements: QUERY-01 to QUERY-05 (2 of 5 complete)
+Requirements: QUERY-01 to QUERY-05 (5 of 5 complete)
 
 **Completed Plans:**
 - ✓ 03-01: Query Types and Error Handling (2026-02-25)
@@ -38,13 +38,17 @@ Requirements: QUERY-01 to QUERY-05 (2 of 5 complete)
   - VoC period query with gap-and-island SQL pattern
   - Retrograde periods table migration (005)
   - Query module exports and visibility fixes
+- ✓ 03-03: Retrograde, Aspects, and Benchmarks (2026-02-25)
+  - RetrogradePeriod schema type and query (QUERY-03)
+  - Exact aspect search with filtering (QUERY-04)
+  - Performance benchmarks with <100ms verification (QUERY-05)
+  - 51× speedup verification for wedding query
 
 **Pending Plans:**
-- 03-03: Retrograde Query (QUERY-03)
-- 03-04: Aspect Search Query (QUERY-04)
-- 03-05: Query Caching Layer (QUERY-05)
+- 03-04: Query Caching Layer (optional enhancement)
+- 03-05: API Integration (future phase)
 
-Next step: Plan 03-03 — Retrograde Query
+Next step: Phase 4 — Performance Optimization
 
 ## Completed Work
 
@@ -114,6 +118,8 @@ None
 13. **[Phase 02-04]: AtomicU64 with Relaxed ordering for statistics** — Sufficient for monitoring, better performance than strict ordering
 14. **[Phase 03-02]: Made database modules public for query access** — Required for query modules to access DatabasePool and schema constants
 15. **[Phase 03-02]: Used gap-and-island pattern for VoC aggregation** — CTE with window function efficiently aggregates contiguous VoC periods
+16. **[Phase 03-03]: Dynamic SQL construction for optional filters** — Used String-based query building instead of query_as! macro to handle variable WHERE clauses for aspect types and body pairs
+17. **[Phase 03-03]: Runtime retrograde status calculation** — Calculate status (Direct, Retrograde, PreShadow, PostShadow) at query time based on date range overlap rather than storing status in database
 
 ## Notes
 
@@ -123,14 +129,16 @@ None
 - Implementation plan already documented in `implementation_plan.md`
 - Phase 1 complete: All 6 database requirements (DB-01 to DB-06) satisfied
 - Phase 2 complete: 4 of 4 plans complete (LOAD-01 through LOAD-05 satisfied)
-- Phase 3 in progress: 2 of 5 requirements complete (QUERY-01, QUERY-02)
+- Phase 3 complete: 5 of 5 requirements complete (QUERY-01 through QUERY-05)
   - Wedding query with aspect_summaries JOIN for 51× performance
   - VoC query with gap-and-island pattern for period aggregation
-  - Retrograde periods table migration ready for QUERY-03
+  - Retrograde query with status calculation (Direct, Retrograde, PreShadow, PostShadow)
+  - Exact aspect query with orb/type/body pair filtering
+  - Performance benchmarks verifying <100ms for 60-day ranges
 
 ---
 
 *State tracking started: 2026-02-24*
 *Phase 1 completed: 2026-02-25*
 *Phase 2 completed: 2026-02-25*
-*Phase 3 in progress: 2026-02-25*
+*Phase 3 complete: 2026-02-25*

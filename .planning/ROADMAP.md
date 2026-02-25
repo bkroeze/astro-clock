@@ -102,9 +102,9 @@ Plans:
 **Plans:** 3 plans in 2 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — Create query infrastructure (types, errors, criteria)
-- [ ] 03-02-PLAN.md — Implement wedding and VoC queries with retrograde migration
-- [ ] 03-03-PLAN.md — Implement retrograde and aspect queries with benchmarks
+- [x] 03-01-PLAN.md — Create query infrastructure (types, errors, criteria) (Complete: 2026-02-25)
+- [x] 03-02-PLAN.md — Implement wedding and VoC queries with retrograde migration (Complete: 2026-02-25)
+- [x] 03-03-PLAN.md — Implement retrograde and aspect queries with benchmarks (Complete: 2026-02-25)
 
 ---
 
@@ -169,4 +169,4 @@ Phase 4 (Performance) — depends on query system for benchmarking
 ---
 
 *Roadmap created: 2026-02-24*
-*Last updated: 2026-02-25 after completing Plan 02-04*
+*Last updated: 2026-02-25 after completing Plan 03-03*
