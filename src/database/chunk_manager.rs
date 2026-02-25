@@ -194,18 +194,31 @@ impl ChunkManager {
         {
             let mut cache = self.cache.write().await;
             if let Some(data) = cache.get(&key) {
+                // Cache hit - record stats and trigger pre-fetching
+                self.stats.record_cache_hit();
+                let self_arc = Arc::new(self.clone());
+                self_arc.pre_fetch_adjacent_chunks(date);
                 return Ok(Arc::clone(data));
             }
         }
 
+        // Cache miss - record stats
+        self.stats.record_cache_miss();
+
         // 2. Try to load from database
         match self.load_chunk_from_db(date).await {
             Ok(chunk_data) => {
+                self.stats.record_db_load();
                 let chunk_arc = Arc::new(chunk_data);
                 {
                     let mut cache = self.cache.write().await;
                     cache.put(key, Arc::clone(&chunk_arc));
                 }
+
+                // Trigger pre-fetching after successful database load
+                let self_arc = Arc::new(self.clone());
+                self_arc.pre_fetch_adjacent_chunks(date);
+
                 return Ok(chunk_arc);
             }
             Err(ChunkManagerError::NotFound(_)) => {
@@ -228,6 +241,8 @@ impl ChunkManager {
             .await
             .map_err(|e| ChunkManagerError::Generation(e.to_string()))?;
 
+        self.stats.record_generation();
+
         // 4. Save to database (fire-and-forget, don't fail if save fails)
         let chunk_for_save = chunk_data.clone();
         let generator = ChunkGenerator::new(self.db_pool.clone());
@@ -239,12 +254,16 @@ impl ChunkManager {
             }
         });
 
-        // 5. Add to cache and return
+        // 5. Add to cache
         let chunk_arc = Arc::new(chunk_data);
         {
             let mut cache = self.cache.write().await;
             cache.put(key, Arc::clone(&chunk_arc));
         }
+
+        // 6. Trigger pre-fetching after generation
+        let self_arc = Arc::new(self.clone());
+        self_arc.pre_fetch_adjacent_chunks(date);
 
         Ok(chunk_arc)
     }
@@ -418,7 +437,7 @@ impl ChunkManager {
     /// This is a fire-and-forget operation - failures are silent and don't
     /// affect the main query flow. Pre-fetched chunks populate the cache
     /// for faster subsequent queries.
-    async fn pre_fetch_adjacent_chunks(
+    fn pre_fetch_adjacent_chunks(
         self: Arc<Self>,
         center_date: NaiveDate,
     ) {
@@ -428,25 +447,36 @@ impl ChunkManager {
 
         use chrono::Duration;
 
-        // Pre-fetch range on each side
-        for offset in 1..=self.config.pre_fetch_range {
-            let prev_date = center_date - Duration::days(offset);
-            let next_date = center_date + Duration::days(offset);
+        // Spawn a new task for pre-fetching to avoid blocking
+        tokio::spawn(async move {
+            // Pre-fetch range on each side
+            for offset in 1..=self.config.pre_fetch_range {
+                let prev_date = center_date - Duration::days(offset);
+                let next_date = center_date + Duration::days(offset);
 
-            if !self.is_cached(prev_date).await {
-                if self.get_chunk(prev_date).await.is_ok() {
-                    self.stats.record_pre_fetch();
-                    tracing::debug!("Pre-fetched previous day: {}", prev_date);
+                // Check and fetch previous day
+                let self_clone = Arc::clone(&self);
+                let is_prev_cached = self_clone.is_cached(prev_date).await;
+                if !is_prev_cached {
+                    let self_fetch = Arc::clone(&self);
+                    if self_fetch.get_chunk(prev_date).await.is_ok() {
+                        self.stats.record_pre_fetch();
+                        tracing::debug!("Pre-fetched previous day: {}", prev_date);
+                    }
+                }
+
+                // Check and fetch next day
+                let self_clone = Arc::clone(&self);
+                let is_next_cached = self_clone.is_cached(next_date).await;
+                if !is_next_cached {
+                    let self_fetch = Arc::clone(&self);
+                    if self_fetch.get_chunk(next_date).await.is_ok() {
+                        self.stats.record_pre_fetch();
+                        tracing::debug!("Pre-fetched next day: {}", next_date);
+                    }
                 }
             }
-
-            if !self.is_cached(next_date).await {
-                if self.get_chunk(next_date).await.is_ok() {
-                    self.stats.record_pre_fetch();
-                    tracing::debug!("Pre-fetched next day: {}", next_date);
-                }
-            }
-        }
+        });
     }
 
     /// Get multiple chunks for a date range efficiently
