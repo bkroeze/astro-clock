@@ -34,9 +34,17 @@
 **Key Deliverables:**
 - `migrations/001_create_hypertables.sql`
 - `migrations/002_create_indexes.sql`
-- `migrations/003_create_aspect_summaries.sql`
-- `migrations/004_refactor_house_cusps.sql`
+- `migrations/003_create_locations.sql`
+- `migrations/004_create_aspect_summaries.sql`
+- `migrations/verify_schema.sql`
 - Database schema documentation
+
+**Plans:** 3 plans in 3 waves
+
+Plans:
+- [ ] 01-01-PLAN.md — Create core hypertables and indexes
+- [ ] 01-02-PLAN.md — Set up sqlx migration tooling
+- [ ] 01-03-PLAN.md — Verify schema and update Rust types
 
 ---
 
