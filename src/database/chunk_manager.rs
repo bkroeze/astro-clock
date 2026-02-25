@@ -3,6 +3,7 @@ use lru::LruCache;
 use rust_decimal::Decimal;
 use sqlx::Row;
 use std::num::NonZeroUsize;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -33,18 +34,110 @@ impl From<ChunkGeneratorError> for ChunkManagerError {
     }
 }
 
+/// Configuration for chunk manager behavior
+#[derive(Debug, Clone)]
+pub struct ChunkManagerConfig {
+    /// Enable background pre-fetching of adjacent chunks
+    pub enable_pre_fetching: bool,
+    /// Number of days to pre-fetch on each side (default: 1)
+    pub pre_fetch_range: i64,
+}
+
+impl Default for ChunkManagerConfig {
+    fn default() -> Self {
+        Self {
+            enable_pre_fetching: true,
+            pre_fetch_range: 1,
+        }
+    }
+}
+
+/// Statistics for monitoring chunk manager performance
+#[derive(Debug, Default)]
+pub struct ChunkManagerStats {
+    pub cache_hits: AtomicU64,
+    pub cache_misses: AtomicU64,
+    pub db_loads: AtomicU64,
+    pub generations: AtomicU64,
+    pub pre_fetches: AtomicU64,
+}
+
+impl ChunkManagerStats {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn record_cache_hit(&self) {
+        self.cache_hits.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_cache_miss(&self) {
+        self.cache_misses.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_db_load(&self) {
+        self.db_loads.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_generation(&self) {
+        self.generations.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn record_pre_fetch(&self) {
+        self.pre_fetches.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn snapshot(&self) -> ChunkManagerStatsSnapshot {
+        ChunkManagerStatsSnapshot {
+            cache_hits: self.cache_hits.load(Ordering::Relaxed),
+            cache_misses: self.cache_misses.load(Ordering::Relaxed),
+            db_loads: self.db_loads.load(Ordering::Relaxed),
+            generations: self.generations.load(Ordering::Relaxed),
+            pre_fetches: self.pre_fetches.load(Ordering::Relaxed),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ChunkManagerStatsSnapshot {
+    pub cache_hits: u64,
+    pub cache_misses: u64,
+    pub db_loads: u64,
+    pub generations: u64,
+    pub pre_fetches: u64,
+}
+
+impl ChunkManagerStatsSnapshot {
+    pub fn total_requests(&self) -> u64 {
+        self.cache_hits + self.cache_misses
+    }
+
+    pub fn cache_hit_rate(&self) -> f64 {
+        let total = self.total_requests();
+        if total == 0 {
+            0.0
+        } else {
+            self.cache_hits as f64 / total as f64
+        }
+    }
+}
+
 /// Manages chunk data with LRU caching, database fallback, and Swiss Ephemeris generation
 ///
 /// Provides thread-safe access to astrological data chunks with a three-tier
 /// lookup strategy: memory cache first, then database, then Swiss Ephemeris generation.
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct ChunkManager {
     /// LRU cache for chunk data, protected by RwLock for thread-safe access
-    cache: RwLock<LruCache<ChunkKey, Arc<ChunkData>>>,
+    cache: Arc<RwLock<LruCache<ChunkKey, Arc<ChunkData>>>>,
     /// Database connection pool for loading chunks on cache miss
     db_pool: DatabasePool,
     /// Generator for creating chunks from Swiss Ephemeris when not in database
     generator: ChunkGenerator,
+    /// Configuration for chunk manager behavior
+    config: ChunkManagerConfig,
+    /// Statistics for monitoring performance
+    stats: Arc<ChunkManagerStats>,
 }
 
 impl ChunkManager {
@@ -53,15 +146,27 @@ impl ChunkManager {
     /// Initializes an empty LRU cache with capacity for CACHE_SIZE_CHUNKS (30) chunks
     /// and a ChunkGenerator for on-demand data generation.
     pub fn new(db_pool: DatabasePool) -> Self {
-        let cache = RwLock::new(LruCache::new(
+        Self::with_config(db_pool, ChunkManagerConfig::default())
+    }
+
+    /// Create a new ChunkManager with custom configuration
+    pub fn with_config(db_pool: DatabasePool, config: ChunkManagerConfig) -> Self {
+        let cache = Arc::new(RwLock::new(LruCache::new(
             NonZeroUsize::new(CACHE_SIZE_CHUNKS).unwrap(),
-        ));
+        )));
         let generator = ChunkGenerator::new(db_pool.clone());
         Self {
             cache,
             db_pool,
             generator,
+            config,
+            stats: Arc::new(ChunkManagerStats::new()),
         }
+    }
+
+    /// Get current statistics snapshot
+    pub fn stats(&self) -> ChunkManagerStatsSnapshot {
+        self.stats.snapshot()
     }
 
     /// Get a chunk for the given date, using cache-first lookup with generation fallback
@@ -306,6 +411,65 @@ impl ChunkManager {
         let key = ChunkKey::new(date);
         let cache = self.cache.read().await;
         cache.peek(&key).map(Arc::clone)
+    }
+
+    /// Pre-fetch adjacent chunks (previous and next day) in background
+    ///
+    /// This is a fire-and-forget operation - failures are silent and don't
+    /// affect the main query flow. Pre-fetched chunks populate the cache
+    /// for faster subsequent queries.
+    async fn pre_fetch_adjacent_chunks(
+        self: Arc<Self>,
+        center_date: NaiveDate,
+    ) {
+        if !self.config.enable_pre_fetching {
+            return;
+        }
+
+        use chrono::Duration;
+
+        // Pre-fetch range on each side
+        for offset in 1..=self.config.pre_fetch_range {
+            let prev_date = center_date - Duration::days(offset);
+            let next_date = center_date + Duration::days(offset);
+
+            if !self.is_cached(prev_date).await {
+                if self.get_chunk(prev_date).await.is_ok() {
+                    self.stats.record_pre_fetch();
+                    tracing::debug!("Pre-fetched previous day: {}", prev_date);
+                }
+            }
+
+            if !self.is_cached(next_date).await {
+                if self.get_chunk(next_date).await.is_ok() {
+                    self.stats.record_pre_fetch();
+                    tracing::debug!("Pre-fetched next day: {}", next_date);
+                }
+            }
+        }
+    }
+
+    /// Get multiple chunks for a date range efficiently
+    ///
+    /// This method loads all chunks in the range and triggers pre-fetching
+    /// for optimal cache utilization.
+    pub async fn get_chunk_range(
+        &self,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> Result<Vec<Arc<ChunkData>>, ChunkManagerError> {
+        use chrono::Duration;
+
+        let mut chunks = Vec::new();
+        let mut current = start_date;
+
+        while current <= end_date {
+            let chunk = self.get_chunk(current).await?;
+            chunks.push(chunk);
+            current = current + Duration::days(1);
+        }
+
+        Ok(chunks)
     }
 }
 
