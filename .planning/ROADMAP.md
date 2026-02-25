@@ -10,8 +10,8 @@
 
 | # | Name | Goal | Requirements | Success Criteria |
 |---|------|------|--------------|------------------|
-| 1 | Database Schema | Create optimized TimescaleDB schema for time-series astrological data | DB-01 to DB-06 | 6 |
-| 2 | Data Loading | Implement chunk-based loading with LRU cache and Swiss Ephemeris integration | LOAD-01 to LOAD-05 | 5 |
+| 1 | Database Schema | Create optimized TimescaleDB schema for time-series astrological data | DB-01 to DB-06 | 3/3 complete | 2026-02-25 | 6 |
+| 2 | Data Loading | Complete chunk-based loading with LRU cache and Swiss Ephemeris | LOAD-01 to LOAD-05 | 4/4 complete | 2026-02-25 | 5 |
 | 3 | Query System | Build specialized query functions for electoral astrology | QUERY-01 to QUERY-05 | 5 |
 | 4 | Performance | Optimize storage, memory, and query performance | PERF-01 to PERF-04 | 4 |
 
@@ -44,7 +44,7 @@
 Plans:
 - [x] 01-01-PLAN.md — Create core hypertables and indexes (Complete: 2026-02-25)
 - [x] 01-02-PLAN.md — Set up sqlx migration tooling (Complete: 2026-02-25)
-- [ ] 01-03-PLAN.md — Verify schema and update Rust types
+- [x] 01-03-PLAN.md — Verify schema and update Rust types (Complete: 2026-02-25)
 
 ---
 
@@ -68,13 +68,13 @@ Plans:
 - `src/database/chunk_generator.rs` — Swiss Ephemeris integration
 - Chunk data structures with compact memory layout (~4.5× size reduction)
 
-**Plans:** 4 plans in 4 waves
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Create compact chunk data structures and add LRU dependency (Complete: 2026-02-25)
 - [x] 02-02-PLAN.md — Implement ChunkManager with LRU cache and database loading (Complete: 2026-02-25)
-- [ ] 02-03-PLAN.md — Implement Swiss Ephemeris generation and database persistence
-- [ ] 02-04-PLAN.md — Add background pre-fetching of adjacent chunks
+- [x] 02-03-PLAN.md — Implement Swiss Ephemeris generation and database persistence (Complete: 2026-02-25)
+- [x] 02-04-PLAN.md — Add background pre-fetching of adjacent chunks (Complete: 2026-02-25)
 
 ---
 
@@ -161,4 +161,4 @@ Phase 4 (Performance) — depends on query system for benchmarking
 ---
 
 *Roadmap created: 2026-02-24*
-*Last updated: 2026-02-25 after completing Plan 02-02*
+*Last updated: 2026-02-25 after completing Plan 02-04*

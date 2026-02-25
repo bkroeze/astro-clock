@@ -36,7 +36,7 @@
 - [x] **LOAD-02**: Load data from database when available
 - [x] **LOAD-03**: Generate data from Swiss Ephemeris when not in database
 - [x] **LOAD-04**: Save generated data to database for future queries
-- [ ] **LOAD-05**: Background pre-fetching of adjacent chunks
+- [x] **LOAD-05**: Background pre-fetching of adjacent chunks
 
 ### Query System (Phase 3)
 
@@ -103,7 +103,7 @@
 | LOAD-02 | Phase 2 | Complete |
 | LOAD-03 | Phase 2 | Complete |
 | LOAD-04 | Phase 2 | Complete |
-| LOAD-05 | Phase 2 | Pending |
+| LOAD-05 | Phase 2 | Complete |
 | QUERY-01 | Phase 3 | Pending |
 | QUERY-02 | Phase 3 | Pending |
 | QUERY-03 | Phase 3 | Pending |
