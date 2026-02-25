@@ -125,6 +125,17 @@ None - no external service configuration required.
 - Retrograde query (03-04) can use RetrogradeCriteria and RetrogradePeriod
 - Aspect query (03-05) can use AspectCriteria and ExactAspect
 
+## Self-Check: PASSED
+
+- [x] src/queries/error.rs exists (24 lines)
+- [x] src/queries/types.rs exists (569 lines)
+- [x] src/queries/mod.rs exists (9 lines)
+- [x] All code compiles with `cargo check --features db`
+- [x] QueryError has Database, InvalidCriteria, Timeout, ChunkManager variants
+- [x] All criteria structs have validate() methods
+- [x] Module exports are accessible from outside the crate
+- [x] All commits created: a31d46a, eba4c4f, 3107a81
+
 ---
 *Phase: 03-query-system*
 *Completed: 2026-02-25*
