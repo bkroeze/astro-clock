@@ -32,7 +32,7 @@
 
 ### Data Loading (Phase 2)
 
-- [ ] **LOAD-01**: Implement ChunkManager with LRU cache
+- [x] **LOAD-01**: Implement ChunkManager with LRU cache
 - [ ] **LOAD-02**: Load data from database when available
 - [ ] **LOAD-03**: Generate data from Swiss Ephemeris when not in database
 - [ ] **LOAD-04**: Save generated data to database for future queries
@@ -99,7 +99,7 @@
 | DB-04 | Phase 1 | Complete |
 | DB-05 | Phase 1 | Complete |
 | DB-06 | Phase 1 | Complete |
-| LOAD-01 | Phase 2 | Pending |
+| LOAD-01 | Phase 2 | Complete |
 | LOAD-02 | Phase 2 | Pending |
 | LOAD-03 | Phase 2 | Pending |
 | LOAD-04 | Phase 2 | Pending |
