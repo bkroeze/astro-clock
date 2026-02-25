@@ -18,7 +18,7 @@ CREATE TABLE aspect_summaries (
     
     -- Individual aspect type counts
     conjunctions SMALLINT DEFAULT 0 CHECK (conjunctions >= 0),
-    sextiles SMALLINT DEFAULT 0 CHECK (sextilles >= 0),
+    sextiles SMALLINT DEFAULT 0 CHECK (sextiles >= 0),
     squares SMALLINT DEFAULT 0 CHECK (squares >= 0),
     trines SMALLINT DEFAULT 0 CHECK (trines >= 0),
     oppositions SMALLINT DEFAULT 0 CHECK (oppositions >= 0),
