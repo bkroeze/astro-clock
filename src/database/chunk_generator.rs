@@ -305,13 +305,12 @@ impl ChunkGenerator {
         positions: &[CompactPlanetPosition],
         chunk_date: NaiveDate,
     ) -> Result<(), sqlx::Error> {
-        use rust_decimal::Decimal;
-
         if positions.is_empty() {
             return Ok(());
         }
 
         // Build batch insert using UNNEST for efficiency
+        // Use f64 for numeric arrays since rust_decimal doesn't implement sqlx array traits
         let times: Vec<DateTime<Utc>> = positions
             .iter()
             .map(|p| {
@@ -323,21 +322,21 @@ impl ChunkGenerator {
             .collect();
 
         let body_ids: Vec<i16> = positions.iter().map(|p| p.body_id as i16).collect();
-        let longitudes: Vec<Decimal> = positions
+        let longitudes: Vec<f64> = positions
             .iter()
-            .map(|p| Decimal::from(p.longitude_millidegrees) / Decimal::from(1000))
+            .map(|p| p.longitude_millidegrees as f64 / 1000.0)
             .collect();
-        let latitudes: Vec<Decimal> = positions
+        let latitudes: Vec<f64> = positions
             .iter()
-            .map(|p| Decimal::from(p.latitude_millidegrees) / Decimal::from(1000))
+            .map(|p| p.latitude_millidegrees as f64 / 1000.0)
             .collect();
-        let distances: Vec<Decimal> = positions
+        let distances: Vec<f64> = positions
             .iter()
-            .map(|p| Decimal::from(p.distance_milliau) / Decimal::from(1000))
+            .map(|p| p.distance_milliau as f64 / 1000.0)
             .collect();
-        let speeds: Vec<Decimal> = positions
+        let speeds: Vec<f64> = positions
             .iter()
-            .map(|p| Decimal::from(p.speed_millidegrees) / Decimal::from(1000))
+            .map(|p| p.speed_millidegrees as f64 / 1000.0)
             .collect();
         let retrogrades: Vec<bool> = positions.iter().map(|p| p.is_retrograde).collect();
         let signs: Vec<i16> = positions.iter().map(|p| p.zodiac_sign as i16).collect();
@@ -349,10 +348,10 @@ impl ChunkGenerator {
             SELECT * FROM UNNEST(
                 $1::timestamptz[],
                 $2::smallint[],
-                $3::decimal[],
-                $4::decimal[],
-                $5::decimal[],
-                $6::decimal[],
+                $3::float8[],
+                $4::float8[],
+                $5::float8[],
+                $6::float8[],
                 $7::boolean[],
                 $8::smallint[]
             )
@@ -379,8 +378,6 @@ impl ChunkGenerator {
         aspects: &[CompactAspect],
         chunk_date: NaiveDate,
     ) -> Result<(), sqlx::Error> {
-        use rust_decimal::Decimal;
-
         if aspects.is_empty() {
             return Ok(());
         }
@@ -397,9 +394,9 @@ impl ChunkGenerator {
         let body1_ids: Vec<i16> = aspects.iter().map(|a| a.body1_id as i16).collect();
         let body2_ids: Vec<i16> = aspects.iter().map(|a| a.body2_id as i16).collect();
         let aspect_types: Vec<i16> = aspects.iter().map(|a| a.aspect_type as i16).collect();
-        let orbs: Vec<Decimal> = aspects
+        let orbs: Vec<f64> = aspects
             .iter()
-            .map(|a| Decimal::from(a.orb_millidegrees) / Decimal::from(1000))
+            .map(|a| a.orb_millidegrees as f64 / 1000.0)
             .collect();
         let applyings: Vec<bool> = aspects.iter().map(|a| a.applying).collect();
 
@@ -412,7 +409,7 @@ impl ChunkGenerator {
                 $2::smallint[],
                 $3::smallint[],
                 $4::smallint[],
-                $5::decimal[],
+                $5::float8[],
                 $6::boolean[]
             )
             ON CONFLICT (time, body1_id, body2_id) DO NOTHING
@@ -436,8 +433,6 @@ impl ChunkGenerator {
         lunar: &[CompactLunarCondition],
         chunk_date: NaiveDate,
     ) -> Result<(), sqlx::Error> {
-        use rust_decimal::Decimal;
-
         if lunar.is_empty() {
             return Ok(());
         }
@@ -453,13 +448,13 @@ impl ChunkGenerator {
             .collect();
         let moon_phases: Vec<i16> = lunar.iter().map(|l| l.moon_phase as i16).collect();
         let moon_signs: Vec<i16> = lunar.iter().map(|l| l.moon_sign as i16).collect();
-        let phase_angles: Vec<Decimal> = lunar
+        let phase_angles: Vec<f64> = lunar
             .iter()
-            .map(|l| Decimal::from(l.moon_phase_angle_milli) / Decimal::from(1000))
+            .map(|l| l.moon_phase_angle_milli as f64 / 1000.0)
             .collect();
-        let illuminations: Vec<Decimal> = lunar
+        let illuminations: Vec<f64> = lunar
             .iter()
-            .map(|l| Decimal::from(l.moon_illumination_permille) / Decimal::from(1000))
+            .map(|l| l.moon_illumination_permille as f64 / 1000.0)
             .collect();
         let is_voc: Vec<bool> = lunar.iter().map(|l| l.is_void_of_course).collect();
 
@@ -471,8 +466,8 @@ impl ChunkGenerator {
                 $1::timestamptz[],
                 $2::smallint[],
                 $3::smallint[],
-                $4::decimal[],
-                $5::decimal[],
+                $4::float8[],
+                $5::float8[],
                 $6::boolean[]
             )
             ON CONFLICT (time) DO NOTHING

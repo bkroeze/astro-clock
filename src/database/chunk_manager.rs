@@ -8,6 +8,7 @@ use thiserror::Error;
 use tokio::sync::RwLock;
 
 use super::chunk::{ChunkData, ChunkKey, CACHE_SIZE_CHUNKS};
+use super::chunk_generator::{ChunkGenerator, ChunkGeneratorError};
 use super::pool::DatabasePool;
 use super::schema;
 
@@ -22,44 +23,62 @@ pub enum ChunkManagerError {
     NotFound(NaiveDate),
     #[error("Chunk conversion error: {0}")]
     Conversion(String),
+    #[error("Generation error: {0}")]
+    Generation(String),
 }
 
-/// Manages chunk data with LRU caching and database fallback
+impl From<ChunkGeneratorError> for ChunkManagerError {
+    fn from(err: ChunkGeneratorError) -> Self {
+        ChunkManagerError::Generation(err.to_string())
+    }
+}
+
+/// Manages chunk data with LRU caching, database fallback, and Swiss Ephemeris generation
 ///
-/// Provides thread-safe access to astrological data chunks with a two-tier
-/// lookup strategy: memory cache first, then database on miss.
+/// Provides thread-safe access to astrological data chunks with a three-tier
+/// lookup strategy: memory cache first, then database, then Swiss Ephemeris generation.
 #[derive(Debug)]
 pub struct ChunkManager {
     /// LRU cache for chunk data, protected by RwLock for thread-safe access
     cache: RwLock<LruCache<ChunkKey, Arc<ChunkData>>>,
     /// Database connection pool for loading chunks on cache miss
     db_pool: DatabasePool,
+    /// Generator for creating chunks from Swiss Ephemeris when not in database
+    generator: ChunkGenerator,
 }
 
 impl ChunkManager {
     /// Create a new ChunkManager with the given database pool
     ///
-    /// Initializes an empty LRU cache with capacity for CACHE_SIZE_CHUNKS (30) chunks.
+    /// Initializes an empty LRU cache with capacity for CACHE_SIZE_CHUNKS (30) chunks
+    /// and a ChunkGenerator for on-demand data generation.
     pub fn new(db_pool: DatabasePool) -> Self {
         let cache = RwLock::new(LruCache::new(
             NonZeroUsize::new(CACHE_SIZE_CHUNKS).unwrap(),
         ));
-        Self { cache, db_pool }
+        let generator = ChunkGenerator::new(db_pool.clone());
+        Self {
+            cache,
+            db_pool,
+            generator,
+        }
     }
 
-    /// Get a chunk for the given date, using cache-first lookup
+    /// Get a chunk for the given date, using cache-first lookup with generation fallback
     ///
     /// # Arguments
     /// * `date` - The date to retrieve chunk data for
     ///
     /// # Returns
-    /// * `Ok(Arc<ChunkData>)` - The chunk data, either from cache or freshly loaded
-    /// * `Err(ChunkManagerError)` - If database query fails or data cannot be converted
+    /// * `Ok(Arc<ChunkData>)` - The chunk data from cache, database, or fresh generation
+    /// * `Err(ChunkManagerError)` - If all lookup strategies fail
     ///
     /// # Lookup Strategy
     /// 1. Check cache first (O(1) lookup)
     /// 2. On cache miss, load from database
-    /// 3. Populate cache with loaded data for future queries
+    /// 3. If not in database, generate from Swiss Ephemeris
+    /// 4. Save generated data to database in background
+    /// 5. Populate cache with loaded/generated data for future queries
     pub async fn get_chunk(
         &self,
         date: NaiveDate,
@@ -74,11 +93,49 @@ impl ChunkManager {
             }
         }
 
-        // 2. Cache miss - load from database
-        let chunk_data = self.load_chunk_from_db(date).await?;
-        let chunk_arc = Arc::new(chunk_data);
+        // 2. Try to load from database
+        match self.load_chunk_from_db(date).await {
+            Ok(chunk_data) => {
+                let chunk_arc = Arc::new(chunk_data);
+                {
+                    let mut cache = self.cache.write().await;
+                    cache.put(key, Arc::clone(&chunk_arc));
+                }
+                return Ok(chunk_arc);
+            }
+            Err(ChunkManagerError::NotFound(_)) => {
+                // Database doesn't have this chunk, generate it
+                tracing::info!(
+                    "Chunk not found in database, generating from Swiss Ephemeris: {}",
+                    date
+                );
+            }
+            Err(e) => {
+                // Other database error, log and try generation
+                tracing::warn!("Database error loading chunk, falling back to generation: {}", e);
+            }
+        }
 
-        // 3. Populate cache
+        // 3. Generate from Swiss Ephemeris
+        let chunk_data = self
+            .generator
+            .generate_chunk(date)
+            .await
+            .map_err(|e| ChunkManagerError::Generation(e.to_string()))?;
+
+        // 4. Save to database (fire-and-forget, don't fail if save fails)
+        let chunk_for_save = chunk_data.clone();
+        let generator = ChunkGenerator::new(self.db_pool.clone());
+        tokio::spawn(async move {
+            if let Err(e) = generator.save_chunk_to_db(&chunk_for_save).await {
+                tracing::warn!("Failed to save generated chunk to database: {}", e);
+            } else {
+                tracing::info!("Successfully saved chunk to database: {}", chunk_for_save.date);
+            }
+        });
+
+        // 5. Add to cache and return
+        let chunk_arc = Arc::new(chunk_data);
         {
             let mut cache = self.cache.write().await;
             cache.put(key, Arc::clone(&chunk_arc));
