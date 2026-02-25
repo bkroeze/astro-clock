@@ -16,8 +16,9 @@ pub enum QueryError {
     ChunkManager(String),
 }
 
-impl From<super::chunk_manager::ChunkManagerError> for QueryError {
-    fn from(err: super::chunk_manager::ChunkManagerError) -> Self {
+#[cfg(feature = "db")]
+impl From<crate::database::chunk_manager::ChunkManagerError> for QueryError {
+    fn from(err: crate::database::chunk_manager::ChunkManagerError) -> Self {
         QueryError::ChunkManager(err.to_string())
     }
 }

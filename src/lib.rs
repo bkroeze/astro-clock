@@ -10,6 +10,8 @@ pub mod renderer;
 pub mod server;
 #[cfg(feature = "db")]
 pub mod database;
+#[cfg(feature = "db")]
+pub mod queries;
 
 pub mod swiss_eph_impl;
 
