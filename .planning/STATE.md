@@ -8,14 +8,14 @@
 See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 **Core value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
-**Current focus:** Phase 2 — Data Loading (Plan 02 of 04 complete)
+**Current focus:** Phase 2 — Data Loading (Plan 03 of 04 complete)
 
 ## Phase Status
 
 | Phase | Status | Requirements | Progress |
 |-------|--------|--------------|----------|
 | 1 — Database Schema | ✓ Complete | 6 | 100% |
-| 2 — Data Loading | ○ In Progress | 5 | 40% |
+| 2 — Data Loading | ○ In Progress | 5 | 60% |
 | 3 — Query System | ○ Pending | 5 | 0% |
 | 4 — Performance | ○ Pending | 4 | 0% |
 
@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 Goal: Implement chunk-based loading with LRU cache and Swiss Ephemeris integration
 
-Requirements: LOAD-01 to LOAD-05 (2 of 5 complete)
+Requirements: LOAD-01 to LOAD-05 (4 of 5 complete)
 
 **Completed Plans:**
 - ✓ 02-01: Compact Chunk Data Structures (2026-02-25)
@@ -36,12 +36,17 @@ Requirements: LOAD-01 to LOAD-05 (2 of 5 complete)
   - ChunkManager with 30-chunk LRU cache and database loading
   - Thread-safe access via RwLock
   - Cache-first lookup with database fallback
+- ✓ 02-03: Swiss Ephemeris Integration (2026-02-25)
+  - ChunkGenerator with Swiss Ephemeris integration for all 10 bodies
+  - Aspect calculation for 5 major aspects with 10° orb
+  - Lunar conditions with moon phase and VoC detection
+  - Batch database persistence using UNNEST
+  - Three-tier lookup: cache → database → generation
 
 **Pending Plans:**
-- ○ 02-03: Swiss Ephemeris Integration
 - ○ 02-04: Background Pre-fetching
 
-Next step: Plan 02-03 — Swiss Ephemeris Integration
+Next step: Plan 02-04 — Background Pre-fetching
 
 ## Completed Work
 
@@ -84,6 +89,8 @@ Next step: Plan 02-03 — Swiss Ephemeris Integration
 - [Phase 02-data-loading]: Used lru crate instead of custom implementation for cache correctness — Per CONTEXT.md discretion, using battle-tested crate saves development time and ensures O(1) operations
 - [Phase 02-data-loading]: Packed struct representation with integer encoding for memory efficiency — Millidegrees and permille encoding achieves ~4.5× size reduction while maintaining sufficient precision
 - [Phase 02-data-loading]: Manual f64 to Decimal conversion for sqlx compatibility — rust_decimal doesn't implement sqlx traits, so we query as f64 and convert using Decimal::from_f64_retain()
+- [Phase 02-data-loading]: f64 for UNNEST batch inserts — rust_decimal doesn't implement sqlx array traits, so we use f64 arrays and let PostgreSQL cast to DECIMAL(8,4)
+- [Phase 02-data-loading]: Fire-and-forget background database persistence — Database writes happen in tokio::spawn after returning chunk, ensuring low latency
 
 ## Blockers
 
@@ -96,8 +103,8 @@ None
 - Database connection string in `.env` as `PG_URL`
 - Implementation plan already documented in `implementation_plan.md`
 - Phase 1 complete: All 6 database requirements (DB-01 to DB-06) satisfied
-- Phase 2 in progress: 2 of 4 plans complete (LOAD-01, LOAD-02 satisfied)
-- Ready for Plan 02-03: Swiss Ephemeris Integration
+- Phase 2 in progress: 3 of 4 plans complete (LOAD-01, LOAD-02, LOAD-03, LOAD-04 satisfied)
+- Ready for Plan 02-04: Background Pre-fetching
 
 ---
 
