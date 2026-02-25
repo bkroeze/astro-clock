@@ -20,7 +20,7 @@ pub async fn find_exact_aspects(
     // Validate criteria
     criteria
         .validate()
-        .map_err(|e| QueryError::InvalidCriteria(e))?;
+        .map_err(|e| QueryError::InvalidCriteria(e.to_string()))?;
 
     let start_time = Instant::now();
 
@@ -53,15 +53,12 @@ pub async fn find_exact_aspects(
         "#,
     );
 
-    let mut param_idx = 4;
     let mut has_aspect_types = false;
 
     // Add aspect type filter if specified
     if let Some(ref types) = criteria.aspect_types {
         if !types.is_empty() {
-            let type_ids: Vec<i16> = types.iter().map(|t| t.to_id()).collect();
-            query.push_str(&format!(" AND aspect_type = ANY(${})", param_idx));
-            param_idx += 1;
+            query.push_str(" AND aspect_type = ANY($4)");
             has_aspect_types = true;
         }
     }

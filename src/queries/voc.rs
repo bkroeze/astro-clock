@@ -17,7 +17,7 @@ pub async fn find_voc_periods(
     // Validate criteria
     criteria
         .validate()
-        .map_err(|e| QueryError::InvalidCriteria(e))?;
+        .map_err(|e| QueryError::InvalidCriteria(e.to_string()))?;
 
     let start_time = Instant::now();
 
@@ -97,7 +97,7 @@ pub async fn find_voc_periods(
                 start,
                 end,
                 duration,
-                moon_sign: ZodiacSign::from_id(moon_sign_id),
+                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(crate::queries::types::ZodiacSign::Aries),
             })
         })
         .collect();

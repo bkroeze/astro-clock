@@ -19,7 +19,7 @@ pub async fn find_retrograde_periods(
     // Validate criteria
     criteria
         .validate()
-        .map_err(|e| QueryError::InvalidCriteria(e))?;
+        .map_err(|e| QueryError::InvalidCriteria(e.to_string()))?;
 
     let start_time = Instant::now();
 

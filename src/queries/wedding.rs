@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::Row;
 use std::time::Instant;
 
@@ -21,7 +21,7 @@ pub async fn find_wedding_dates(
     // Validate criteria
     criteria
         .validate()
-        .map_err(|e| QueryError::InvalidCriteria(e))?;
+        .map_err(|e| QueryError::InvalidCriteria(e.to_string()))?;
 
     let start_time = Instant::now();
 
@@ -94,7 +94,7 @@ pub async fn find_wedding_dates(
 
             WeddingCandidate {
                 datetime: time,
-                moon_sign: ZodiacSign::from_id(moon_sign_id),
+                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(crate::queries::types::ZodiacSign::Aries),
                 venus_favorable_aspects: favorable_aspects,
             }
         })
@@ -106,7 +106,7 @@ pub async fn find_wedding_dates(
         data: candidates,
         execution_time_ms,
         rows_examined,
-        cache_hit: false, // Database query, not cache
+        cache_hit: false,
     })
 }
 
@@ -122,7 +122,7 @@ pub async fn find_wedding_dates_with_signs(
     // Validate criteria
     criteria
         .validate()
-        .map_err(|e| QueryError::InvalidCriteria(e))?;
+        .map_err(|e| QueryError::InvalidCriteria(e.to_string()))?;
 
     let start_time = Instant::now();
 
@@ -181,7 +181,7 @@ pub async fn find_wedding_dates_with_signs(
 
             WeddingCandidate {
                 datetime: time,
-                moon_sign: ZodiacSign::from_id(moon_sign_id),
+                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(crate::queries::types::ZodiacSign::Aries),
                 venus_favorable_aspects: favorable_aspects,
             }
         })
