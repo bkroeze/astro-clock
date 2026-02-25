@@ -93,10 +93,18 @@ Plans:
 
 **Key Deliverables:**
 - `src/queries/wedding.rs`
-- `src/queries/void_of_course.rs`
+- `src/queries/voc.rs`
 - `src/queries/retrograde.rs`
 - `src/queries/aspects.rs`
+- `src/queries/benchmark.rs`
 - Query benchmarks and performance tests
+
+**Plans:** 3 plans in 2 waves
+
+Plans:
+- [ ] 03-01-PLAN.md — Create query infrastructure (types, errors, criteria)
+- [ ] 03-02-PLAN.md — Implement wedding and VoC queries with retrograde migration
+- [ ] 03-03-PLAN.md — Implement retrograde and aspect queries with benchmarks
 
 ---
 
