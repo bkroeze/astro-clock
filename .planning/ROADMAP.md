@@ -127,6 +127,14 @@ Plans:
 - Performance benchmark suite
 - Memory profiling results
 
+**Plans:** 4 plans in 2 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Create TimescaleDB continuous aggregates for multi-resolution storage
+- [ ] 04-02-PLAN.md — Implement memory-aware cache eviction with sysinfo monitoring
+- [ ] 04-03-PLAN.md — Add interpolation for outer planets and major aspect filtering
+- [ ] 04-04-PLAN.md — Create automated benchmark runner with regression detection
+
 ---
 
 ## Dependencies Between Phases
@@ -169,4 +177,4 @@ Phase 4 (Performance) — depends on query system for benchmarking
 ---
 
 *Roadmap created: 2026-02-24*
-*Last updated: 2026-02-25 after completing Plan 03-03*
+*Last updated: 2026-02-27 after creating Phase 4 plans*
