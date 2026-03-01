@@ -8,6 +8,11 @@ pub struct DatabasePool {
 }
 
 impl DatabasePool {
+    /// Create a new DatabasePool from an existing connection pool
+    pub fn from_pool(pool: Pool<Postgres>) -> Self {
+        Self { pool }
+    }
+
     pub async fn connect(url: &str) -> Result<Self, sqlx::Error> {
         let pool = PgPoolOptions::new()
             .max_connections(5)
