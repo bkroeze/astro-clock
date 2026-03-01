@@ -51,7 +51,7 @@
 - [x] **PERF-01**: Multi-resolution storage (different intervals per planet)
 - [x] **PERF-02**: Memory usage <30MB for 30-day cache
 - [x] **PERF-03**: Database storage <50GB/year
-- [ ] **PERF-04**: Wedding query 51× faster than baseline (2.3s → 45ms)
+- [x] **PERF-04**: Wedding query 51× faster than baseline (2.3s → 45ms)
 
 ## v2 Requirements
 
@@ -112,7 +112,7 @@
 | PERF-01 | Phase 4 | Complete |
 | PERF-02 | Phase 4 | Complete |
 | PERF-03 | Phase 4 | Complete |
-| PERF-04 | Phase 4 | Pending |
+| PERF-04 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total
