@@ -5,6 +5,8 @@
 
 #[cfg(feature = "db")]
 pub mod handlers;
+#[cfg(feature = "db")]
+pub mod registry;
 pub mod error;
 pub mod executor;
 pub mod repository;
@@ -18,4 +20,8 @@ pub use types::{Job, JobStatus, JobType};
 
 // Re-export handlers (only available with db feature)
 #[cfg(feature = "db")]
-pub use handlers::{LoadJobHandler, LoadJobResult};
+pub use handlers::{LoadJobHandler, LoadJobResult, QueryJobHandler, QueryJobPayload, QueryJobResult};
+
+// Re-export registry (only available with db feature)
+#[cfg(feature = "db")]
+pub use registry::{QueryTemplateRegistry, QueryTemplate};

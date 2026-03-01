@@ -7,6 +7,7 @@
 //! # Available Handlers
 //!
 //! - `LoadJobHandler`: Handles data loading for date ranges
+//! - `QueryJobHandler`: Handles named query execution
 //!
 //! # Example
 //!
@@ -22,5 +23,7 @@
 //! ```
 
 pub mod load;
+pub mod query;
 
 pub use load::{LoadJobHandler, LoadJobResult};
+pub use query::{QueryJobHandler, QueryJobPayload, QueryJobResult};
