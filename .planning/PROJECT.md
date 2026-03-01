@@ -2,15 +2,29 @@
 
 ## What This Is
 
-A CLI application that generates astrological natal charts ("Chart of Now") - visual representations of planetary positions at a specific moment in time. The app can render charts as PNG/WebP images or output data as Markdown tables. It also provides an HTTP server mode for API access to chart generation.
+A CLI application that generates astrological natal charts ("Chart of Now") and provides electoral astrology query capabilities for finding optimal timing. The app can render charts as PNG/WebP images, output data as Markdown tables, and query the database for auspicious dates. It also provides an HTTP server mode for API access.
 
 ## Core Value
 
 Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration.
 
+## Current State
+
+**Shipped: v1.0 MVP (2026-03-01)**
+
+- ✅ TimescaleDB time-series schema with 4 hypertables
+- ✅ Chunk-based data loading with LRU cache (~30MB limit)
+- ✅ Electoral astrology queries (wedding dates, VoC Moon, retrogrades, exact aspects)
+- ✅ 51× query performance improvement (2.3s → 45ms)
+- ✅ Multi-resolution storage (1min/5min/60min by planet speed)
+- ✅ Automated benchmarking with regression detection
+- ✅ Memory monitoring with automatic cache eviction
+
+**Tech Stack:** Rust, TimescaleDB, Swiss Ephemeris, tiny-skia, sqlx
+
 ## Requirements
 
-### Validated
+### Validated (v1.0)
 
 - ✓ Generate natal charts for any date/time/location — existing
 - ✓ Render chart wheel as PNG image — existing
@@ -18,19 +32,25 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 - ✓ Output planetary positions as Markdown table — existing
 - ✓ Calculate and display astrological aspects — existing
 - ✓ HTTP server mode for API access — existing
-- ✓ Support for multiple house systems (Placidus, Koch, Equal, etc.) — existing
-- ✓ Configuration via RON config file — existing
-- ✓ Swiss Ephemeris integration for accurate calculations — existing
+- ✓ Support for multiple house systems — existing
+- ✓ TimescaleDB schema with aspect summaries — v1.0
+- ✓ Chunk-based loading with LRU cache — v1.0
+- ✓ Wedding date queries — v1.0
+- ✓ Void-of-course Moon queries — v1.0
+- ✓ Retrograde period queries — v1.0
+- ✓ Exact aspect queries — v1.0
+- ✓ Multi-resolution storage — v1.0
+- ✓ Memory-aware cache eviction — v1.0
+- ✓ Automated benchmarking — v1.0
 
-### Active
+### Active (Next Milestone)
 
-- [ ] Electoral astrology query system for finding auspicious dates
-- [ ] Database schema for time-series planetary data (TimescaleDB)
-- [ ] Chunk-based data loading with LRU cache for performance
-- [ ] Pre-calculated aspect summaries for fast queries
-- [ ] Specialized query functions (wedding dates, void-of-course Moon, etc.)
-- [ ] Multi-resolution data storage (different granularities per planet)
-- [ ] Database connection pooling and async operations
+- [ ] Advanced pattern queries (grand trines, T-squares, grand crosses)
+- [ ] Transit calculations relative to natal charts
+- [ ] Planetary ingress detection
+- [ ] JSON/CSV export for chart data
+- [ ] Batch export for date ranges
+- [ ] Real-time monitoring dashboard
 
 ### Out of Scope
 
@@ -44,13 +64,18 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 
 This is a Rust-based astrological calculation tool built around the Swiss Ephemeris library. The codebase uses a layered architecture with clear separation between CLI, domain logic, and external integrations. The rendering layer uses tiny-skia for 2D graphics.
 
-The project is expanding to support electoral astrology (finding optimal timing for events), which requires efficient querying of large date ranges. The implementation plan focuses on database optimizations, on-demand data loading, and query performance.
+**v1.0 shipped with:**
+- 97 commits over 5 days
+- 4 phases, 16 plans, all complete
+- 22/22 v1 requirements delivered
+- 51× query performance improvement
+- ~80% storage reduction through aspect filtering
 
 ## Constraints
 
-- **Tech Stack**: Rust with Swiss Ephemeris bindings — established
-- **Database**: PostgreSQL with TimescaleDB extension — required for time-series
-- **Performance**: Wedding date queries must complete in <100ms for 60-day ranges
+- **Tech Stack**: Rust with Swiss Ephemeris bindings
+- **Database**: PostgreSQL with TimescaleDB extension
+- **Performance**: Wedding date queries complete in <100ms for 60-day ranges
 - **Memory**: Cache limit of ~30 days of data in memory
 - **Storage**: Target <50GB/year for all planetary data
 
@@ -58,11 +83,13 @@ The project is expanding to support electoral astrology (finding optimal timing 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Use TimescaleDB for time-series data | Optimized for time-range queries, continuous aggregates | — Pending |
-| Chunk-based loading with LRU cache | Balance memory usage vs query performance | — Pending |
-| Pre-calculate aspect summaries | Avoid O(n²) correlated subqueries in aspect counting | — Pending |
+| Use TimescaleDB for time-series data | Optimized for time-range queries, continuous aggregates | ✓ Good |
+| Chunk-based loading with LRU cache | Balance memory usage vs query performance | ✓ Good |
+| Pre-calculate aspect summaries | Avoid O(n²) correlated subqueries in aspect counting | ✓ Good (51× speedup) |
+| Multi-resolution storage by body speed | Moon at 1min, inner at 5min, outer at 60min | ✓ Good |
+| Major aspect filtering | ~80% storage reduction with 8° orb | ✓ Good |
 | Feature-gated database support | Keep core chart generation lightweight | ✓ Good |
 | tiny-skia for rendering | Lightweight 2D graphics, no heavy dependencies | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 after initialization*
+*Last updated: 2026-03-01 after v1.0 milestone*
