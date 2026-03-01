@@ -16,7 +16,7 @@
 
 ### Data Loading
 
-- [ ] **LOAD-06**: CLI command to load date range: `astro-clock load --start YYYY-MM-DD --days N [--sync]`
+- [x] **LOAD-06**: CLI command to load date range: `astro-clock load --start YYYY-MM-DD --days N [--sync]`
 - [ ] **LOAD-07**: API endpoint: `POST /api/v1/load` with `{start_date, days, sync?}`
 - [x] **LOAD-08**: Day-level incremental loading — skip already-loaded days
 - [x] **LOAD-09**: Loading jobs populate planet_positions, aspects, lunar_conditions tables

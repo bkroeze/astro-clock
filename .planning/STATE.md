@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
 **Status:** Milestone complete
-**Last Updated:** 2026-03-01T22:48:23Z
+**Last Updated:** 2026-03-01T22:53:58Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 6 — Data Loading
-**Plan:** 01 (completed)
-**Status:** Plan 01 complete — LoadJobHandler implemented — 1/3 plans complete in Phase 6
+**Plan:** 02 (completed)
+**Status:** Plan 02 complete — CLI load command implemented — 2/3 plans complete in Phase 6
 
 ---
 
@@ -37,7 +37,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 | Phase | Status | Requirements | Progress | Dependencies |
 |-------|--------|--------------|----------|--------------|
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
-| 6 — Data Loading | 🚧 In Progress | 7 | 43% (3/7) | Phase 5 |
+| 6 — Data Loading | 🚧 In Progress | 7 | 57% (4/7) | Phase 5 |
 | 7 — Named Queries | 📋 Planned | 7 | 0% | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
 
@@ -49,7 +49,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 v1.1 Progress: [██████████░░░░░░░░░░] 39% (11/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
-Phase 6: [██████░░░░░░░░░░░░░░] 43% (3/7)
+Phase 6: [██████████░░░░░░░░░░] 57% (4/7)
 Phase 7: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 ```
@@ -74,6 +74,8 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 12. **Sequential day processing** (06-01) — Process days sequentially within job for Swiss Ephemeris thread safety
 13. **Partial success handling** (06-01) — Mark job Complete if >=1 day loaded, Failed only if 0 progress
 14. **Feature-gated handlers** (06-01) — #[cfg(feature = "db")] on handler modules for clean compilation
+15. **Runtime-per-async-block pattern** (06-02) — Create tokio runtime for each async block in sync CLI context
+16. **Structured result display** (06-02) — Deserialize LoadJobResult JSON for formatted terminal output
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -140,15 +142,15 @@ None — ready to begin Phase 5 planning.
 
 ## Session Continuity
 
-**Last Session:** 2026-03-01 — Completed 06-01: LoadJobHandler
-**Stopped At:** Completed 06-01-PLAN.md
+**Last Session:** 2026-03-01 — Completed 06-02: CLI Load Command
+**Stopped At:** Completed 06-02-PLAN.md
 
 **For Next Session:**
 - LoadJobHandler complete with gap detection and resume capability
+- CLI load command with sync/async modes implemented
 - Handler orchestration pattern established
-- Ready for Phase 6 Plan 2: CLI integration for load command
 - Ready for Phase 6 Plan 3: API endpoint for load jobs
-- Key context: LoadJobHandler, ChunkGenerator integration, structured job results
+- Key context: LoadJobHandler, JobExecutor, CLI patterns
 
 ---
 
