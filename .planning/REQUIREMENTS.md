@@ -1,0 +1,133 @@
+# Requirements: Astro Clock v1.1
+
+**Defined:** 2026-03-01
+**Core Value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
+
+## v1.1 Requirements (Job System)
+
+### Job Infrastructure
+
+- [ ] **JOB-01**: Create jobs table for tracking job state (pending, in-process, complete, failed)
+- [ ] **JOB-02**: Create loaded_days tracking table for incremental data loading
+- [ ] **JOB-03**: Job states: pending → in-process → (complete | failed)
+- [ ] **JOB-04**: Jobs have unique job-id (UUID or sequential)
+- [ ] **JOB-05**: Jobs store payload (parameters), result (JSON), error details on failure
+- [ ] **JOB-06**: Support both synchronous and asynchronous execution modes
+
+### Data Loading
+
+- [ ] **LOAD-06**: CLI command to load date range: `astro-clock load --start YYYY-MM-DD --days N [--sync]`
+- [ ] **LOAD-07**: API endpoint: `POST /api/v1/load` with `{start_date, days, sync?}`
+- [ ] **LOAD-08**: Day-level incremental loading — skip already-loaded days
+- [ ] **LOAD-09**: Loading jobs populate planet_positions, aspects, lunar_conditions tables
+- [ ] **LOAD-10**: Track loaded days in tracking table for resume capability
+
+### Named Queries
+
+- [ ] **QUERY-06**: Named query "wedding" — find auspicious wedding dates
+- [ ] **QUERY-07**: Named query "project" — find good dates to start projects
+- [ ] **QUERY-08**: Named query "travel" — find favorable travel dates
+- [ ] **QUERY-09**: Named queries accept date range parameters (start_date, days)
+- [ ] **QUERY-10**: Named queries intelligently load missing data before executing
+- [ ] **QUERY-11**: Named queries support sync/async execution modes
+
+### CLI Interface
+
+- [ ] **CLI-01**: Command `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
+- [ ] **CLI-02**: Command `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
+- [ ] **CLI-03**: Command `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
+- [ ] **CLI-04**: Command `astro-clock job status <job-id>` — get job status and results
+- [ ] **CLI-05**: Command `astro-clock job list` — list recent jobs with statuses
+
+### HTTP API
+
+- [ ] **API-01**: Endpoint `POST /api/v1/query/wedding` with `{start_date, days, sync?}`
+- [ ] **API-02**: Endpoint `POST /api/v1/query/project` with `{start_date, days, sync?}`
+- [ ] **API-03**: Endpoint `POST /api/v1/query/travel` with `{start_date, days, sync?}`
+- [ ] **API-04**: Endpoint `GET /api/v1/jobs/{job-id}` — get job status and results
+- [ ] **API-05**: Endpoint `GET /api/v1/jobs` — list recent jobs
+- [ ] **API-06**: Job result response includes: `status`, `created_at`, `completed_at`, `result` (JSON) or `error` (object)
+
+### Job Results
+
+- [ ] **RESULT-01**: Synchronous jobs block until complete, return result directly
+- [ ] **RESULT-02**: Asynchronous jobs return immediately with job-id
+- [ ] **RESULT-03**: Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
+- [ ] **RESULT-04**: Failed jobs include error code and message in error field
+- [ ] **RESULT-05**: Complete jobs include query results in result field (JSON)
+
+## v2 Requirements (Future)
+
+### Advanced Queries
+
+- **ADV-01**: Find grand trine configurations
+- **ADV-02**: Find T-square and grand cross patterns
+- **ADV-03**: Calculate transits relative to natal chart
+- **ADV-04**: Planetary ingress detection (sign changes)
+
+### Export Features
+
+- **EXP-01**: Export chart data as JSON
+- **EXP-02**: Export chart data as CSV
+- **EXP-03**: Batch export for date ranges
+
+### Configurability
+
+- **CONFIG-01**: Named queries defined in config files (JSON/YAML)
+- **CONFIG-02**: Custom query templates without code changes
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Real-time job progress streaming | Polling sufficient for v1.1 |
+| Job cancellation | Add if needed based on usage |
+| Job retry logic | Manual retry via re-submit for now |
+| Query result caching | Database is already the cache |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| JOB-01 | Phase 5 | Pending |
+| JOB-02 | Phase 5 | Pending |
+| JOB-03 | Phase 5 | Pending |
+| JOB-04 | Phase 5 | Pending |
+| JOB-05 | Phase 5 | Pending |
+| JOB-06 | Phase 5 | Pending |
+| LOAD-06 | Phase 6 | Pending |
+| LOAD-07 | Phase 6 | Pending |
+| LOAD-08 | Phase 6 | Pending |
+| LOAD-09 | Phase 6 | Pending |
+| LOAD-10 | Phase 6 | Pending |
+| QUERY-06 | Phase 7 | Pending |
+| QUERY-07 | Phase 7 | Pending |
+| QUERY-08 | Phase 7 | Pending |
+| QUERY-09 | Phase 7 | Pending |
+| QUERY-10 | Phase 7 | Pending |
+| QUERY-11 | Phase 7 | Pending |
+| CLI-01 | Phase 8 | Pending |
+| CLI-02 | Phase 8 | Pending |
+| CLI-03 | Phase 8 | Pending |
+| CLI-04 | Phase 8 | Pending |
+| CLI-05 | Phase 8 | Pending |
+| API-01 | Phase 8 | Pending |
+| API-02 | Phase 8 | Pending |
+| API-03 | Phase 8 | Pending |
+| API-04 | Phase 8 | Pending |
+| API-05 | Phase 8 | Pending |
+| API-06 | Phase 8 | Pending |
+| RESULT-01 | Phase 5-8 | Pending |
+| RESULT-02 | Phase 5-8 | Pending |
+| RESULT-03 | Phase 5-8 | Pending |
+| RESULT-04 | Phase 5-8 | Pending |
+| RESULT-05 | Phase 5-8 | Pending |
+
+**Coverage:**
+- v1.1 requirements: 28 total
+- Mapped to phases: 28
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-03-01*
+*Last updated: 2026-03-01 after initial definition*

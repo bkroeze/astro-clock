@@ -43,14 +43,26 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 - ✓ Memory-aware cache eviction — v1.0
 - ✓ Automated benchmarking — v1.0
 
-### Active (Next Milestone)
+### Current Milestone: v1.1 Job System
 
-- [ ] Advanced pattern queries (grand trines, T-squares, grand crosses)
-- [ ] Transit calculations relative to natal charts
-- [ ] Planetary ingress detection
-- [ ] JSON/CSV export for chart data
-- [ ] Batch export for date ranges
-- [ ] Real-time monitoring dashboard
+**Goal:** Build unified job-based system for data loading and named queries with async/sync execution modes.
+
+**Target features:**
+- Job orchestration for DB population (day-level incremental loading)
+- Named query templates (starting with "wedding" query)
+- Synchronous and asynchronous execution modes
+- Job status tracking and result polling
+- CLI commands and HTTP API endpoints
+- Tracking table for loaded date ranges
+
+## Active (v1.1)
+
+- [ ] Job system infrastructure (async/sync modes, job states)
+- [ ] Day-level incremental loading with tracking table
+- [ ] Named query templates (wedding, project start, travel dates)
+- [ ] CLI commands for loading and querying
+- [ ] HTTP API endpoints for jobs and queries
+- [ ] Job status polling and result retrieval
 
 ### Out of Scope
 
@@ -92,4 +104,4 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 | tiny-skia for rendering | Lightweight 2D graphics, no heavy dependencies | ✓ Good |
 
 ---
-*Last updated: 2026-03-01 after v1.0 milestone*
+*Last updated: 2026-03-01 after starting v1.1 milestone planning*

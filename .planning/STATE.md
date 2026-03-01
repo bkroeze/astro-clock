@@ -1,14 +1,14 @@
 # Project State: Astro Clock
 
-**Status:** v1.0 Shipped — Planning next milestone
-**Last Updated:** 2026-03-01 (v1.0 milestone complete)
+**Status:** v1.1 Planning — Defining requirements
+**Last Updated:** 2026-03-01 (v1.1 milestone started)
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Core value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
-**Current focus:** Planning next milestone (v1.1 or v2.0)
+**Current focus:** Defining v1.1 requirements (Job System)
 
 ## Milestone Status
 
