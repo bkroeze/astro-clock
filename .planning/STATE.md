@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 **Core value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
-**Current focus:** Phase 4 — Performance Optimization (Plan 02 in progress)
+**Current focus:** Phase 4 — Performance Optimization (Plan 03 in progress)
 
 ## Phase Status
 
@@ -36,11 +36,14 @@ Requirements: PERF-01 to PERF-04 (1 of 4 complete)
   - MemoryMonitor with configurable soft/hard limits
   - Memory pressure detection (Normal, Elevated, High, Critical)
   - Default limits: 30MB soft, 50MB hard, 90% eviction threshold
+- ✓ 04-05: ChunkManager Integration (2026-03-01)
+  - Memory-aware cache eviction in ChunkManager
+  - Automatic eviction at 90% threshold (45MB)
+  - Evict 25% at High pressure, 50% at Critical
 
 **Pending Plans:**
 - 04-03: Interpolation Module
 - 04-04: Cache Eviction Strategies
-- 04-05: ChunkManager Integration
 
 Next step: Continue with 04-03 — Interpolation Module
 
@@ -117,6 +120,7 @@ None
 16. **[Phase 03-03]: Dynamic SQL construction for optional filters** — Used String-based query building instead of query_as! macro to handle variable WHERE clauses for aspect types and body pairs
 17. **[Phase 03-03]: Runtime retrograde status calculation** — Calculate status (Direct, Retrograde, PreShadow, PostShadow) at query time based on date range overlap rather than storing status in database
 18. **[Phase 04-02]: Used sysinfo 0.30 for cross-platform memory monitoring** — Process memory tracking with configurable soft/hard limits for cache eviction decisions
+19. **[Phase 04-05]: Integrated MemoryMonitor into ChunkManager** — Memory-aware cache eviction with 25% eviction at High pressure, 50% at Critical
 
 ## Notes
 
@@ -132,10 +136,11 @@ None
   - Retrograde query with status calculation (Direct, Retrograde, PreShadow, PostShadow)
   - Exact aspect query with orb/type/body pair filtering
   - Performance benchmarks verifying <100ms for 60-day ranges
-- Phase 4 in progress: 1 of 4 requirements complete (PERF-02)
+- Phase 4 in progress: 2 of 4 requirements complete (PERF-02)
   - Memory monitoring with sysinfo crate
   - Configurable soft/hard limits (30MB/50MB)
   - Memory pressure detection for cache eviction
+  - Memory-aware eviction integrated into ChunkManager
 
 ---
 
