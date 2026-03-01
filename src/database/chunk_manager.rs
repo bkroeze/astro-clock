@@ -8,6 +8,8 @@ use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::RwLock;
 
+use crate::performance::{MemoryMonitor, MemoryPressure};
+
 use super::chunk::{ChunkData, ChunkKey, CACHE_SIZE_CHUNKS};
 use super::chunk_generator::{ChunkGenerator, ChunkGeneratorError};
 use super::pool::DatabasePool;
@@ -41,6 +43,14 @@ pub struct ChunkManagerConfig {
     pub enable_pre_fetching: bool,
     /// Number of days to pre-fetch on each side (default: 1)
     pub pre_fetch_range: i64,
+    /// Soft memory limit in MB (default: 30)
+    pub memory_soft_limit_mb: usize,
+    /// Hard memory limit in MB (default: 50)
+    pub memory_hard_limit_mb: usize,
+    /// Eviction threshold percentage of hard limit (default: 90)
+    pub memory_eviction_threshold_pct: f64,
+    /// Enable memory-aware eviction (default: true)
+    pub enable_memory_monitoring: bool,
 }
 
 impl Default for ChunkManagerConfig {
@@ -48,6 +58,10 @@ impl Default for ChunkManagerConfig {
         Self {
             enable_pre_fetching: true,
             pre_fetch_range: 1,
+            memory_soft_limit_mb: 30,
+            memory_hard_limit_mb: 50,
+            memory_eviction_threshold_pct: 90.0,
+            enable_memory_monitoring: true,
         }
     }
 }
@@ -138,6 +152,8 @@ pub struct ChunkManager {
     config: ChunkManagerConfig,
     /// Statistics for monitoring performance
     stats: Arc<ChunkManagerStats>,
+    /// Memory monitor for cache eviction decisions
+    memory_monitor: Arc<RwLock<MemoryMonitor>>,
 }
 
 impl ChunkManager {
@@ -155,12 +171,18 @@ impl ChunkManager {
             NonZeroUsize::new(CACHE_SIZE_CHUNKS).unwrap(),
         )));
         let generator = ChunkGenerator::new(db_pool.clone());
+        let memory_monitor = Arc::new(RwLock::new(MemoryMonitor::new(
+            config.memory_soft_limit_mb,
+            config.memory_hard_limit_mb,
+            config.memory_eviction_threshold_pct,
+        )));
         Self {
             cache,
             db_pool,
             generator,
             config,
             stats: Arc::new(ChunkManagerStats::new()),
+            memory_monitor,
         }
     }
 
@@ -202,8 +224,9 @@ impl ChunkManager {
             }
         }
 
-        // Cache miss - record stats
+        // Cache miss - record stats and check memory pressure
         self.stats.record_cache_miss();
+        self.evict_if_needed().await;
 
         // 2. Try to load from database
         match self.load_chunk_from_db(date).await {
@@ -500,6 +523,57 @@ impl ChunkManager {
         }
 
         Ok(chunks)
+    }
+
+    /// Evict cache entries if memory pressure is high
+    ///
+    /// This method checks memory pressure and evicts cache entries
+    /// when pressure reaches High or Critical levels.
+    async fn evict_if_needed(&self) {
+        if !self.config.enable_memory_monitoring {
+            return;
+        }
+
+        let mut monitor = self.memory_monitor.write().await;
+        let pressure = monitor.check_memory_pressure();
+        drop(monitor); // Release lock before cache operations
+
+        match pressure {
+            MemoryPressure::Critical => {
+                // Evict 50% of cache
+                let mut cache = self.cache.write().await;
+                let target_size = cache.len() / 2;
+                while cache.len() > target_size {
+                    cache.pop_lru();
+                }
+                tracing::error!("Critical memory pressure: evicted to {} chunks", cache.len());
+            }
+            MemoryPressure::High => {
+                // Evict 25% of cache
+                let mut cache = self.cache.write().await;
+                let target_size = cache.len() * 3 / 4;
+                while cache.len() > target_size {
+                    cache.pop_lru();
+                }
+                tracing::warn!("High memory pressure: evicted to {} chunks", cache.len());
+            }
+            MemoryPressure::Elevated => {
+                tracing::info!("Memory usage elevated (above soft limit)");
+            }
+            MemoryPressure::Normal => {
+                // No action needed
+            }
+        }
+    }
+
+    /// Get current memory stats and pressure level
+    ///
+    /// Returns (current_memory_mb, pressure_level) tuple
+    pub async fn memory_stats(&self) -> (usize, MemoryPressure) {
+        let mut monitor = self.memory_monitor.write().await;
+        let current_mb = monitor.current_memory_mb();
+        let pressure = monitor.check_memory_pressure();
+        (current_mb, pressure)
     }
 }
 
