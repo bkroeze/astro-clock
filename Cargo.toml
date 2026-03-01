@@ -21,6 +21,7 @@ bigdecimal = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 swiss-eph = "0.2.1"
+sysinfo = "0.30"
 image-webp = "0.2.4"
 png = "0.17"
 lru = "0.12"
