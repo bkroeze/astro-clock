@@ -8,6 +8,25 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** — Phases 1-4 (shipped 2026-03-01) — [Archive](milestones/v1.0-ROADMAP.md)
+- 🚧 **v1.1 Job System** — Phases 5-8 (in planning)
+
+---
+
+## Phases
+
+### v1.0 (Shipped)
+
+- [x] **Phase 1: Database Schema** — TimescaleDB hypertables and migrations
+- [x] **Phase 2: Data Loading** — Chunk-based loading with LRU cache
+- [x] **Phase 3: Query System** — Electoral astrology queries
+- [x] **Phase 4: Performance** — Optimization and benchmarking
+
+### v1.1 (Planned)
+
+- [ ] **Phase 5: Job Infrastructure** — Job tables, state machine, sync/async executor
+- [ ] **Phase 6: Data Loading** — Day-level incremental loading with tracking
+- [ ] **Phase 7: Named Queries** — Wedding, project, travel query templates
+- [ ] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling
 
 ---
 
@@ -52,6 +71,87 @@
 | 2. Data Loading | v1.0 | 4/4 | ✅ Complete | 2026-02-25 |
 | 3. Query System | v1.0 | 3/3 | ✅ Complete | 2026-02-25 |
 | 4. Performance | v1.0 | 6/6 | ✅ Complete | 2026-03-01 |
+| 5. Job Infrastructure | v1.1 | 0/TBD | 📋 Planned | — |
+| 6. Data Loading | v1.1 | 0/TBD | 📋 Planned | — |
+| 7. Named Queries | v1.1 | 0/TBD | 📋 Planned | — |
+| 8. CLI & API Integration | v1.1 | 0/TBD | 📋 Planned | — |
+
+---
+
+## Phase Details
+
+### Phase 5: Job Infrastructure
+**Goal:** Establish foundational job system with state management and dual execution modes
+**Depends on:** Phase 4 (v1.0 foundation)
+**Requirements:** JOB-01, JOB-02, JOB-03, JOB-04, JOB-05, JOB-06, RESULT-01, RESULT-02
+**Success Criteria** (what must be TRUE):
+1. Jobs table exists with state tracking (pending → in-process → complete/failed)
+2. Loaded days table tracks which dates have planetary data
+3. Jobs have unique UUID identifiers stored in database
+4. Jobs persist payload (JSON) and results (JSON) or error details
+5. Synchronous execution blocks until job completes and returns result directly
+6. Asynchronous execution returns job-id immediately for later polling
+**Plans:** TBD
+
+### Phase 6: Data Loading
+**Goal:** Enable day-level incremental loading with intelligent resume capability
+**Depends on:** Phase 5 (job infrastructure)
+**Requirements:** LOAD-06, LOAD-07, LOAD-08, LOAD-09, LOAD-10, RESULT-03, RESULT-04
+**Success Criteria** (what must be TRUE):
+1. CLI command `astro-clock load --start YYYY-MM-DD --days N` works synchronously
+2. API endpoint `POST /api/v1/load` accepts start_date, days, and optional sync flag
+3. Loading skips dates already present in loaded_days tracking table
+4. Loading populates planet_positions, aspects, and lunar_conditions tables
+5. Tracking table records loaded date ranges for resume capability
+6. Failed loading jobs store error code and message for troubleshooting
+**Plans:** TBD
+
+### Phase 7: Named Queries
+**Goal:** Deliver wedding, project, and travel query templates with automatic data loading
+**Depends on:** Phase 6 (data loading)
+**Requirements:** QUERY-06, QUERY-07, QUERY-08, QUERY-09, QUERY-10, QUERY-11, RESULT-05
+**Success Criteria** (what must be TRUE):
+1. Named query "wedding" finds auspicious wedding dates in date range
+2. Named query "project" finds good dates to start projects
+3. Named query "travel" finds favorable travel dates
+4. Named queries accept start_date and days parameters
+5. Named queries automatically load missing data before executing query
+6. Named queries support both sync (block until complete) and async (return job-id) modes
+7. Complete query jobs include results in JSON format
+**Plans:** TBD
+
+### Phase 8: CLI & API Integration
+**Goal:** Expose complete job system through CLI commands and HTTP endpoints
+**Depends on:** Phase 7 (named queries)
+**Requirements:** CLI-01, CLI-02, CLI-03, CLI-04, CLI-05, API-01, API-02, API-03, API-04, API-05, API-06
+**Success Criteria** (what must be TRUE):
+1. CLI command `astro-clock query wedding --start YYYY-MM-DD --days N` returns results
+2. CLI commands exist for project and travel queries with same interface
+3. CLI command `astro-clock job status <job-id>` displays job status and results
+4. CLI command `astro-clock job list` shows recent jobs with statuses
+5. HTTP endpoint `POST /api/v1/query/{wedding,project,travel}` executes named queries
+6. HTTP endpoint `GET /api/v1/jobs/{job-id}` returns job status with payload, result/error, timestamps
+7. HTTP endpoint `GET /api/v1/jobs` lists recent jobs with pagination
+8. Job result responses include status, created_at, completed_at, result (JSON) or error (object)
+**Plans:** TBD
+
+---
+
+## Coverage
+
+**v1.1 Requirements:** 28 total requirements
+
+| Phase | Requirements | Count |
+|-------|--------------|-------|
+| Phase 5 | JOB-01, JOB-02, JOB-03, JOB-04, JOB-05, JOB-06, RESULT-01, RESULT-02 | 8 |
+| Phase 6 | LOAD-06, LOAD-07, LOAD-08, LOAD-09, LOAD-10, RESULT-03, RESULT-04 | 7 |
+| Phase 7 | QUERY-06, QUERY-07, QUERY-08, QUERY-09, QUERY-10, QUERY-11, RESULT-05 | 7 |
+| Phase 8 | CLI-01, CLI-02, CLI-03, CLI-04, CLI-05, API-01, API-02, API-03, API-04, API-05, API-06 | 11 |
+| **Total** | | **33** |
+
+*Note: RESULT requirements appear in multiple phases as they span the job lifecycle*
+
+**Coverage Validation:** ✓ All 28 unique v1.1 requirements mapped
 
 ---
 
