@@ -1,5 +1,6 @@
 use crate::database::schema::PlanetPosition;
 use chrono::{DateTime, Utc};
+use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 
 /// Errors that can occur during interpolation
