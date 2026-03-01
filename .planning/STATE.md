@@ -1,14 +1,14 @@
 # Project State: Astro Clock
 
-**Status:** Milestone complete
-**Last Updated:** 2026-02-25
+**Status:** In Progress
+**Last Updated:** 2026-03-01
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-02-24)
 
 **Core value:** Generate accurate, visually appealing astrological charts from any date/time/location with minimal configuration
-**Current focus:** Phase 3 — Query System (Plan 02 in progress)
+**Current focus:** Phase 4 — Performance Optimization (Plan 02 in progress)
 
 ## Phase Status
 
@@ -16,39 +16,33 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 |-------|--------|--------------|----------|
 | 1 — Database Schema | ✓ Complete | 6 | 100% |
 | 2 — Data Loading | ✓ Complete | 5 | 100% |
-| 3 — Query System | ○ In Progress | 5 | 100% |
-| 4 — Performance | ○ Pending | 4 | 0% |
+| 3 — Query System | ✓ Complete | 5 | 100% |
+| 4 — Performance | ○ In Progress | 4 | 25% |
 
 ## Current Phase
 
-**Phase 3: Query System** ○ IN PROGRESS
+**Phase 4: Performance** ○ IN PROGRESS
 
-Goal: Implement wedding date queries, VoC period queries, and retrograde tracking
+Goal: Memory monitoring, cache management, and interpolation for optimal performance
 
-Requirements: QUERY-01 to QUERY-05 (5 of 5 complete)
+Requirements: PERF-01 to PERF-04 (1 of 4 complete)
 
 **Completed Plans:**
-- ✓ 03-01: Query Types and Error Handling (2026-02-25)
-  - QueryResult<T> wrapper with metadata
-  - WeddingCriteria, VoCCriteria, RetrogradeCriteria validation
-  - Body, AspectType, ZodiacSign domain types
-  - QueryError with thiserror
-- ✓ 03-02: Wedding and VoC Queries (2026-02-25)
-  - Wedding date query with aspect_summaries JOIN (51× faster)
-  - VoC period query with gap-and-island SQL pattern
-  - Retrograde periods table migration (005)
-  - Query module exports and visibility fixes
-- ✓ 03-03: Retrograde, Aspects, and Benchmarks (2026-02-25)
-  - RetrogradePeriod schema type and query (QUERY-03)
-  - Exact aspect search with filtering (QUERY-04)
-  - Performance benchmarks with <100ms verification (QUERY-05)
-  - 51× speedup verification for wedding query
+- ✓ 04-01: Multi-Resolution Chunk Manager (2026-02-28)
+  - Continuous aggregates for 1min/5min/60min resolutions
+  - Resolution selection by body movement speed
+  - MultiResolutionManager with automatic resolution selection
+- ✓ 04-02: Memory Monitoring (2026-03-01)
+  - MemoryMonitor with configurable soft/hard limits
+  - Memory pressure detection (Normal, Elevated, High, Critical)
+  - Default limits: 30MB soft, 50MB hard, 90% eviction threshold
 
 **Pending Plans:**
-- 03-04: Query Caching Layer (optional enhancement)
-- 03-05: API Integration (future phase)
+- 04-03: Interpolation Module
+- 04-04: Cache Eviction Strategies
+- 04-05: ChunkManager Integration
 
-Next step: Phase 4 — Performance Optimization
+Next step: Continue with 04-03 — Interpolation Module
 
 ## Completed Work
 
@@ -122,6 +116,7 @@ None
 15. **[Phase 03-02]: Used gap-and-island pattern for VoC aggregation** — CTE with window function efficiently aggregates contiguous VoC periods
 16. **[Phase 03-03]: Dynamic SQL construction for optional filters** — Used String-based query building instead of query_as! macro to handle variable WHERE clauses for aspect types and body pairs
 17. **[Phase 03-03]: Runtime retrograde status calculation** — Calculate status (Direct, Retrograde, PreShadow, PostShadow) at query time based on date range overlap rather than storing status in database
+18. **[Phase 04-02]: Used sysinfo 0.30 for cross-platform memory monitoring** — Process memory tracking with configurable soft/hard limits for cache eviction decisions
 
 ## Notes
 
@@ -137,10 +132,15 @@ None
   - Retrograde query with status calculation (Direct, Retrograde, PreShadow, PostShadow)
   - Exact aspect query with orb/type/body pair filtering
   - Performance benchmarks verifying <100ms for 60-day ranges
+- Phase 4 in progress: 1 of 4 requirements complete (PERF-02)
+  - Memory monitoring with sysinfo crate
+  - Configurable soft/hard limits (30MB/50MB)
+  - Memory pressure detection for cache eviction
 
 ---
 
 *State tracking started: 2026-02-24*
 *Phase 1 completed: 2026-02-25*
 *Phase 2 completed: 2026-02-25*
-*Phase 3 complete: 2026-02-25*
+*Phase 3 completed: 2026-02-25*
+*Phase 4 started: 2026-03-01*
