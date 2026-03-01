@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
 **Status:** v1.1 Planning — Roadmap created
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-01T15:41:25Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 5 — Job Infrastructure
-**Plan:** TBD (awaiting `/gsd-plan-phase 5`)
-**Status:** Ready to begin planning
+**Plan:** 02 (awaiting execution)
+**Status:** Plan 01 complete — 2 of 3 plans remaining
 
 ---
 
@@ -36,7 +36,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 | Phase | Status | Requirements | Progress | Dependencies |
 |-------|--------|--------------|----------|--------------|
-| 5 — Job Infrastructure | 📋 Planned | 8 | 0% | Phase 4 (complete) |
+| 5 — Job Infrastructure | 🚧 In Progress | 8 | 25% (2/8) | Phase 4 (complete) |
 | 6 — Data Loading | 📋 Planned | 7 | 0% | Phase 5 |
 | 7 — Named Queries | 📋 Planned | 7 | 0% | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
@@ -46,9 +46,9 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Progress Bar
 
 ```
-v1.1 Progress: [░░░░░░░░░░░░░░░░░░░░] 0% (0/28 requirements)
+v1.1 Progress: [░░░░░░░░░░░░░░░░░░░░] 7% (2/28 requirements)
 
-Phase 5: [░░░░░░░░░░░░░░░░░░░░] 0%
+Phase 5: [████░░░░░░░░░░░░░░░░] 25% (2/8)
 Phase 6: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 7: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
@@ -58,9 +58,12 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 
 ## Decisions Log
 
-### v1.1 Decisions (Pending)
+### v1.1 Decisions
 
-None yet — planning phase.
+1. **CHECK constraints for status validation** (05-01) — Data integrity at database level prevents invalid status values
+2. **JSONB for flexible job parameters** (05-01) — Payload, result, error use JSONB to accommodate different job types without schema changes
+3. **coverage_minutes range (0-1440)** (05-01) — Validates that a day cannot have more than 1440 minutes of data
+4. **ON DELETE SET NULL for traceability** (05-01) — When jobs are deleted, loaded_days entries retain dates but lose traceability
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -117,19 +120,22 @@ None — ready to begin Phase 5 planning.
 
 ## Next Steps
 
-1. Run `/gsd-plan-phase 5` to create detailed plan for Job Infrastructure
-2. Review and approve Phase 5 plan
-3. Execute Phase 5 plans
-4. Repeat for Phases 6, 7, 8
+1. Execute 05-02: Job types and repository implementation
+2. Execute 05-03: Job executor and worker infrastructure
+3. Move to Phase 6: Data Loading
+4. Continue with Phases 7, 8
 
 ---
 
 ## Session Continuity
 
+**Last Session:** 2026-03-01 — Completed 05-01: Job System Database Schema
+**Stopped At:** Completed 05-01-PLAN.md
+
 **For Next Session:**
-- ROADMAP.md has complete phase structure for v1.1
-- REQUIREMENTS.md has updated traceability
-- Ready to start planning Phase 5 (Job Infrastructure)
+- Database schema created (migrations 008, 009)
+- strum dependencies available for JobStatus enum derives
+- Ready for 05-02: Job types and repository implementation
 - Key context: Custom job queue using sqlx + PostgreSQL, dual connection pools, spawn_blocking pattern
 
 ---
