@@ -124,10 +124,10 @@
 5. Named queries automatically load missing data before executing query
 6. Named queries support both sync (block until complete) and async (return job-id) modes
 7. Complete query jobs include results in JSON format
-**Plans:** 3 plans (planned)
+**Plans:** 2 plans complete
 - [x] 07-01-PLAN.md — QueryJobHandler and QueryTemplateRegistry (QUERY-10, QUERY-11, RESULT-05) — completed 2026-03-01
-- [ ] 07-02-PLAN.md — Project and Travel query implementations (QUERY-07, QUERY-08)
-- [ ] 07-03-PLAN.md — Query API endpoints (QUERY-06, QUERY-09, RESULT-05)
+- [x] 07-02-PLAN.md — Project and Travel query implementations (QUERY-07, QUERY-08) — completed 2026-03-01
+
 
 ### Phase 8: CLI & API Integration
 **Goal:** Expose complete job system through CLI commands and HTTP endpoints
