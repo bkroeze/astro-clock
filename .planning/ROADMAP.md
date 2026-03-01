@@ -1,7 +1,7 @@
 # Roadmap: Astro Clock
 
 **Created:** 2026-02-24
-**Last Updated:** 2026-03-01T22:55:27Z
+**Last Updated:** 2026-03-01T23:52:54Z
 
 ---
 
@@ -25,7 +25,7 @@
 
 - [x] **Phase 5: Job Infrastructure** — Job tables, state machine, sync/async executor
 - [x] **Phase 6: Data Loading** — Day-level incremental loading with tracking
-- [ ] **Phase 7: Named Queries** — Wedding, project, travel query templates
+- [🔄] **Phase 7: Named Queries** — Wedding, project, travel query templates (2/2 complete)
 - [ ] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling
 
 ---
@@ -73,7 +73,7 @@
 | 4. Performance | v1.0 | 6/6 | ✅ Complete | 2026-03-01 |
 | 5. Job Infrastructure | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
 | 6. Data Loading | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
-| 7. Named Queries | v1.1 | 0/TBD | 📋 Planned | — |
+| 7. Named Queries | v1.1 | 1/3 | 🔄 In Progress | — |
 | 8. CLI & API Integration | v1.1 | 0/TBD | 📋 Planned | — |
 
 ---
@@ -125,7 +125,7 @@
 6. Named queries support both sync (block until complete) and async (return job-id) modes
 7. Complete query jobs include results in JSON format
 **Plans:** 3 plans (planned)
-- [ ] 07-01-PLAN.md — QueryJobHandler and QueryTemplateRegistry (QUERY-10, QUERY-11, RESULT-05)
+- [x] 07-01-PLAN.md — QueryJobHandler and QueryTemplateRegistry (QUERY-10, QUERY-11, RESULT-05) — completed 2026-03-01
 - [ ] 07-02-PLAN.md — Project and Travel query implementations (QUERY-07, QUERY-08)
 - [ ] 07-03-PLAN.md — Query API endpoints (QUERY-06, QUERY-09, RESULT-05)
 
