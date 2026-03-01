@@ -96,6 +96,8 @@ Next step: Phase 4 — Performance Optimization
 - [Phase 02-data-loading]: Fire-and-forget background database persistence — Database writes happen in tokio::spawn after returning chunk, ensuring low latency
 - [Phase 02-data-loading]: Spawn pre-fetching in dedicated task to avoid Send bound issues — Recursive async calls create Send bound problems with tokio::spawn; internal task spawning in pre_fetch_adjacent_chunks solves this cleanly
 - [Phase 02-data-loading]: AtomicU64 with Relaxed ordering for statistics — Statistics are for monitoring only, so strict memory ordering isn't required. Relaxed ordering provides better performance than SeqCst.
+- [Phase 04-performance]: Used last() aggregation for continuous aggregates to capture most recent value in each bucket
+- [Phase 04-performance]: Resolution mapping by body movement speed: Moon at 1-minute, inner planets at 5-minute, outer planets at 60-minute
 
 ## Blockers
 
