@@ -567,3 +567,285 @@ pub const ALL_ASPECT_TYPES: [AspectType; 5] = [
     AspectType::Trine,
     AspectType::Opposition,
 ];
+
+// ============================================================================
+// PROJECT AND TRAVEL QUERY TYPES (QUERY-07, QUERY-08)
+// ============================================================================
+
+/// Purpose of travel (for future extensibility)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TravelPurpose {
+    Business,
+    Leisure,
+    Relocation,
+}
+
+/// Criteria for project date queries (QUERY-07)
+#[derive(Debug, Clone)]
+pub struct ProjectCriteria {
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub limit: usize,
+}
+
+impl ProjectCriteria {
+    /// Create new project criteria with defaults
+    pub fn new(start_date: NaiveDate, end_date: NaiveDate) -> Self {
+        Self {
+            start_date,
+            end_date,
+            limit: 10,
+        }
+    }
+
+    /// Set result limit
+    pub fn with_limit(mut self, limit: usize) -> Self {
+        self.limit = limit;
+        self
+    }
+
+    /// Validate criteria
+    pub fn validate(&self) -> Result<(), QueryError> {
+        if self.start_date > self.end_date {
+            return Err(QueryError::InvalidCriteria(
+                "Start date must be before end date".to_string(),
+            ));
+        }
+
+        let max_range = Duration::days(365);
+        let date_range = self.end_date.signed_duration_since(self.start_date);
+        if date_range > max_range {
+            return Err(QueryError::InvalidCriteria(
+                "Date range cannot exceed 1 year".to_string(),
+            ));
+        }
+
+        if self.limit == 0 || self.limit > 1000 {
+            return Err(QueryError::InvalidCriteria(
+                "Limit must be between 1 and 1000".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+/// Criteria for travel date queries (QUERY-08)
+#[derive(Debug, Clone)]
+pub struct TravelCriteria {
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub limit: usize,
+    pub purpose: Option<TravelPurpose>,
+}
+
+impl TravelCriteria {
+    /// Create new travel criteria with defaults
+    pub fn new(start_date: NaiveDate, end_date: NaiveDate) -> Self {
+        Self {
+            start_date,
+            end_date,
+            limit: 10,
+            purpose: None,
+        }
+    }
+
+    /// Set result limit
+    pub fn with_limit(mut self, limit: usize) -> Self {
+        self.limit = limit;
+        self
+    }
+
+    /// Set travel purpose
+    pub fn with_purpose(mut self, purpose: TravelPurpose) -> Self {
+        self.purpose = Some(purpose);
+        self
+    }
+
+    /// Validate criteria
+    pub fn validate(&self) -> Result<(), QueryError> {
+        if self.start_date > self.end_date {
+            return Err(QueryError::InvalidCriteria(
+                "Start date must be before end date".to_string(),
+            ));
+        }
+
+        let max_range = Duration::days(365);
+        let date_range = self.end_date.signed_duration_since(self.start_date);
+        if date_range > max_range {
+            return Err(QueryError::InvalidCriteria(
+                "Date range cannot exceed 1 year".to_string(),
+            ));
+        }
+
+        if self.limit == 0 || self.limit > 1000 {
+            return Err(QueryError::InvalidCriteria(
+                "Limit must be between 1 and 1000".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+/// Project date candidate result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectCandidate {
+    pub datetime: DateTime<Utc>,
+    pub moon_sign: ZodiacSign,
+    pub mercury_direct: bool,
+    pub favorable_aspects: i16,
+}
+
+/// Travel date candidate result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TravelCandidate {
+    pub datetime: DateTime<Utc>,
+    pub moon_sign: ZodiacSign,
+    pub mercury_direct: bool,
+    pub moon_void_of_course: bool,
+    pub favorable_aspects: i16,
+}
+
+/// Favorable Moon signs for starting projects (avoid Scorpio, Capricorn)
+pub const FAVORABLE_PROJECT_SIGNS: [ZodiacSign; 7] = [
+    ZodiacSign::Taurus,
+    ZodiacSign::Cancer,
+    ZodiacSign::Leo,
+    ZodiacSign::Libra,
+    ZodiacSign::Aquarius,
+    ZodiacSign::Pisces,
+    ZodiacSign::Aries,
+];
+
+/// Favorable Moon signs for travel (same as wedding but exclude Scorpio/Capricorn)
+pub const FAVORABLE_TRAVEL_SIGNS: [ZodiacSign; 7] = [
+    ZodiacSign::Taurus,
+    ZodiacSign::Cancer,
+    ZodiacSign::Leo,
+    ZodiacSign::Libra,
+    ZodiacSign::Aquarius,
+    ZodiacSign::Pisces,
+    ZodiacSign::Gemini,
+];
+
+// ============================================================================
+// UNIT TESTS
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_project_criteria_validation() {
+        // Valid criteria
+        let criteria = ProjectCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+        );
+        assert!(criteria.validate().is_ok());
+
+        // Invalid: start after end
+        let invalid = ProjectCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+        );
+        assert!(invalid.validate().is_err());
+
+        // Invalid: range too large
+        let too_large = ProjectCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(),
+        );
+        assert!(too_large.validate().is_err());
+
+        // Invalid: limit too large
+        let bad_limit = ProjectCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+        )
+        .with_limit(1001);
+        assert!(bad_limit.validate().is_err());
+
+        // Invalid: limit zero
+        let zero_limit = ProjectCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+        )
+        .with_limit(0);
+        assert!(zero_limit.validate().is_err());
+    }
+
+    #[test]
+    fn test_travel_criteria_validation() {
+        // Valid criteria
+        let criteria = TravelCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+        )
+        .with_purpose(TravelPurpose::Business);
+        assert!(criteria.validate().is_ok());
+
+        // Invalid: start after end
+        let invalid = TravelCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 2, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+        );
+        assert!(invalid.validate().is_err());
+
+        // Invalid: range too large
+        let too_large = TravelCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2025, 6, 1).unwrap(),
+        );
+        assert!(too_large.validate().is_err());
+
+        // Valid: limit within bounds
+        let valid_limit = TravelCriteria::new(
+            NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+        )
+        .with_limit(100);
+        assert!(valid_limit.validate().is_ok());
+    }
+
+    #[test]
+    fn test_candidate_serialization() {
+        let project = ProjectCandidate {
+            datetime: Utc::now(),
+            moon_sign: ZodiacSign::Taurus,
+            mercury_direct: true,
+            favorable_aspects: 5,
+        };
+
+        let json = serde_json::to_string(&project).unwrap();
+        assert!(json.contains("Taurus"));
+
+        let travel = TravelCandidate {
+            datetime: Utc::now(),
+            moon_sign: ZodiacSign::Cancer,
+            mercury_direct: true,
+            moon_void_of_course: false,
+            favorable_aspects: 3,
+        };
+
+        let json = serde_json::to_string(&travel).unwrap();
+        assert!(json.contains("Cancer"));
+    }
+
+    #[test]
+    fn test_favorable_signs_constants() {
+        // Verify project signs don't include Scorpio or Capricorn
+        assert!(!FAVORABLE_PROJECT_SIGNS.contains(&ZodiacSign::Scorpio));
+        assert!(!FAVORABLE_PROJECT_SIGNS.contains(&ZodiacSign::Capricorn));
+
+        // Verify travel signs don't include Scorpio or Capricorn
+        assert!(!FAVORABLE_TRAVEL_SIGNS.contains(&ZodiacSign::Scorpio));
+        assert!(!FAVORABLE_TRAVEL_SIGNS.contains(&ZodiacSign::Capricorn));
+
+        // Verify both include Taurus (should be favorable for both)
+        assert!(FAVORABLE_PROJECT_SIGNS.contains(&ZodiacSign::Taurus));
+        assert!(FAVORABLE_TRAVEL_SIGNS.contains(&ZodiacSign::Taurus));
+    }
+}
