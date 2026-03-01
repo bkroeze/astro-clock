@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
-**Status:** v1.1 Planning — Roadmap created
-**Last Updated:** 2026-03-01T15:46:32Z
+**Status:** Milestone complete
+**Last Updated:** 2026-03-01T22:48:23Z
 
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Current Position
 
 **Milestone:** v1.1 Job System
-**Phase:** 5 — Job Infrastructure
-**Plan:** 03 (completed)
-**Status:** Plan 03 complete — All 3 plans complete — Phase 5 complete
+**Phase:** 6 — Data Loading
+**Plan:** 01 (completed)
+**Status:** Plan 01 complete — LoadJobHandler implemented — 1/3 plans complete in Phase 6
 
 ---
 
@@ -37,7 +37,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 | Phase | Status | Requirements | Progress | Dependencies |
 |-------|--------|--------------|----------|--------------|
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
-| 6 — Data Loading | 📋 Planned | 7 | 0% | Phase 5 |
+| 6 — Data Loading | 🚧 In Progress | 7 | 43% (3/7) | Phase 5 |
 | 7 — Named Queries | 📋 Planned | 7 | 0% | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
 
@@ -46,10 +46,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Progress Bar
 
 ```
-v1.1 Progress: [████████░░░░░░░░░░░░] 29% (8/28 requirements)
+v1.1 Progress: [██████████░░░░░░░░░░] 39% (11/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
-Phase 6: [░░░░░░░░░░░░░░░░░░░░] 0%
+Phase 6: [██████░░░░░░░░░░░░░░] 43% (3/7)
 Phase 7: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 ```
@@ -70,6 +70,10 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 8. **spawn_blocking for CPU-intensive work** (05-03) — Swiss Ephemeris FFI calls run in spawn_blocking to avoid blocking async runtime
 9. **Dual execution modes** (05-03) — execute_sync for CLI (blocking), execute_async for API (background with job-id)
 10. **Handler registry pattern** (05-03) — Arc<dyn JobHandler> registered by JobType in HashMap for pluggable handlers
+11. **Pool storage strategy** (06-01) — Store Pool<Postgres> in handler, create DatabasePool on demand for compatibility with both repository types
+12. **Sequential day processing** (06-01) — Process days sequentially within job for Swiss Ephemeris thread safety
+13. **Partial success handling** (06-01) — Mark job Complete if >=1 day loaded, Failed only if 0 progress
+14. **Feature-gated handlers** (06-01) — #[cfg(feature = "db")] on handler modules for clean compilation
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -109,6 +113,8 @@ src/jobs/
 - `FOR UPDATE SKIP LOCKED` for race-free job claiming
 - `spawn_blocking` + oneshot channel for CPU-intensive work
 - Transactionally-staged job drains to prevent race conditions
+- **Handler orchestration pattern**: Handler coordinates repositories/generators, implements JobHandler trait
+- **Structured job results**: Type-safe JSON results using serde-serializable structs
 
 ### Performance Constraints
 
@@ -134,15 +140,15 @@ None — ready to begin Phase 5 planning.
 
 ## Session Continuity
 
-**Last Session:** 2026-03-01 — Completed 05-03: Job Executor
-**Stopped At:** Completed 05-03-PLAN.md
+**Last Session:** 2026-03-01 — Completed 06-01: LoadJobHandler
+**Stopped At:** Completed 06-01-PLAN.md
 
 **For Next Session:**
-- JobExecutor with sync/async execution modes complete
-- JobHandler trait defined for pluggable handlers
-- spawn_blocking + oneshot pattern for CPU-intensive work
-- Ready for Phase 6: Data Loading (LoadJobHandler)
-- Key context: Handler registration, dual execution modes, background job processing
+- LoadJobHandler complete with gap detection and resume capability
+- Handler orchestration pattern established
+- Ready for Phase 6 Plan 2: CLI integration for load command
+- Ready for Phase 6 Plan 3: API endpoint for load jobs
+- Key context: LoadJobHandler, ChunkGenerator integration, structured job results
 
 ---
 

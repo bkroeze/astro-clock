@@ -10,9 +10,9 @@
 //!
 //! # Example
 //!
-//! ```rust
-//! use crate::jobs::handlers::LoadJobHandler;
-//! use crate::jobs::executor::JobExecutor;
+//! ```rust,ignore
+//! use astro_clock::jobs::{LoadJobHandler, JobExecutor};
+//! use std::sync::Arc;
 //!
 //! // Create handlers
 //! let load_handler = Arc::new(LoadJobHandler::new(pool.clone()));
