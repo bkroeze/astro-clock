@@ -12,6 +12,8 @@ pub mod server;
 #[cfg(feature = "db")]
 pub mod database;
 #[cfg(feature = "db")]
+pub mod jobs;
+#[cfg(feature = "db")]
 pub mod queries;
 
 pub mod swiss_eph_impl;

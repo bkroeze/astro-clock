@@ -2,11 +2,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use sqlx::FromRow;
-use std::fmt;
 use uuid::Uuid;
 
 /// Job types supported by the system
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, strum_macros::Display)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, strum_macros::Display,
+)]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum JobType {
@@ -45,12 +46,6 @@ impl JobStatus {
                 | (JobStatus::InProcess, JobStatus::Complete)
                 | (JobStatus::InProcess, JobStatus::Failed)
         )
-    }
-}
-
-impl fmt::Display for JobStatus {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.as_ref())
     }
 }
 

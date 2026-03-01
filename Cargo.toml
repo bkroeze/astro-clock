@@ -27,6 +27,8 @@ png = "0.17"
 lru = "0.12"
 strum = "0.28"
 strum_macros = "0.28"
+async-trait = "0.1"
+uuid = { version = "1", features = ["v4", "serde"] }
 
 [features]
 default = []
@@ -35,7 +37,7 @@ db = ["sqlx", "chrono/serde"]
 [dependencies.sqlx]
 version = "0.8"
 optional = true
-features = ["runtime-tokio", "postgres", "macros", "chrono"]
+features = ["runtime-tokio", "postgres", "macros", "chrono", "uuid"]
 default-features = false
 
 [dev-dependencies]

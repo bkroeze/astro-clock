@@ -148,7 +148,7 @@ impl JobRepository {
         
         if let Some(s) = status {
             query.push(" WHERE status = ");
-            query.push_bind(s.as_ref());
+            query.push_bind(s.to_string());
         }
         
         query.push(" ORDER BY created_at DESC LIMIT ");
