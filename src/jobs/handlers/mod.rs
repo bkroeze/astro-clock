@@ -23,4 +23,4 @@
 
 pub mod load;
 
-pub use load::LoadJobHandler;
+pub use load::{LoadJobHandler, LoadJobResult};

@@ -91,6 +91,21 @@ pub enum Commands {
         #[arg(long, value_name = "SYSTEM")]
         house: Option<String>,
     },
+
+    /// Load planetary data for a date range
+    Load {
+        /// Start date (YYYY-MM-DD)
+        #[arg(long, value_name = "DATE")]
+        start: String,
+
+        /// Number of days to load (1-365)
+        #[arg(long, value_name = "N")]
+        days: i64,
+
+        /// Execute synchronously and wait for completion
+        #[arg(long)]
+        sync: bool,
+    },
 }
 
 #[derive(Debug)]
@@ -307,6 +322,128 @@ impl App {
                 let server = crate::server::Server::new(host.clone(), *port);
                 tokio::runtime::Runtime::new()?.block_on(async { server.run().await })?;
                 Ok(())
+            }
+            Commands::Load { start, days, sync } => {
+                tracing::info!("Running data load mode: start={}, days={}, sync={}", start, days, sync);
+
+                // Validate date format
+                let _start_date = chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d")
+                    .map_err(|_| crate::errors::Error::Config(
+                        format!("Invalid date format: {}. Expected YYYY-MM-DD", start)
+                    ))?;
+
+                // Validate days range
+                if *days < 1 || *days > 365 {
+                    return Err(crate::errors::Error::Config(
+                        format!("Days must be between 1 and 365, got {}", days)
+                    ));
+                }
+
+                // Check if db feature is enabled
+                #[cfg(feature = "db")]
+                {
+                    use crate::database::pool::DatabasePool;
+                    use crate::jobs::executor::JobExecutor;
+                    use crate::jobs::handlers::LoadJobHandler;
+                    use crate::jobs::repository::JobRepository;
+                    use crate::jobs::types::JobType;
+                    use serde_json::json;
+
+                    // Get database URL from environment or config
+                    let db_url = std::env::var("DATABASE_URL")
+                        .unwrap_or_else(|_| config.database.url.clone());
+
+                    // Create database pool
+                    let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
+                        DatabasePool::connect(&db_url).await
+                            .map_err(|e| crate::errors::Error::Config(
+                                format!("Failed to connect to database: {}", e)
+                            ))
+                    })?;
+
+                    let pool = db_pool.pool().clone();
+
+                    // Create repositories and handler
+                    let job_repo = JobRepository::new(pool.clone());
+                    let load_handler = LoadJobHandler::new(pool);
+
+                    // Create executor with the load handler
+                    let executor = JobExecutor::new(
+                        job_repo,
+                        vec![std::sync::Arc::new(load_handler)],
+                        "cli-worker".to_string(),
+                    );
+
+                    // Build payload
+                    let payload = json!({
+                        "start_date": start,
+                        "days": days
+                    });
+
+                    // Execute based on sync flag
+                    if *sync {
+                        println!("Loading planetary data for {} days starting from {}...", days, start);
+                        
+                        let result = tokio::runtime::Runtime::new()?.block_on(async {
+                            executor.execute_sync(JobType::Load, payload).await
+                        });
+
+                        match result {
+                            Ok(job) => {
+                                if let Some(ref result) = job.result {
+                                    // Parse the result JSON
+                                    if let Ok(load_result) = serde_json::from_value::<crate::jobs::handlers::LoadJobResult>(result.clone()) {
+                                        println!("\n✓ Load completed successfully");
+                                        println!("  Dates loaded: {}", load_result.dates_loaded);
+                                        println!("  Dates skipped: {}", load_result.dates_skipped);
+                                        println!("  Dates failed: {}", load_result.dates_failed);
+                                        println!("  Total positions: {}", load_result.total_positions);
+                                        println!("  Total aspects: {}", load_result.total_aspects);
+                                        println!("  Total lunar conditions: {}", load_result.total_lunar_conditions);
+                                        
+                                        if !load_result.failed.is_empty() {
+                                            println!("\nFailed dates:");
+                                            for failure in &load_result.failed {
+                                                println!("  - {}: {}", failure.date, failure.error);
+                                            }
+                                        }
+                                    } else {
+                                        println!("✓ Load completed: {:?}", job.result);
+                                    }
+                                } else if let Some(error) = job.error {
+                                    println!("✗ Load failed: {:?}", error);
+                                }
+                            }
+                            Err(e) => {
+                                return Err(crate::errors::Error::Chart(format!("Load failed: {}", e)));
+                            }
+                        }
+                    } else {
+                        let job_id = tokio::runtime::Runtime::new()?.block_on(async {
+                            executor.execute_async(JobType::Load, payload).await
+                        });
+
+                        match job_id {
+                            Ok(id) => {
+                                println!("Load job started in background");
+                                println!("Job ID: {}", id);
+                                println!("Poll status: /api/v1/jobs/{}", id);
+                            }
+                            Err(e) => {
+                                return Err(crate::errors::Error::Chart(format!("Failed to start load job: {}", e)));
+                            }
+                        }
+                    }
+
+                    Ok(())
+                }
+
+                #[cfg(not(feature = "db"))]
+                {
+                    Err(crate::errors::Error::Config(
+                        "Database support not enabled. Build with --features db to use the load command.".to_string()
+                    ))
+                }
             }
         }
     }

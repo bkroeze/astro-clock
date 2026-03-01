@@ -18,4 +18,4 @@ pub use types::{Job, JobStatus, JobType};
 
 // Re-export handlers (only available with db feature)
 #[cfg(feature = "db")]
-pub use handlers::LoadJobHandler;
+pub use handlers::{LoadJobHandler, LoadJobResult};
