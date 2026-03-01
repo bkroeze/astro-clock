@@ -9,9 +9,9 @@
 
 - [x] **JOB-01**: Create jobs table for tracking job state (pending, in-process, complete, failed)
 - [x] **JOB-02**: Create loaded_days tracking table for incremental data loading
-- [ ] **JOB-03**: Job states: pending → in-process → (complete | failed)
-- [ ] **JOB-04**: Jobs have unique job-id (UUID or sequential)
-- [ ] **JOB-05**: Jobs store payload (parameters), result (JSON), error details on failure
+- [x] **JOB-03**: Job states: pending → in-process → (complete | failed)
+- [x] **JOB-04**: Jobs have unique job-id (UUID or sequential)
+- [x] **JOB-05**: Jobs store payload (parameters), result (JSON), error details on failure
 - [ ] **JOB-06**: Support both synchronous and asynchronous execution modes
 
 ### Data Loading

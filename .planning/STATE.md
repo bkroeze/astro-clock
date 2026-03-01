@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
 **Status:** v1.1 Planning — Roadmap created
-**Last Updated:** 2026-03-01T15:41:25Z
+**Last Updated:** 2026-03-01T15:46:32Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 5 — Job Infrastructure
-**Plan:** 02 (awaiting execution)
-**Status:** Plan 01 complete — 2 of 3 plans remaining
+**Plan:** 02 (completed)
+**Status:** Plan 02 complete — 1 of 3 plans remaining
 
 ---
 
@@ -36,7 +36,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 | Phase | Status | Requirements | Progress | Dependencies |
 |-------|--------|--------------|----------|--------------|
-| 5 — Job Infrastructure | 🚧 In Progress | 8 | 25% (2/8) | Phase 4 (complete) |
+| 5 — Job Infrastructure | 🚧 In Progress | 8 | 62% (5/8) | Phase 4 (complete) |
 | 6 — Data Loading | 📋 Planned | 7 | 0% | Phase 5 |
 | 7 — Named Queries | 📋 Planned | 7 | 0% | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
@@ -46,9 +46,9 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Progress Bar
 
 ```
-v1.1 Progress: [░░░░░░░░░░░░░░░░░░░░] 7% (2/28 requirements)
+v1.1 Progress: [██████░░░░░░░░░░░░░░] 18% (5/28 requirements)
 
-Phase 5: [████░░░░░░░░░░░░░░░░] 25% (2/8)
+Phase 5: [████████████░░░░░░░░] 62% (5/8)
 Phase 6: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 7: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
@@ -64,6 +64,9 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 2. **JSONB for flexible job parameters** (05-01) — Payload, result, error use JSONB to accommodate different job types without schema changes
 3. **coverage_minutes range (0-1440)** (05-01) — Validates that a day cannot have more than 1440 minutes of data
 4. **ON DELETE SET NULL for traceability** (05-01) — When jobs are deleted, loaded_days entries retain dates but lose traceability
+5. **String-Enum Bridge Pattern** (05-02) — DB uses strings for job_type/status, domain uses enums with parse methods for sqlx compatibility
+6. **FOR UPDATE SKIP LOCKED** (05-02) — PostgreSQL row-level locking pattern ensures race-free job claiming across multiple workers
+7. **State machine validation in code** (05-02) — JobStatus::can_transition_to validates state transitions before database updates
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -120,23 +123,23 @@ None — ready to begin Phase 5 planning.
 
 ## Next Steps
 
-1. Execute 05-02: Job types and repository implementation
-2. Execute 05-03: Job executor and worker infrastructure
-3. Move to Phase 6: Data Loading
-4. Continue with Phases 7, 8
+1. Execute 05-03: Job executor and worker infrastructure
+2. Move to Phase 6: Data Loading
+3. Continue with Phases 7, 8
 
 ---
 
 ## Session Continuity
 
-**Last Session:** 2026-03-01 — Completed 05-01: Job System Database Schema
-**Stopped At:** Completed 05-01-PLAN.md
+**Last Session:** 2026-03-01 — Completed 05-02: Job Types and Repository Layer
+**Stopped At:** Completed 05-02-PLAN.md
 
 **For Next Session:**
-- Database schema created (migrations 008, 009)
-- strum dependencies available for JobStatus enum derives
-- Ready for 05-02: Job types and repository implementation
-- Key context: Custom job queue using sqlx + PostgreSQL, dual connection pools, spawn_blocking pattern
+- Job types created (Job, JobType, JobStatus with state machine)
+- JobRepository with race-free claiming (FOR UPDATE SKIP LOCKED)
+- LoadedDaysRepository for date range tracking
+- Ready for 05-03: Job executor and worker infrastructure
+- Key context: Job state machine validation, repository patterns, JSONB handling
 
 ---
 
