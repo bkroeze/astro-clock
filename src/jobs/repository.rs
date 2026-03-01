@@ -16,6 +16,11 @@ impl JobRepository {
         Self { pool }
     }
 
+    /// Get reference to the connection pool
+    pub fn pool(&self) -> &Pool<Postgres> {
+        &self.pool
+    }
+
     /// Create a new job in pending status
     pub async fn create_job(
         &self,
