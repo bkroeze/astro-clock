@@ -1,7 +1,6 @@
 //! Automated benchmark runner with regression detection and alerting
 
 use chrono::{DateTime, Utc};
-use rust_decimal::Decimal;
 use tracing::{error, info, warn};
 
 use crate::database::pool::DatabasePool;
@@ -194,12 +193,13 @@ impl BenchmarkRunner {
         .bind(run.wedding_query_ms as i64)
         .bind(run.voc_query_ms as i64)
         .bind(run.aspect_query_ms as i64)
-        .bind(Decimal::from_f64_retain(run.wedding_speedup).unwrap_or_default())
+        // Using f64 for DECIMAL columns - PostgreSQL will cast automatically
+        .bind(run.wedding_speedup)
         .bind(run.speedup_target_met)
         .bind(run.memory_used_mb as i64)
         .bind(format!("{:?}", run.memory_pressure))
         .bind(self.config.wedding_baseline_ms as i64)
-        .bind(run.degradation_pct.map(|d| Decimal::from_f64_retain(d).unwrap_or_default()))
+        .bind(run.degradation_pct)
         .bind(run.alert_level.as_str())
         .execute(self.pool.pool())
         .await?;
