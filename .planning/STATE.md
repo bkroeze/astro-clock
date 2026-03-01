@@ -1,7 +1,7 @@
 # Project State: Astro Clock
 
 **Status:** In Progress
-**Last Updated:** 2026-03-01 (Phase 4 complete)
+**Last Updated:** 2026-03-01 (Phase 4, Plan 6 complete)
 
 ## Project Reference
 
@@ -49,6 +49,10 @@ Requirements: PERF-01 to PERF-04 (4 of 4 complete)
   - Degradation alerts at 20% (WARN) and 50% (ERROR)
   - TimescaleDB hypertable for benchmark history
   - 51× speedup verification and tracking
+- ✓ 04-06: Aspect Filtering Gap Closure (2026-03-01)
+  - Integrated is_major_aspect() into calculate_aspects()
+  - ~80% storage reduction through major aspect filtering
+  - No dead code warnings
 
 **Pending Plans:**
 None — Phase 4 complete
@@ -132,6 +136,7 @@ None
 20. **[Phase 04-03]: Used 8° orb for major aspect filtering** — Matches standard astrological conventions while reducing storage by ~80%
 21. **[Phase 04-03]: Shortest-path interpolation for longitude** — Handles 360° wraparound correctly (e.g., 350° to 10° goes forward through 360°)
 22. **[Phase 04-04]: Use f64 for DECIMAL bindings in sqlx** — PostgreSQL auto-casts f64 to DECIMAL, avoiding rust_decimal's lack of sqlx Encode/Type traits
+23. **[Phase 04-06]: Moved MAJOR_ASPECT_ANGLES inside is_major_aspect()** — Eliminates dead code warning while keeping the filtering logic self-contained
 
 ## Notes
 
