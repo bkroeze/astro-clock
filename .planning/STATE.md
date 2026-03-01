@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
-**Status:** Milestone complete
-**Last Updated:** 2026-03-01T22:55:27Z
+**Status:** Phase 7 in progress
+**Last Updated:** 2026-03-01T23:52:54Z
 
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Current Position
 
 **Milestone:** v1.1 Job System
-**Phase:** 6 — Data Loading
-**Plan:** 03 (completed)
-**Status:** Plan 03 complete — HTTP API endpoints for load jobs — 3/3 plans complete in Phase 6
+**Phase:** 7 — Named Queries
+**Plan:** 02 (completed)
+**Status:** Plan 01 complete — QueryJobHandler and QueryTemplateRegistry — 1/3 plans complete in Phase 7
 
 ---
 
@@ -38,7 +38,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 |-------|--------|--------------|----------|--------------|
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
 | 6 — Data Loading | ✅ Complete | 7 | 100% (7/7) | Phase 5 |
-| 7 — Named Queries | 📋 Planned | 7 | 0% | Phase 6 |
+| 7 — Named Queries | 🔄 In Progress | 7 | 14% (1/7) | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
 
 ---
@@ -46,11 +46,11 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Progress Bar
 
 ```
-v1.1 Progress: [████████████░░░░░░░░] 46% (13/28 requirements)
+v1.1 Progress: [█████████████░░░░░░░] 50% (14/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
 Phase 6: [████████████████████] 100% (7/7)
-Phase 7: [░░░░░░░░░░░░░░░░░░░░] 0%
+Phase 7: [█████░░░░░░░░░░░░░░░] 14% (1/7)
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 ```
 
@@ -79,6 +79,9 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 17. **impl IntoResponse for handlers** (06-03) — Cleaner handler signatures than Result<impl IntoResponse, StatusCode>
 18. **Validate in handler before executor** (06-03) — Fast failure for bad input with clear 400 responses
 19. **AppState with accessor methods** (06-03) — Private fields with executor() and get_pool() accessors
+20. **Clone pool and payload before async blocks** (07-02) — Resolve lifetime issues in QueryTemplateRegistry closures by cloning DatabasePool and payload fields before moving into async blocks
+21. **Mercury direct criteria for project/travel** (07-02) — Both queries filter for Mercury direct periods for clear planning and smooth travel
+22. **Favorable sign selection by purpose** (07-02) — Aries for projects (initiation), Gemini for travel (movement), both exclude Scorpio/Capricorn
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -106,7 +109,14 @@ src/jobs/
 │   ├── mod.rs
 │   ├── load.rs      # LoadJobHandler
 │   └── query.rs     # QueryJobHandler
-└── registry.rs      # QueryTemplateRegistry
+├── registry.rs      # QueryTemplateRegistry
+└── QueryJobHandler with auto data loading
+
+src/queries/
+├── wedding.rs       # Wedding date queries (Venus aspects)
+├── project.rs       # Project start queries (Mercury direct)
+├── travel.rs        # Travel date queries (Moon/Mercury)
+└── types.rs         # Criteria structs, candidate types
 ```
 
 **Database Migrations:**
@@ -137,23 +147,25 @@ None — ready to begin Phase 5 planning.
 
 ## Next Steps
 
-1. Move to Phase 6: Data Loading (LoadJobHandler)
-2. Continue with Phase 7: Named Queries
-3. Continue with Phase 8: CLI & API Integration
+1. ✅ Phase 6 complete: Data Loading (LoadJobHandler)
+2. 🔄 Phase 7 in progress: Named Queries — 07-02 complete, ready for next plan
+3. ⏳ Phase 8: CLI & API Integration — waiting for Phase 7 completion
 
 ---
 
 ## Session Continuity
 
-**Last Session:** 2026-03-01 — Completed 06-03: HTTP API Endpoints
-**Stopped At:** Completed 06-03-PLAN.md
+**Last Session:** 2026-03-01 — Completed 07-02: Project and Travel Queries
+**Stopped At:** Completed 07-02-PLAN.md
 
 **For Next Session:**
-- Phase 6 complete: LoadJobHandler, CLI load command, HTTP API endpoints
-- POST /api/v1/load endpoint with sync/async modes
-- GET /api/v1/jobs/{id} endpoint for job status polling
-- Ready for Phase 7: Named Queries
-- Key context: JobHandler pattern, axum State extractor, API route structure
+- Phase 7 in progress: 07-02 complete
+- Project and Travel query functions implemented with Mercury direct + favorable Moon criteria
+- QueryTemplateRegistry updated with actual query functions (no more placeholders)
+- All 3 query templates (wedding, project, travel) execute real queries
+- 115 tests passing
+- Ready for Phase 8: CLI & API Integration
+- Key context: QueryTemplateRegistry pattern, QueryJobHandler with auto data loading
 
 ---
 
