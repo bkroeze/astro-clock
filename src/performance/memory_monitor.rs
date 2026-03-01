@@ -1,6 +1,6 @@
 //! Memory monitoring and pressure detection for cache management
 
-use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
+use sysinfo::{get_current_pid, Pid, ProcessRefreshKind, System};
 use tracing::{error, info, warn};
 
 /// Default soft memory limit in MB (30MB)
@@ -60,15 +60,11 @@ impl MemoryMonitor {
     /// * `eviction_threshold_pct` - Percentage of hard limit for High pressure (0-100)
     pub fn new(soft_limit_mb: usize, hard_limit_mb: usize, eviction_threshold_pct: f64) -> Self {
         let mut system = System::new_all();
-        let pid = sysinfo::get_current_pid().expect("Failed to get current process PID");
+        let pid = get_current_pid().expect("Failed to get current process PID");
 
         // Initial refresh to populate data
         system.refresh_memory();
-        system.refresh_processes_specifics(
-            ProcessesToUpdate::Some(&[pid]),
-            true,
-            ProcessRefreshKind::new().with_memory(),
-        );
+        system.refresh_processes_specifics(ProcessRefreshKind::new().with_memory());
 
         info!(
             "MemoryMonitor initialized: soft_limit={}MB, hard_limit={}MB, eviction_threshold={}%",
@@ -162,11 +158,8 @@ impl MemoryMonitor {
     /// Refresh system memory information
     fn refresh_memory_info(&mut self) {
         self.system.refresh_memory();
-        self.system.refresh_processes_specifics(
-            ProcessesToUpdate::Some(&[self.pid]),
-            true,
-            ProcessRefreshKind::new().with_memory(),
-        );
+        self.system
+            .refresh_processes_specifics(ProcessRefreshKind::new().with_memory());
     }
 }
 
