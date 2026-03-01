@@ -12,7 +12,7 @@
 - [x] **JOB-03**: Job states: pending → in-process → (complete | failed)
 - [x] **JOB-04**: Jobs have unique job-id (UUID or sequential)
 - [x] **JOB-05**: Jobs store payload (parameters), result (JSON), error details on failure
-- [ ] **JOB-06**: Support both synchronous and asynchronous execution modes
+- [x] **JOB-06**: Support both synchronous and asynchronous execution modes
 
 ### Data Loading
 
@@ -50,8 +50,8 @@
 
 ### Job Results
 
-- [ ] **RESULT-01**: Synchronous jobs block until complete, return result directly
-- [ ] **RESULT-02**: Asynchronous jobs return immediately with job-id
+- [x] **RESULT-01**: Synchronous jobs block until complete, return result directly
+- [x] **RESULT-02**: Asynchronous jobs return immediately with job-id
 - [ ] **RESULT-03**: Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
 - [ ] **RESULT-04**: Failed jobs include error code and message in error field
 - [ ] **RESULT-05**: Complete jobs include query results in result field (JSON)

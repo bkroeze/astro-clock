@@ -23,7 +23,7 @@
 
 ### v1.1 (Planned)
 
-- [ ] **Phase 5: Job Infrastructure** — Job tables, state machine, sync/async executor
+- [x] **Phase 5: Job Infrastructure** — Job tables, state machine, sync/async executor
 - [ ] **Phase 6: Data Loading** — Day-level incremental loading with tracking
 - [ ] **Phase 7: Named Queries** — Wedding, project, travel query templates
 - [ ] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling
@@ -71,7 +71,7 @@
 | 2. Data Loading | v1.0 | 4/4 | ✅ Complete | 2026-02-25 |
 | 3. Query System | v1.0 | 3/3 | ✅ Complete | 2026-02-25 |
 | 4. Performance | v1.0 | 6/6 | ✅ Complete | 2026-03-01 |
-| 5. Job Infrastructure | v1.1 | 0/TBD | 📋 Planned | — |
+| 5. Job Infrastructure | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
 | 6. Data Loading | v1.1 | 0/TBD | 📋 Planned | — |
 | 7. Named Queries | v1.1 | 0/TBD | 📋 Planned | — |
 | 8. CLI & API Integration | v1.1 | 0/TBD | 📋 Planned | — |
@@ -91,10 +91,10 @@
 4. Jobs persist payload (JSON) and results (JSON) or error details
 5. Synchronous execution blocks until job completes and returns result directly
 6. Asynchronous execution returns job-id immediately for later polling
-**Plans:** 3 plans
-- [ ] 05-01-PLAN.md — Database schema (jobs table, loaded_days table, migrations)
-- [ ] 05-02-PLAN.md — Job types and repository layer (Job struct, JobRepository, LoadedDaysRepository)
-- [ ] 05-03-PLAN.md — Job executor (JobExecutor, sync/async modes, state machine)
+**Plans:** 3 plans (all complete)
+- [x] 05-01-PLAN.md — Database schema (jobs table, loaded_days table, migrations)
+- [x] 05-02-PLAN.md — Job types and repository layer (Job struct, JobRepository, LoadedDaysRepository)
+- [x] 05-03-PLAN.md — Job executor (JobExecutor, sync/async modes, state machine)
 
 ### Phase 6: Data Loading
 **Goal:** Enable day-level incremental loading with intelligent resume capability
