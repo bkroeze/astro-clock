@@ -6,14 +6,12 @@ use tracing::debug;
 use super::chunk::{ChunkData, CompactAspect, CompactLunarCondition, CompactPlanetPosition, BODIES_COUNT, MINUTES_PER_DAY};
 use super::pool::DatabasePool;
 
-/// Major aspect angles in degrees (conjunction, sextile, square, trine, opposition)
-const MAJOR_ASPECT_ANGLES: [f64; 5] = [0.0, 60.0, 90.0, 120.0, 180.0];
-
 /// Orb for considering an aspect valid (in degrees)
 const ASPECT_ORB: f64 = 8.0;
 
 /// Check if an angular separation is a major aspect within orb
 fn is_major_aspect(angle: f64) -> bool {
+    const MAJOR_ASPECT_ANGLES: [f64; 5] = [0.0, 60.0, 90.0, 120.0, 180.0];
     let normalized = (angle % 360.0 + 360.0) % 360.0;
     MAJOR_ASPECT_ANGLES.iter().any(|&aspect_angle| {
         let diff = (normalized - aspect_angle).abs();
@@ -196,8 +194,12 @@ impl ChunkGenerator {
                 let diff = (lon2 - lon1).abs();
                 let diff = if diff > 180.0 { 360.0 - diff } else { diff };
 
-                // Only store major aspects (conjunction, sextile, square, trine, opposition)
+                // Filter to only major aspects (conjunction, sextile, square, trine, opposition)
                 // This reduces storage by ~80% compared to storing all aspects
+                if !is_major_aspect(diff) {
+                    continue;
+                }
+
                 for (aspect_type, target_angle) in ASPECT_TYPE_IDS {
                     let orb = (diff - target_angle).abs();
 
