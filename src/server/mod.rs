@@ -1,5 +1,5 @@
 use axum::{extract::Query, response::{IntoResponse, Response}};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Json;
 use axum::http::StatusCode;
 use axum::body::Body;
@@ -9,14 +9,36 @@ use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
 use crate::SwissEphChartCalculator;
 use crate::errors::Error;
 
+// Import job-related types when database feature is enabled
+#[cfg(feature = "db")]
+use crate::jobs::{executor::JobExecutor, repository::JobRepository, handlers::LoadJobHandler};
+#[cfg(feature = "db")]
+use crate::server::state::AppState;
+
+pub mod state;
+pub mod routes;
+
 pub struct Server {
     host: String,
     port: u16,
+    #[cfg(feature = "db")]
+    database_url: Option<String>,
 }
 
 impl Server {
     pub fn new(host: String, port: u16) -> Self {
-        Self { host, port }
+        Self {
+            host,
+            port,
+            #[cfg(feature = "db")]
+            database_url: std::env::var("DATABASE_URL").ok(),
+        }
+    }
+
+    #[cfg(feature = "db")]
+    pub fn with_database(mut self, url: String) -> Self {
+        self.database_url = Some(url);
+        self
     }
 
     pub async fn run(self) -> Result<(), Error> {
@@ -24,9 +46,11 @@ impl Server {
             .parse()
             .map_err(|e: std::net::AddrParseError| Error::HttpServer(e.to_string()))?;
 
-        let app = axum::Router::new()
-            .route("/health", get(health_handler))
-            .route("/chart", get(chart_handler));
+        #[cfg(feature = "db")]
+        let app = self.build_app_with_db().await?;
+
+        #[cfg(not(feature = "db"))]
+        let app = self.build_app_without_db();
 
         tracing::info!("Starting HTTP server on {}", addr);
         let listener = tokio::net::TcpListener::bind(&addr)
@@ -37,6 +61,60 @@ impl Server {
             .map_err(|e: std::io::Error| Error::HttpServer(e.to_string()))?;
 
         Ok(())
+    }
+
+    /// Build router with database-dependent routes
+    #[cfg(feature = "db")]
+    async fn build_app_with_db(self) -> Result<axum::Router, Error> {
+        use sqlx::postgres::PgPoolOptions;
+
+        // Get database URL
+        let db_url = self.database_url
+            .or_else(|| std::env::var("DATABASE_URL").ok())
+            .ok_or_else(|| Error::Config("DATABASE_URL not set".to_string()))?;
+
+        // Create database pool
+        let pool = PgPoolOptions::new()
+            .max_connections(10)
+            .connect(&db_url)
+            .await
+            .map_err(|e| Error::Database(e.to_string()))?;
+
+        tracing::info!("Connected to database");
+
+        // Create repository
+        let repository = JobRepository::new(pool.clone());
+
+        // Create load job handler
+        let load_handler = Arc::new(LoadJobHandler::new(pool.clone()));
+
+        // Create executor with handler
+        let executor = JobExecutor::new(
+            repository,
+            vec![load_handler],
+            format!("server-{}", std::process::id()),
+        );
+
+        // Create application state
+        let app_state = AppState::new(executor, pool);
+
+        // Build router with API routes
+        let app = axum::Router::new()
+            .route("/health", get(health_handler))
+            .route("/chart", get(chart_handler))
+            .route("/api/v1/load", post(routes::load_handler))
+            .route("/api/v1/jobs/:id", get(routes::get_job_handler))
+            .with_state(app_state);
+
+        Ok(app)
+    }
+
+    /// Build router without database-dependent routes
+    #[cfg(not(feature = "db"))]
+    fn build_app_without_db(self) -> axum::Router {
+        axum::Router::new()
+            .route("/health", get(health_handler))
+            .route("/chart", get(chart_handler))
     }
 }
 
@@ -116,6 +194,10 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
         Body::from(buffer),
     ).into_response())
 }
+
+// Need Arc for handlers in JobExecutor
+#[cfg(feature = "db")]
+use std::sync::Arc;
 
 #[cfg(test)]
 mod tests {

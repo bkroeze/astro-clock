@@ -13,9 +13,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use uuid::Uuid;
 
-use crate::jobs::executor::JobExecutor;
 use crate::jobs::repository::JobRepository;
-use crate::jobs::types::{Job, JobStatus, JobType};
+use crate::jobs::types::{Job, JobType};
 use crate::server::state::AppState;
 
 /// Request to create a load job
@@ -83,14 +82,14 @@ pub struct ErrorResponse {
 pub async fn load_handler(
     State(state): State<AppState>,
     Json(request): Json<LoadRequest>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     // Validate days parameter (must be 1-365)
     if request.days < 1 || request.days > 365 {
         let error = ErrorResponse {
             error: "invalid_days".to_string(),
             message: format!("Days must be between 1 and 365, got {}", request.days),
         };
-        return Ok((StatusCode::BAD_REQUEST, Json(error)));
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
     }
 
     // Validate date format (YYYY-MM-DD)
@@ -102,7 +101,7 @@ pub async fn load_handler(
                 request.start_date
             ),
         };
-        return Ok((StatusCode::BAD_REQUEST, Json(error)));
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
     }
 
     // Build payload JSON
@@ -115,42 +114,42 @@ pub async fn load_handler(
 
     if sync_mode {
         // Synchronous execution: block until completion
-        match state.executor.execute_sync(JobType::Load, payload).await {
+        match state.executor().execute_sync(JobType::Load, payload).await {
             Ok(job) => {
                 let response = LoadSyncResponse {
                     job_id: job.id,
                     status: job.status,
                     result: job.result,
                 };
-                Ok((StatusCode::OK, Json(response)).into_response())
+                (StatusCode::OK, Json(serde_json::json!(response))).into_response()
             }
             Err(e) => {
                 tracing::error!("Sync load job failed: {}", e);
                 let error = ErrorResponse {
                     error: "execution_failed".to_string(),
-                    message: e.to_string(),
+                    message: format!("{}", e),
                 };
-                Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response())
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
             }
         }
     } else {
         // Asynchronous execution: return job-id immediately
-        match state.executor.execute_async(JobType::Load, payload).await {
+        match state.executor().execute_async(JobType::Load, payload).await {
             Ok(job_id) => {
                 let response = LoadAsyncResponse {
                     job_id,
                     status: "pending".to_string(),
                     poll_url: format!("/api/v1/jobs/{}", job_id),
                 };
-                Ok((StatusCode::ACCEPTED, Json(response)).into_response())
+                (StatusCode::ACCEPTED, Json(serde_json::json!(response))).into_response()
             }
             Err(e) => {
                 tracing::error!("Async load job submission failed: {}", e);
                 let error = ErrorResponse {
                     error: "submission_failed".to_string(),
-                    message: e.to_string(),
+                    message: format!("{}", e),
                 };
-                Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response())
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
             }
         }
     }
@@ -166,28 +165,28 @@ pub async fn load_handler(
 pub async fn get_job_handler(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> impl IntoResponse {
     let repository = JobRepository::new(state.get_pool());
 
     match repository.get_job(job_id).await {
         Ok(Some(job)) => {
             let response = build_job_response(job);
-            Ok((StatusCode::OK, Json(response)))
+            (StatusCode::OK, Json(serde_json::json!(response))).into_response()
         }
         Ok(None) => {
             let error = ErrorResponse {
                 error: "not_found".to_string(),
                 message: format!("Job {} not found", job_id),
             };
-            Ok((StatusCode::NOT_FOUND, Json(error)))
+            (StatusCode::NOT_FOUND, Json(serde_json::json!(error))).into_response()
         }
         Err(e) => {
             tracing::error!("Failed to get job {}: {}", job_id, e);
             let error = ErrorResponse {
                 error: "query_failed".to_string(),
-                message: e.to_string(),
+                message: format!("{}", e),
             };
-            Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(error)))
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
         }
     }
 }
