@@ -91,7 +91,10 @@
 4. Jobs persist payload (JSON) and results (JSON) or error details
 5. Synchronous execution blocks until job completes and returns result directly
 6. Asynchronous execution returns job-id immediately for later polling
-**Plans:** TBD
+**Plans:** 3 plans
+- [ ] 05-01-PLAN.md — Database schema (jobs table, loaded_days table, migrations)
+- [ ] 05-02-PLAN.md — Job types and repository layer (Job struct, JobRepository, LoadedDaysRepository)
+- [ ] 05-03-PLAN.md — Job executor (JobExecutor, sync/async modes, state machine)
 
 ### Phase 6: Data Loading
 **Goal:** Enable day-level incremental loading with intelligent resume capability
