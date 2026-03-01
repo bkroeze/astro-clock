@@ -17,7 +17,7 @@
 ### Data Loading
 
 - [x] **LOAD-06**: CLI command to load date range: `astro-clock load --start YYYY-MM-DD --days N [--sync]`
-- [ ] **LOAD-07**: API endpoint: `POST /api/v1/load` with `{start_date, days, sync?}`
+- [x] **LOAD-07**: API endpoint: `POST /api/v1/load` with `{start_date, days, sync?}`
 - [x] **LOAD-08**: Day-level incremental loading — skip already-loaded days
 - [x] **LOAD-09**: Loading jobs populate planet_positions, aspects, lunar_conditions tables
 - [x] **LOAD-10**: Track loaded days in tracking table for resume capability
@@ -52,8 +52,8 @@
 
 - [x] **RESULT-01**: Synchronous jobs block until complete, return result directly
 - [x] **RESULT-02**: Asynchronous jobs return immediately with job-id
-- [ ] **RESULT-03**: Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
-- [ ] **RESULT-04**: Failed jobs include error code and message in error field
+- [x] **RESULT-03**: Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
+- [x] **RESULT-04**: Failed jobs include error code and message in error field
 - [ ] **RESULT-05**: Complete jobs include query results in result field (JSON)
 
 ## v2 Requirements (Future)

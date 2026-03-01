@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
 **Status:** Milestone complete
-**Last Updated:** 2026-03-01T22:53:58Z
+**Last Updated:** 2026-03-01T22:55:27Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 6 — Data Loading
-**Plan:** 02 (completed)
-**Status:** Plan 02 complete — CLI load command implemented — 2/3 plans complete in Phase 6
+**Plan:** 03 (completed)
+**Status:** Plan 03 complete — HTTP API endpoints for load jobs — 3/3 plans complete in Phase 6
 
 ---
 
@@ -37,7 +37,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 | Phase | Status | Requirements | Progress | Dependencies |
 |-------|--------|--------------|----------|--------------|
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
-| 6 — Data Loading | 🚧 In Progress | 7 | 57% (4/7) | Phase 5 |
+| 6 — Data Loading | ✅ Complete | 7 | 100% (7/7) | Phase 5 |
 | 7 — Named Queries | 📋 Planned | 7 | 0% | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
 
@@ -46,10 +46,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Progress Bar
 
 ```
-v1.1 Progress: [██████████░░░░░░░░░░] 39% (11/28 requirements)
+v1.1 Progress: [████████████░░░░░░░░] 46% (13/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
-Phase 6: [██████████░░░░░░░░░░] 57% (4/7)
+Phase 6: [████████████████████] 100% (7/7)
 Phase 7: [░░░░░░░░░░░░░░░░░░░░] 0%
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 ```
@@ -76,6 +76,9 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 14. **Feature-gated handlers** (06-01) — #[cfg(feature = "db")] on handler modules for clean compilation
 15. **Runtime-per-async-block pattern** (06-02) — Create tokio runtime for each async block in sync CLI context
 16. **Structured result display** (06-02) — Deserialize LoadJobResult JSON for formatted terminal output
+17. **impl IntoResponse for handlers** (06-03) — Cleaner handler signatures than Result<impl IntoResponse, StatusCode>
+18. **Validate in handler before executor** (06-03) — Fast failure for bad input with clear 400 responses
+19. **AppState with accessor methods** (06-03) — Private fields with executor() and get_pool() accessors
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -142,15 +145,15 @@ None — ready to begin Phase 5 planning.
 
 ## Session Continuity
 
-**Last Session:** 2026-03-01 — Completed 06-02: CLI Load Command
-**Stopped At:** Completed 06-02-PLAN.md
+**Last Session:** 2026-03-01 — Completed 06-03: HTTP API Endpoints
+**Stopped At:** Completed 06-03-PLAN.md
 
 **For Next Session:**
-- LoadJobHandler complete with gap detection and resume capability
-- CLI load command with sync/async modes implemented
-- Handler orchestration pattern established
-- Ready for Phase 6 Plan 3: API endpoint for load jobs
-- Key context: LoadJobHandler, JobExecutor, CLI patterns
+- Phase 6 complete: LoadJobHandler, CLI load command, HTTP API endpoints
+- POST /api/v1/load endpoint with sync/async modes
+- GET /api/v1/jobs/{id} endpoint for job status polling
+- Ready for Phase 7: Named Queries
+- Key context: JobHandler pattern, axum State extractor, API route structure
 
 ---
 
