@@ -6,7 +6,7 @@ use crate::database::pool::DatabasePool;
 use crate::database::schema::body_ids;
 use crate::queries::error::QueryError;
 use crate::queries::types::{
-    FAVORABLE_PROJECT_SIGNS, FAVORABLE_TRAVEL_SIGNS, QueryResult, TravelCandidate, TravelCriteria, ZodiacSign,
+    FAVORABLE_TRAVEL_SIGNS, QueryResult, TravelCandidate, TravelCriteria, ZodiacSign,
 };
 
 /// Find optimal dates for travel based on astrological criteria
@@ -118,6 +118,7 @@ pub async fn find_travel_dates(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::queries::{FAVORABLE_PROJECT_SIGNS, TravelPurpose};
     use chrono::NaiveDate;
 
     #[test]
