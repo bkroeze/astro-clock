@@ -1,7 +1,7 @@
 # Project State: Astro Clock
 
 **Status:** In Progress
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-01 (Phase 4 complete)
 
 ## Project Reference
 
@@ -17,15 +17,15 @@ See: `.planning/PROJECT.md` (updated 2026-02-24)
 | 1 — Database Schema | ✓ Complete | 6 | 100% |
 | 2 — Data Loading | ✓ Complete | 5 | 100% |
 | 3 — Query System | ✓ Complete | 5 | 100% |
-| 4 — Performance | ○ In Progress | 4 | 25% |
+| 4 — Performance | ✓ Complete | 4 | 100% |
 
 ## Current Phase
 
-**Phase 4: Performance** ○ IN PROGRESS
+**Phase 4: Performance** ✓ COMPLETE
 
 Goal: Memory monitoring, cache management, and interpolation for optimal performance
 
-Requirements: PERF-01 to PERF-04 (1 of 4 complete)
+Requirements: PERF-01 to PERF-04 (4 of 4 complete)
 
 **Completed Plans:**
 - ✓ 04-01: Multi-Resolution Chunk Manager (2026-02-28)
@@ -44,11 +44,16 @@ Requirements: PERF-01 to PERF-04 (1 of 4 complete)
   - Memory-aware cache eviction in ChunkManager
   - Automatic eviction at 90% threshold (45MB)
   - Evict 25% at High pressure, 50% at Critical
+- ✓ 04-04: Automated Benchmarking (2026-03-01)
+  - BenchmarkRunner with regression detection
+  - Degradation alerts at 20% (WARN) and 50% (ERROR)
+  - TimescaleDB hypertable for benchmark history
+  - 51× speedup verification and tracking
 
 **Pending Plans:**
-- 04-04: Cache Eviction Strategies
+None — Phase 4 complete
 
-Next step: Continue with 04-04 — Cache Eviction Strategies
+Next step: Phase 5 planning or production deployment
 
 ## Completed Work
 
@@ -126,6 +131,7 @@ None
 19. **[Phase 04-05]: Integrated MemoryMonitor into ChunkManager** — Memory-aware cache eviction with 25% eviction at High pressure, 50% at Critical
 20. **[Phase 04-03]: Used 8° orb for major aspect filtering** — Matches standard astrological conventions while reducing storage by ~80%
 21. **[Phase 04-03]: Shortest-path interpolation for longitude** — Handles 360° wraparound correctly (e.g., 350° to 10° goes forward through 360°)
+22. **[Phase 04-04]: Use f64 for DECIMAL bindings in sqlx** — PostgreSQL auto-casts f64 to DECIMAL, avoiding rust_decimal's lack of sqlx Encode/Type traits
 
 ## Notes
 
@@ -141,13 +147,16 @@ None
   - Retrograde query with status calculation (Direct, Retrograde, PreShadow, PostShadow)
   - Exact aspect query with orb/type/body pair filtering
   - Performance benchmarks verifying <100ms for 60-day ranges
-- Phase 4 in progress: 3 of 4 requirements complete (PERF-02, PERF-03)
+- Phase 4 complete: 4 of 4 requirements complete (PERF-01 to PERF-04)
   - Memory monitoring with sysinfo crate
   - Configurable soft/hard limits (30MB/50MB)
   - Memory pressure detection for cache eviction
   - Memory-aware eviction integrated into ChunkManager
   - Interpolation module with 360° wraparound handling
   - Major aspect filtering for ~80% storage reduction
+  - Automated benchmarking with regression detection
+  - Degradation alerts at 20% (WARN) and 50% (ERROR)
+  - 51× speedup verification and historical tracking
 
 ---
 
