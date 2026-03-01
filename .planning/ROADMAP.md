@@ -127,7 +127,7 @@ Plans:
 - Performance benchmark suite
 - Memory profiling results
 
-**Plans:** 5 plans in 3 waves
+**Plans:** 6 plans in 3 waves (1 gap closure plan)
 
 Plans:
 - [x] 04-01-PLAN.md — Create TimescaleDB continuous aggregates for multi-resolution storage (Complete: 2026-02-28)
@@ -135,6 +135,7 @@ Plans:
 - [x] 04-03-PLAN.md — Add interpolation for outer planets and major aspect filtering (Complete: 2026-03-01)
 - [x] 04-04-PLAN.md — Create automated benchmark runner with regression detection (Complete: 2026-03-01)
 - [x] 04-05-PLAN.md — Integrate memory monitoring with ChunkManager for eviction (Complete: 2026-03-01)
+- [ ] 04-06-PLAN.md — Integrate aspect filtering into calculate_aspects() (Gap Closure)
 
 ---
 
