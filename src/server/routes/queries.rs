@@ -7,7 +7,7 @@
 
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -140,6 +140,111 @@ pub async fn query_handler(
             }
             Err(e) => {
                 tracing::error!("Async query job submission failed: {}", e);
+                let error = ErrorResponse {
+                    error: "job_creation_failed".to_string(),
+                    message: format!("Failed to create query job: {}", e),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error)))
+                    .into_response()
+            }
+        }
+    }
+}
+
+/// POST /api/v1/query/wedding - Execute wedding date query
+pub async fn wedding_query_handler(
+    State(state): State<AppState>,
+    Json(request): Json<QueryRequest>,
+) -> impl IntoResponse {
+    execute_named_query(state, "wedding", request).await
+}
+
+/// POST /api/v1/query/project - Execute project start date query
+pub async fn project_query_handler(
+    State(state): State<AppState>,
+    Json(request): Json<QueryRequest>,
+) -> impl IntoResponse {
+    execute_named_query(state, "project", request).await
+}
+
+/// POST /api/v1/query/travel - Execute travel date query
+pub async fn travel_query_handler(
+    State(state): State<AppState>,
+    Json(request): Json<QueryRequest>,
+) -> impl IntoResponse {
+    execute_named_query(state, "travel", request).await
+}
+
+/// Shared query execution logic
+async fn execute_named_query(
+    state: AppState,
+    query_name: &str,
+    request: QueryRequest,
+) -> Response {
+    // Validate date format (YYYY-MM-DD)
+    if !is_valid_date(&request.start_date) {
+        let error = ErrorResponse {
+            error: "invalid_date".to_string(),
+            message: "start_date must be in YYYY-MM-DD format".to_string(),
+        };
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+    }
+
+    // Validate days range (1-366)
+    if request.days <= 0 || request.days > 366 {
+        let error = ErrorResponse {
+            error: "invalid_days".to_string(),
+            message: "days must be between 1 and 366".to_string(),
+        };
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+    }
+
+    // Build payload for job
+    let payload = serde_json::json!({
+        "query_name": query_name,
+        "start_date": request.start_date,
+        "days": request.days,
+    });
+
+    let is_sync = request.sync.unwrap_or(false);
+
+    if is_sync {
+        // Synchronous execution
+        match state.executor().execute_sync(JobType::Query, payload).await {
+            Ok(job) => {
+                let response = QuerySyncResponse {
+                    job_id: job.id,
+                    status: job.status,
+                    result: job.result,
+                };
+                (StatusCode::OK, Json(serde_json::json!(response))).into_response()
+            }
+            Err(e) => {
+                tracing::error!("Sync {} query job failed: {}", query_name, e);
+                let error = ErrorResponse {
+                    error: "execution_failed".to_string(),
+                    message: format!("Query execution failed: {}", e),
+                };
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error)))
+                    .into_response()
+            }
+        }
+    } else {
+        // Asynchronous execution
+        match state.executor().execute_async(JobType::Query, payload).await {
+            Ok(job_id) => {
+                let response = QueryAsyncResponse {
+                    job_id,
+                    status: "pending".to_string(),
+                    message: format!(
+                        "Query '{}' started. Poll GET /api/v1/jobs/{} for status",
+                        query_name, job_id
+                    ),
+                };
+                (StatusCode::ACCEPTED, Json(serde_json::json!(response))).into_response()
+            }
+            Err(e) => {
+                tracing::error!("Async {} query job submission failed: {}", query_name, e);
                 let error = ErrorResponse {
                     error: "job_creation_failed".to_string(),
                     message: format!("Failed to create query job: {}", e),
