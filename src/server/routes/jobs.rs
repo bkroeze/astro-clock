@@ -216,6 +216,85 @@ pub async fn get_job_handler(
     }
 }
 
+/// GET /api/v1/jobs - List recent jobs with pagination
+///
+/// Query parameters:
+/// - status: Filter by status (optional)
+/// - limit: Max jobs to return (default: 20, max: 100)
+/// - offset: Pagination offset (default: 0)
+pub async fn list_jobs_handler(
+    State(state): State<AppState>,
+    Query(params): Query<ListJobsRequest>,
+) -> impl IntoResponse {
+    let repository = JobRepository::new(state.get_pool());
+
+    // Validate and cap limit
+    let limit = params.limit.max(1).min(100);
+    let offset = params.offset.max(0);
+
+    // Parse status filter if provided
+    let status_filter = params.status.clone().and_then(|s| match s.as_str() {
+        "pending" => Some(crate::jobs::types::JobStatus::Pending),
+        "in_process" => Some(crate::jobs::types::JobStatus::InProcess),
+        "complete" => Some(crate::jobs::types::JobStatus::Complete),
+        "failed" => Some(crate::jobs::types::JobStatus::Failed),
+        _ => None,
+    });
+
+    // If invalid status was provided, return error
+    if params.status.is_some() && status_filter.is_none() {
+        let error = ErrorResponse {
+            error: "invalid_status".to_string(),
+            message: format!(
+                "Invalid status filter: '{}'. Valid values: pending, in_process, complete, failed",
+                params.status.unwrap()
+            ),
+        };
+        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+    }
+
+    // Get total count for pagination
+    let total_result = repository.count_jobs(status_filter).await;
+
+    match total_result {
+        Ok(total) => {
+            match repository.list_jobs(status_filter, limit, offset).await {
+                Ok(jobs) => {
+                    let responses: Vec<JobResponse> = jobs
+                        .into_iter()
+                        .map(build_job_response)
+                        .collect();
+
+                    let response = ListJobsResponse {
+                        jobs: responses,
+                        total,
+                        limit,
+                        offset,
+                    };
+
+                    (StatusCode::OK, Json(serde_json::json!(response))).into_response()
+                }
+                Err(e) => {
+                    tracing::error!("Failed to list jobs: {}", e);
+                    let error = ErrorResponse {
+                        error: "query_failed".to_string(),
+                        message: format!("Failed to retrieve jobs: {}", e),
+                    };
+                    (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to count jobs: {}", e);
+            let error = ErrorResponse {
+                error: "query_failed".to_string(),
+                message: format!("Failed to count jobs: {}", e),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
+        }
+    }
+}
+
 /// Build a JobResponse from a Job entity
 fn build_job_response(job: Job) -> JobResponse {
     let error_response = job.error.map(|err| {
