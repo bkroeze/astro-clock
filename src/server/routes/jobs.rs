@@ -4,7 +4,7 @@
 //! - POST /api/v1/load - Create and execute load jobs (sync or async)
 //! - GET /api/v1/jobs/:id - Get job status and details
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
@@ -73,6 +73,31 @@ pub struct JobErrorResponse {
 pub struct ErrorResponse {
     pub error: String,
     pub message: String,
+}
+
+/// Request parameters for listing jobs
+#[derive(Debug, Deserialize)]
+pub struct ListJobsRequest {
+    /// Filter by status (pending, in_process, complete, failed)
+    pub status: Option<String>,
+    /// Maximum number of jobs to return (default: 20, max: 100)
+    #[serde(default = "default_limit")]
+    pub limit: i64,
+    /// Offset for pagination (default: 0)
+    #[serde(default = "default_offset")]
+    pub offset: i64,
+}
+
+fn default_limit() -> i64 { 20 }
+fn default_offset() -> i64 { 0 }
+
+/// Response for job listing
+#[derive(Debug, Serialize)]
+pub struct ListJobsResponse {
+    pub jobs: Vec<JobResponse>,
+    pub total: i64,
+    pub limit: i64,
+    pub offset: i64,
 }
 
 /// POST /api/v1/load - Create and execute a load job
