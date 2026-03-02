@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
-**Status:** Phase 7 complete, ready for Phase 8
-**Last Updated:** 2026-03-02T00:03:59Z
+**Status:** Milestone complete
+**Last Updated:** 2026-03-02T22:50:00Z
 
 ---
 
@@ -26,9 +26,9 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Current Position
 
 **Milestone:** v1.1 Job System
-**Phase:** 7 — Named Queries
-**Plan:** 03 (completed)
-**Status:** 3/3 plans complete — Query API endpoints with sync/async execution — Phase 7 complete
+**Phase:** 8 — CLI & API Integration
+**Plan:** 01 (completed)
+**Status:** 1/5 plans complete — CLI query subcommands (wedding, project, travel) — Phase 8 in progress
 
 ---
 
@@ -39,19 +39,19 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
 | 6 — Data Loading | ✅ Complete | 7 | 100% (7/7) | Phase 5 |
 | 7 — Named Queries | ✅ Complete | 7 | 100% (7/7) | Phase 6 |
-| 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
+| 8 — CLI & API Integration | 🚧 In Progress | 11 | 9% (1/11) | Phase 7 |
 
 ---
 
 ## Progress Bar
 
 ```
-v1.1 Progress: [█████████████████░░░] 68% (19/28 requirements)
+v1.1 Progress: [██████████████████░░] 79% (22/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
 Phase 6: [████████████████████] 100% (7/7)
 Phase 7: [████████████████████] 100% (7/7)
-Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
+Phase 8: [██░░░░░░░░░░░░░░░░░░] 9% (1/11)
 ```
 
 ---
@@ -85,6 +85,9 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 23. **202 ACCEPTED for async mode** (07-03) — HTTP 202 indicates job acceptance for async processing, 200 OK for sync completion
 24. **Query name whitelist validation** (07-03) — Explicit whitelist (wedding, project, travel) prevents injection attacks
 25. **Consistent route handler patterns** (07-03) — queries.rs mirrors jobs.rs structure for maintainability
+26. **Nested subcommand pattern** (08-01) — Use `#[command(subcommand)]` attribute for nested CLI commands like `query wedding`
+27. **Query CLI consistency** (08-01) — Follow Load command pattern for query commands: same validation, execution modes, and result formatting
+28. **Feature-gated CLI commands** (08-01) — All database-dependent CLI commands behind `#[cfg(feature = "db")]` for clean compilation
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -131,6 +134,17 @@ src/server/routes/
 - `008_create_jobs.sql` — Jobs table with state tracking
 - `009_create_loaded_days.sql` — Date range tracking
 
+**New CLI Components:**
+```
+src/cli/
+├── app.rs           # Extended with QueryCommands, JobCommands, handlers
+```
+
+**New CLI Commands:**
+- `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
+- `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
+- `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
+
 **Critical Patterns:**
 - Dual connection pools: query_pool (3 conn) + job_pool (5 conn)
 - `FOR UPDATE SKIP LOCKED` for race-free job claiming
@@ -138,6 +152,8 @@ src/server/routes/
 - Transactionally-staged job drains to prevent race conditions
 - **Handler orchestration pattern**: Handler coordinates repositories/generators, implements JobHandler trait
 - **Structured job results**: Type-safe JSON results using serde-serializable structs
+- **Nested subcommand pattern**: `#[command(subcommand)]` for CLI command hierarchies
+- **CLI handler pattern**: Match on QueryCommands variants to extract parameters
 
 ### Performance Constraints
 
@@ -157,23 +173,28 @@ None — ready to begin Phase 5 planning.
 
 1. ✅ Phase 6 complete: Data Loading (LoadJobHandler)
 2. ✅ Phase 7 complete: Named Queries — all 3 plans complete
-3. ⏳ Phase 8: CLI & API Integration — ready to begin
+3. 🚧 Phase 8: CLI & API Integration — 1/5 plans complete
+   - ✅ 08-01: CLI Query Subcommands
+   - ⏳ 08-02: CLI Job Management
+   - ⏳ 08-03: CLI Integration Tests
+   - ⏳ 08-04: Server Integration
+   - ⏳ 08-05: End-to-End Testing
 
 ---
 
 ## Session Continuity
 
-**Last Session:** 2026-03-02 — Completed 07-03: Query API Endpoints
-**Stopped At:** Completed 07-03-PLAN.md
+**Last Session:** 2026-03-02 — Completed 08-01: CLI Query Subcommands
+**Stopped At:** Completed 08-01-PLAN.md
 
 **For Next Session:**
-- Phase 7 complete: All 3 plans done
-- Query API endpoints implemented with POST /api/v1/query/:query_name
-- Sync and async execution modes both available
-- Input validation for query names, dates, and day ranges
-- All 127 tests passing (5 new integration tests)
-- Ready for Phase 8: CLI & API Integration
-- Key context: HTTP query endpoints, request/response types, server route integration
+- Phase 8 in progress: 1/5 plans complete
+- CLI query commands implemented: `query wedding|project|travel --start YYYY-MM-DD --days N --sync`
+- All query commands feature-gated behind "db" feature
+- JobCommands stub added for future job management CLI
+- All 130 tests passing (3 new CLI help tests)
+- Ready for 08-02: CLI Job Management commands (status, list, etc.)
+- Key context: QueryCommands enum, handle_query_command pattern, nested subcommand structure
 
 ---
 

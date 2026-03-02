@@ -33,9 +33,9 @@
 
 ### CLI Interface
 
-- [ ] **CLI-01**: Command `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
-- [ ] **CLI-02**: Command `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
-- [ ] **CLI-03**: Command `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
+- [x] **CLI-01**: Command `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
+- [x] **CLI-02**: Command `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
+- [x] **CLI-03**: Command `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
 - [ ] **CLI-04**: Command `astro-clock job status <job-id>` — get job status and results
 - [ ] **CLI-05**: Command `astro-clock job list` — list recent jobs with statuses
 
