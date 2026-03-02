@@ -329,6 +329,7 @@ fn build_job_response(job: Job) -> JobResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::jobs::types::{Job, JobType};
 
     #[test]
     fn test_load_request_deserialization() {
@@ -409,5 +410,54 @@ mod tests {
         let json = serde_json::to_string(&error).unwrap();
         assert!(json.contains("test_error"));
         assert!(json.contains("Something went wrong"));
+    }
+
+    #[test]
+    fn test_list_jobs_request_deserialization() {
+        // Test with all parameters
+        let json = r#"{"status":"complete","limit":10,"offset":5}"#;
+        let req: ListJobsRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.status, Some("complete".to_string()));
+        assert_eq!(req.limit, 10);
+        assert_eq!(req.offset, 5);
+    }
+
+    #[test]
+    fn test_list_jobs_request_defaults() {
+        // Test with empty JSON (should use defaults)
+        let json = r#"{}"#;
+        let req: ListJobsRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.status, None);
+        assert_eq!(req.limit, 20);  // default_limit
+        assert_eq!(req.offset, 0);   // default_offset
+    }
+
+    #[test]
+    fn test_list_jobs_request_partial() {
+        // Test with only status filter
+        let json = r#"{"status":"pending"}"#;
+        let req: ListJobsRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.status, Some("pending".to_string()));
+        assert_eq!(req.limit, 20);  // default
+        assert_eq!(req.offset, 0);   // default
+    }
+
+    #[test]
+    fn test_list_jobs_response_serialization() {
+        let job = Job::new(JobType::Load, serde_json::json!({"test": true}));
+        let job_response = build_job_response(job);
+
+        let response = ListJobsResponse {
+            jobs: vec![job_response],
+            total: 1,
+            limit: 20,
+            offset: 0,
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        assert!(json.contains("\"total\":1"));
+        assert!(json.contains("\"limit\":20"));
+        assert!(json.contains("\"offset\":0"));
+        assert!(json.contains("\"jobs\""));
     }
 }

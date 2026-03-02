@@ -110,6 +110,7 @@ impl Server {
             // Job routes (from 06-03)
             .route("/api/v1/load", post(routes::load_handler))
             .route("/api/v1/jobs/:id", get(routes::get_job_handler))
+            .route("/api/v1/jobs", get(routes::list_jobs_handler))
             // Query routes (dedicated endpoints)
             .route("/api/v1/query/wedding", post(routes::wedding_query_handler))
             .route("/api/v1/query/project", post(routes::project_query_handler))
