@@ -10,7 +10,7 @@
 pub mod jobs;
 
 // Re-export job-related handlers for convenient access
-pub use jobs::{get_job_handler, load_handler};
+pub use jobs::{get_job_handler, load_handler, list_jobs_handler};
 
 #[cfg(feature = "db")]
 // Re-export query-related handlers
