@@ -1,7 +1,7 @@
 # Roadmap: Astro Clock
 
 **Created:** 2026-02-24
-**Last Updated:** 2026-03-02T13:50:00Z
+**Last Updated:** 2026-03-02T22:40:00Z
 
 ---
 
@@ -142,9 +142,9 @@
 6. HTTP endpoint `GET /api/v1/jobs/{job-id}` returns job status with payload, result/error, timestamps
 7. HTTP endpoint `GET /api/v1/jobs` lists recent jobs with pagination
 8. Job result responses include status, created_at, completed_at, result (JSON) or error (object)
-**Plans:** 5 plans created (ready for execution)
-- [ ] 08-01-PLAN.md — CLI query commands (wedding, project, travel)
-- [ ] 08-02-PLAN.md — CLI job commands (status, list)
+**Plans:** 5 plans created (2 complete, 3 ready)
+- [x] 08-01-PLAN.md — CLI query commands (wedding, project, travel) — completed 2026-03-02
+- [x] 08-02-PLAN.md — CLI job commands (status, list) — completed 2026-03-02
 - [ ] 08-03-PLAN.md — API list jobs endpoint (GET /api/v1/jobs)
 - [ ] 08-04-PLAN.md — API query endpoints (POST /api/v1/query/*)
 - [ ] 08-05-PLAN.md — Integration tests
