@@ -15,7 +15,7 @@ use crate::jobs::{executor::JobExecutor, repository::JobRepository, handlers::{L
 #[cfg(feature = "db")]
 use crate::server::state::AppState;
 #[cfg(feature = "db")]
-use crate::server::routes::{query_handler, wedding_query_handler, project_query_handler, travel_query_handler};
+use crate::server::routes::query_handler;
 
 pub mod state;
 pub mod routes;

@@ -333,4 +333,32 @@ mod tests {
         assert!(!is_valid_date("invalid"));
         assert!(!is_valid_date(""));
     }
+
+    #[test]
+    fn test_wedding_query_request_deserialization() {
+        let json = r#"{"start_date":"2024-06-01","days":30,"sync":true}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.start_date, "2024-06-01");
+        assert_eq!(request.days, 30);
+        assert_eq!(request.sync, Some(true));
+    }
+
+    #[test]
+    fn test_project_query_request_deserialization() {
+        // Same structure as wedding, just verifying the type works
+        let json = r#"{"start_date":"2024-07-15","days":60,"sync":false}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.start_date, "2024-07-15");
+        assert_eq!(request.days, 60);
+        assert_eq!(request.sync, Some(false));
+    }
+
+    #[test]
+    fn test_travel_query_request_defaults() {
+        let json = r#"{"start_date":"2024-08-01","days":14}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.start_date, "2024-08-01");
+        assert_eq!(request.days, 14);
+        assert_eq!(request.sync, None); // Should default to async
+    }
 }
