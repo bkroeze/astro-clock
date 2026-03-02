@@ -24,10 +24,10 @@
 
 ### Named Queries
 
-- [ ] **QUERY-06**: Named query "wedding" — find auspicious wedding dates
+- [x] **QUERY-06**: Named query "wedding" — find auspicious wedding dates
 - [ ] **QUERY-07**: Named query "project" — find good dates to start projects
 - [ ] **QUERY-08**: Named query "travel" — find favorable travel dates
-- [ ] **QUERY-09**: Named queries accept date range parameters (start_date, days)
+- [x] **QUERY-09**: Named queries accept date range parameters (start_date, days)
 - [ ] **QUERY-10**: Named queries intelligently load missing data before executing
 - [ ] **QUERY-11**: Named queries support sync/async execution modes
 
@@ -54,7 +54,7 @@
 - [x] **RESULT-02**: Asynchronous jobs return immediately with job-id
 - [x] **RESULT-03**: Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
 - [x] **RESULT-04**: Failed jobs include error code and message in error field
-- [ ] **RESULT-05**: Complete jobs include query results in result field (JSON)
+- [x] **RESULT-05**: Complete jobs include query results in result field (JSON)
 
 ## v2 Requirements (Future)
 

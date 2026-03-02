@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
-**Status:** Phase 7 in progress
-**Last Updated:** 2026-03-01T23:52:54Z
+**Status:** Phase 7 complete, ready for Phase 8
+**Last Updated:** 2026-03-02T00:03:59Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 7 — Named Queries
-**Plan:** 02 (completed)
-**Status:** Plan 01 complete — QueryJobHandler and QueryTemplateRegistry — 1/3 plans complete in Phase 7
+**Plan:** 03 (completed)
+**Status:** 3/3 plans complete — Query API endpoints with sync/async execution — Phase 7 complete
 
 ---
 
@@ -38,7 +38,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 |-------|--------|--------------|----------|--------------|
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
 | 6 — Data Loading | ✅ Complete | 7 | 100% (7/7) | Phase 5 |
-| 7 — Named Queries | 🔄 In Progress | 7 | 14% (1/7) | Phase 6 |
+| 7 — Named Queries | ✅ Complete | 7 | 100% (7/7) | Phase 6 |
 | 8 — CLI & API Integration | 📋 Planned | 11 | 0% | Phase 7 |
 
 ---
@@ -46,11 +46,11 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 ## Progress Bar
 
 ```
-v1.1 Progress: [█████████████░░░░░░░] 50% (14/28 requirements)
+v1.1 Progress: [█████████████████░░░] 68% (19/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
 Phase 6: [████████████████████] 100% (7/7)
-Phase 7: [█████░░░░░░░░░░░░░░░] 14% (1/7)
+Phase 7: [████████████████████] 100% (7/7)
 Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 ```
 
@@ -82,6 +82,9 @@ Phase 8: [░░░░░░░░░░░░░░░░░░░░] 0%
 20. **Clone pool and payload before async blocks** (07-02) — Resolve lifetime issues in QueryTemplateRegistry closures by cloning DatabasePool and payload fields before moving into async blocks
 21. **Mercury direct criteria for project/travel** (07-02) — Both queries filter for Mercury direct periods for clear planning and smooth travel
 22. **Favorable sign selection by purpose** (07-02) — Aries for projects (initiation), Gemini for travel (movement), both exclude Scorpio/Capricorn
+23. **202 ACCEPTED for async mode** (07-03) — HTTP 202 indicates job acceptance for async processing, 200 OK for sync completion
+24. **Query name whitelist validation** (07-03) — Explicit whitelist (wedding, project, travel) prevents injection attacks
+25. **Consistent route handler patterns** (07-03) — queries.rs mirrors jobs.rs structure for maintainability
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -108,7 +111,7 @@ src/jobs/
 ├── handlers/        # Job-type-specific handlers
 │   ├── mod.rs
 │   ├── load.rs      # LoadJobHandler
-│   └── query.rs     # QueryJobHandler
+│   └── query.rs     # QueryJobHandler with integration tests
 ├── registry.rs      # QueryTemplateRegistry
 └── QueryJobHandler with auto data loading
 
@@ -117,6 +120,11 @@ src/queries/
 ├── project.rs       # Project start queries (Mercury direct)
 ├── travel.rs        # Travel date queries (Moon/Mercury)
 └── types.rs         # Criteria structs, candidate types
+
+src/server/routes/
+├── mod.rs           # Route module exports
+├── jobs.rs          # POST /api/v1/load, GET /api/v1/jobs/:id
+└── queries.rs       # POST /api/v1/query/:query_name (new)
 ```
 
 **Database Migrations:**
@@ -148,24 +156,24 @@ None — ready to begin Phase 5 planning.
 ## Next Steps
 
 1. ✅ Phase 6 complete: Data Loading (LoadJobHandler)
-2. 🔄 Phase 7 in progress: Named Queries — 07-02 complete, ready for next plan
-3. ⏳ Phase 8: CLI & API Integration — waiting for Phase 7 completion
+2. ✅ Phase 7 complete: Named Queries — all 3 plans complete
+3. ⏳ Phase 8: CLI & API Integration — ready to begin
 
 ---
 
 ## Session Continuity
 
-**Last Session:** 2026-03-01 — Completed 07-02: Project and Travel Queries
-**Stopped At:** Completed 07-02-PLAN.md
+**Last Session:** 2026-03-02 — Completed 07-03: Query API Endpoints
+**Stopped At:** Completed 07-03-PLAN.md
 
 **For Next Session:**
-- Phase 7 in progress: 07-02 complete
-- Project and Travel query functions implemented with Mercury direct + favorable Moon criteria
-- QueryTemplateRegistry updated with actual query functions (no more placeholders)
-- All 3 query templates (wedding, project, travel) execute real queries
-- 115 tests passing
+- Phase 7 complete: All 3 plans done
+- Query API endpoints implemented with POST /api/v1/query/:query_name
+- Sync and async execution modes both available
+- Input validation for query names, dates, and day ranges
+- All 127 tests passing (5 new integration tests)
 - Ready for Phase 8: CLI & API Integration
-- Key context: QueryTemplateRegistry pattern, QueryJobHandler with auto data loading
+- Key context: HTTP query endpoints, request/response types, server route integration
 
 ---
 
