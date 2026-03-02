@@ -15,7 +15,7 @@ use crate::jobs::{executor::JobExecutor, repository::JobRepository, handlers::{L
 #[cfg(feature = "db")]
 use crate::server::state::AppState;
 #[cfg(feature = "db")]
-use crate::server::routes::query_handler;
+use crate::server::routes::{query_handler, wedding_query_handler, project_query_handler, travel_query_handler};
 
 pub mod state;
 pub mod routes;
@@ -110,7 +110,11 @@ impl Server {
             // Job routes (from 06-03)
             .route("/api/v1/load", post(routes::load_handler))
             .route("/api/v1/jobs/:id", get(routes::get_job_handler))
-            // Query routes (new)
+            // Query routes (dedicated endpoints)
+            .route("/api/v1/query/wedding", post(routes::wedding_query_handler))
+            .route("/api/v1/query/project", post(routes::project_query_handler))
+            .route("/api/v1/query/travel", post(routes::travel_query_handler))
+            // Generic query route (fallback)
             .route("/api/v1/query/:query_name", post(query_handler))
             .with_state(app_state);
 

@@ -13,6 +13,8 @@ pub mod jobs;
 pub use jobs::{get_job_handler, load_handler};
 
 #[cfg(feature = "db")]
-pub mod queries;
+// Re-export query-related handlers
+pub use queries::{query_handler, wedding_query_handler, project_query_handler, travel_query_handler};
+
 #[cfg(feature = "db")]
-pub use queries::query_handler;
+pub mod queries;
