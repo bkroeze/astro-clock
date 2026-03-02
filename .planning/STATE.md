@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
 **Status:** Milestone complete
-**Last Updated:** 2026-03-02T22:50:00Z
+**Last Updated:** 2026-03-02T22:40:00Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 8 — CLI & API Integration
-**Plan:** 01 (completed)
-**Status:** 1/5 plans complete — CLI query subcommands (wedding, project, travel) — Phase 8 in progress
+**Plan:** 02 (completed)
+**Status:** 2/5 plans complete — CLI job management commands (status, list) — Phase 8 in progress
 
 ---
 
@@ -39,19 +39,19 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
 | 6 — Data Loading | ✅ Complete | 7 | 100% (7/7) | Phase 5 |
 | 7 — Named Queries | ✅ Complete | 7 | 100% (7/7) | Phase 6 |
-| 8 — CLI & API Integration | 🚧 In Progress | 11 | 9% (1/11) | Phase 7 |
+| 8 — CLI & API Integration | 🚧 In Progress | 11 | 18% (2/11) | Phase 7 |
 
 ---
 
 ## Progress Bar
 
 ```
-v1.1 Progress: [██████████████████░░] 79% (22/28 requirements)
+v1.1 Progress: [███████████████████░] 82% (23/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
 Phase 6: [████████████████████] 100% (7/7)
 Phase 7: [████████████████████] 100% (7/7)
-Phase 8: [██░░░░░░░░░░░░░░░░░░] 9% (1/11)
+Phase 8: [████░░░░░░░░░░░░░░░░] 18% (2/11)
 ```
 
 ---
@@ -88,6 +88,8 @@ Phase 8: [██░░░░░░░░░░░░░░░░░░] 9% (1/11
 26. **Nested subcommand pattern** (08-01) — Use `#[command(subcommand)]` attribute for nested CLI commands like `query wedding`
 27. **Query CLI consistency** (08-01) — Follow Load command pattern for query commands: same validation, execution modes, and result formatting
 28. **Feature-gated CLI commands** (08-01) — All database-dependent CLI commands behind `#[cfg(feature = "db")]` for clean compilation
+29. **Cap limit at 100** (08-02) — Prevent excessive database queries in job list command
+30. **Truncate job ID display** (08-02) — Show first 8 chars with "..." suffix for table readability
 
 ### Key v1.0 Decisions (Carried Forward)
 
@@ -144,6 +146,8 @@ src/cli/
 - `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
 - `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
 - `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
+- `astro-clock job status <job-id>` — View job details and results
+- `astro-clock job list [--status STATUS] [--limit N] [--offset N]` — List recent jobs
 
 **Critical Patterns:**
 - Dual connection pools: query_pool (3 conn) + job_pool (5 conn)
@@ -173,9 +177,9 @@ None — ready to begin Phase 5 planning.
 
 1. ✅ Phase 6 complete: Data Loading (LoadJobHandler)
 2. ✅ Phase 7 complete: Named Queries — all 3 plans complete
-3. 🚧 Phase 8: CLI & API Integration — 1/5 plans complete
+3. 🚧 Phase 8: CLI & API Integration — 2/5 plans complete
    - ✅ 08-01: CLI Query Subcommands
-   - ⏳ 08-02: CLI Job Management
+   - ✅ 08-02: CLI Job Management
    - ⏳ 08-03: CLI Integration Tests
    - ⏳ 08-04: Server Integration
    - ⏳ 08-05: End-to-End Testing
@@ -184,17 +188,18 @@ None — ready to begin Phase 5 planning.
 
 ## Session Continuity
 
-**Last Session:** 2026-03-02 — Completed 08-01: CLI Query Subcommands
-**Stopped At:** Completed 08-01-PLAN.md
+**Last Session:** 2026-03-02 — Completed 08-02: CLI Job Management
+**Stopped At:** Completed 08-02-PLAN.md
 
 **For Next Session:**
-- Phase 8 in progress: 1/5 plans complete
-- CLI query commands implemented: `query wedding|project|travel --start YYYY-MM-DD --days N --sync`
-- All query commands feature-gated behind "db" feature
-- JobCommands stub added for future job management CLI
-- All 130 tests passing (3 new CLI help tests)
-- Ready for 08-02: CLI Job Management commands (status, list, etc.)
-- Key context: QueryCommands enum, handle_query_command pattern, nested subcommand structure
+- Phase 8 in progress: 2/5 plans complete
+- CLI job commands implemented: `job status <uuid>` and `job list [--status] [--limit] [--offset]`
+- Job status command validates UUID format and displays full job details with payload, result, error
+- Job list command supports status filtering, pagination with limit/offset, and formatted table output
+- All job commands feature-gated behind "db" feature
+- All 131 tests passing (2 new CLI help tests for job commands)
+- Ready for 08-03: CLI Integration Tests
+- Key context: JobCommands enum, handle_job_command dispatcher, job status/list handlers
 
 ---
 
