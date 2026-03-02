@@ -1,7 +1,7 @@
 # Roadmap: Astro Clock
 
 **Created:** 2026-02-24
-**Last Updated:** 2026-03-02T22:40:00Z
+**Last Updated:** 2026-03-02T22:46:00Z
 
 ---
 
@@ -26,7 +26,7 @@
 - [x] **Phase 5: Job Infrastructure** — Job tables, state machine, sync/async executor
 - [x] **Phase 6: Data Loading** — Day-level incremental loading with tracking
 - [x] **Phase 7: Named Queries** — Wedding, project, travel query templates (3/3 complete)
-- [📋] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling (5 plans ready)
+- [🚧] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling (4/5 complete)
 
 ---
 
@@ -74,7 +74,7 @@
 | 5. Job Infrastructure | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
 | 6. Data Loading | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
 | 7. Named Queries | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
-| 8. CLI & API Integration | v1.1 | 0/5 | 📋 Planned | — |
+| 8. CLI & API Integration | v1.1 | 4/5 | 🚧 In Progress | — |
 
 ---
 
@@ -142,11 +142,11 @@
 6. HTTP endpoint `GET /api/v1/jobs/{job-id}` returns job status with payload, result/error, timestamps
 7. HTTP endpoint `GET /api/v1/jobs` lists recent jobs with pagination
 8. Job result responses include status, created_at, completed_at, result (JSON) or error (object)
-**Plans:** 5 plans created (2 complete, 3 ready)
+**Plans:** 5 plans created (4 complete, 1 ready)
 - [x] 08-01-PLAN.md — CLI query commands (wedding, project, travel) — completed 2026-03-02
 - [x] 08-02-PLAN.md — CLI job commands (status, list) — completed 2026-03-02
-- [ ] 08-03-PLAN.md — API list jobs endpoint (GET /api/v1/jobs)
-- [ ] 08-04-PLAN.md — API query endpoints (POST /api/v1/query/*)
+- [x] 08-03-PLAN.md — API list jobs endpoint (GET /api/v1/jobs) — completed 2026-03-02
+- [x] 08-04-PLAN.md — Dedicated query API endpoints (POST /api/v1/query/*) — completed 2026-03-02
 - [ ] 08-05-PLAN.md — Integration tests
 
 ---
