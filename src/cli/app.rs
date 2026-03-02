@@ -737,13 +737,212 @@ impl App {
 
     fn handle_job_command(
         &self,
-        _job_cmd: &JobCommands,
-        _config: &crate::config::AppConfig,
+        job_cmd: &JobCommands,
+        config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
-        // Job command implementation - placeholder for future plan
-        Err(crate::errors::Error::Config(
-            "Job commands not yet implemented".to_string()
-        ))
+        #[cfg(feature = "db")]
+        {
+            match job_cmd {
+                JobCommands::Status { job_id } => {
+                    self.handle_job_status(job_id, config)
+                }
+                JobCommands::List { status, limit, offset } => {
+                    self.handle_job_list(status.as_ref(), *limit, *offset, config)
+                }
+            }
+        }
+
+        #[cfg(not(feature = "db"))]
+        {
+            Err(crate::errors::Error::Config(
+                "Database support not enabled. Build with --features db to use the job command.".to_string()
+            ))
+        }
+    }
+
+    #[cfg(feature = "db")]
+    fn handle_job_status(
+        &self,
+        job_id_str: &str,
+        config: &crate::config::AppConfig,
+    ) -> Result<(), crate::errors::Error> {
+        use uuid::Uuid;
+        use crate::jobs::repository::JobRepository;
+
+        // Validate UUID format
+        let job_id = match Uuid::parse_str(job_id_str) {
+            Ok(id) => id,
+            Err(_) => {
+                return Err(crate::errors::Error::Config(
+                    format!("Invalid job ID format: {}. Expected UUID.", job_id_str)
+                ));
+            }
+        };
+
+        // Get database URL from environment or config
+        let db_url = std::env::var("DATABASE_URL")
+            .unwrap_or_else(|_| config.database.url.clone());
+
+        // Create database pool
+        let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
+            crate::database::pool::DatabasePool::connect(&db_url).await
+                .map_err(|e| crate::errors::Error::Config(
+                    format!("Failed to connect to database: {}", e)
+                ))
+        })?;
+
+        let pool = db_pool.pool().clone();
+
+        // Query job
+        let job = tokio::runtime::Runtime::new()?.block_on(async {
+            let repo = JobRepository::new(pool);
+            repo.get_job(job_id).await
+        });
+
+        match job {
+            Ok(Some(job)) => {
+                println!("Job: {}", job.id);
+                println!("Type: {}", job.job_type);
+                println!("Status: {}", job.status);
+                println!("Created: {}", job.created_at.format("%Y-%m-%d %H:%M:%S UTC"));
+                println!("Updated: {}", job.updated_at.format("%Y-%m-%d %H:%M:%S UTC"));
+                println!("Started: {}", job.started_at.map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string()).unwrap_or_else(|| "N/A".to_string()));
+                println!("Completed: {}", job.completed_at.map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string()).unwrap_or_else(|| "N/A".to_string()));
+                println!();
+
+                if let Some(ref payload) = job.payload {
+                    println!("Payload:");
+                    match serde_json::to_string_pretty(payload) {
+                        Ok(json) => println!("{}", json),
+                        Err(_) => println!("{:?}", payload),
+                    }
+                } else {
+                    println!("Payload:");
+                    println!("N/A");
+                }
+                println!();
+
+                if let Some(ref result) = job.result {
+                    println!("Result:");
+                    match serde_json::to_string_pretty(result) {
+                        Ok(json) => println!("{}", json),
+                        Err(_) => println!("{:?}", result),
+                    }
+                } else {
+                    println!("Result:");
+                    println!("N/A");
+                }
+                println!();
+
+                if let Some(ref error) = job.error {
+                    println!("Error:");
+                    match serde_json::to_string_pretty(error) {
+                        Ok(json) => println!("{}", json),
+                        Err(_) => println!("{:?}", error),
+                    }
+                } else {
+                    println!("Error:");
+                    println!("N/A");
+                }
+            }
+            Ok(None) => {
+                println!("Job {} not found", job_id);
+            }
+            Err(e) => {
+                return Err(crate::errors::Error::Chart(format!("Failed to get job: {}", e)));
+            }
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "db")]
+    fn handle_job_list(
+        &self,
+        status_filter: Option<&String>,
+        limit: Option<i64>,
+        offset: Option<i64>,
+        config: &crate::config::AppConfig,
+    ) -> Result<(), crate::errors::Error> {
+        use crate::jobs::types::JobStatus;
+        use crate::jobs::repository::JobRepository;
+
+        // Parse status filter
+        let status = match status_filter {
+            Some(s) => {
+                match s.as_str() {
+                    "pending" => Some(JobStatus::Pending),
+                    "in_process" => Some(JobStatus::InProcess),
+                    "complete" => Some(JobStatus::Complete),
+                    "failed" => Some(JobStatus::Failed),
+                    _ => {
+                        return Err(crate::errors::Error::Config(
+                            format!("Invalid status: '{}'. Valid options: pending, in_process, complete, failed", s)
+                        ));
+                    }
+                }
+            }
+            None => None,
+        };
+
+        // Set defaults and cap limit
+        let limit = limit.unwrap_or(20).min(100);
+        let offset = offset.unwrap_or(0);
+
+        // Get database URL from environment or config
+        let db_url = std::env::var("DATABASE_URL")
+            .unwrap_or_else(|_| config.database.url.clone());
+
+        // Create database pool
+        let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
+            crate::database::pool::DatabasePool::connect(&db_url).await
+                .map_err(|e| crate::errors::Error::Config(
+                    format!("Failed to connect to database: {}", e)
+                ))
+        })?;
+
+        let pool = db_pool.pool().clone();
+
+        // Query jobs
+        let result: Result<(Vec<_>, i64), crate::jobs::error::JobError> = tokio::runtime::Runtime::new()?.block_on(async {
+            let repo = JobRepository::new(pool);
+            let jobs = repo.list_jobs(status, limit, offset).await?;
+            let total = repo.count_jobs(status).await?;
+            Ok::<_, crate::jobs::error::JobError>((jobs, total))
+        });
+
+        match result {
+            Ok((jobs, total)) => {
+                if jobs.is_empty() {
+                    if let Some(s) = status_filter {
+                        println!("No {} jobs found", s);
+                    } else {
+                        println!("No jobs found");
+                    }
+                } else {
+                    println!("Jobs (showing {} of {}):\n", jobs.len(), total);
+                    println!("{:<40} {:<10} {:<12} {:<20}", "ID", "Type", "Status", "Created");
+                    println!("{}", "-".repeat(82));
+
+                    for job in jobs {
+                        let id_short = format!("{}...", &job.id.to_string()[..8]);
+                        let created = job.created_at.format("%Y-%m-%d %H:%M");
+                        let status_str = format!("{:>10}", job.status);
+                        let type_str = format!("{:<10}", job.job_type);
+                        println!("{:<40} {:<10} {:<12} {:<20}", id_short, type_str, status_str, created);
+                    }
+
+                    if total > (offset + limit) {
+                        println!("\nUse --offset {} to see more results", offset + limit);
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(crate::errors::Error::Chart(format!("Failed to list jobs: {}", e)));
+            }
+        }
+
+        Ok(())
     }
 }
 
