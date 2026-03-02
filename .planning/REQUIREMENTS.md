@@ -36,8 +36,8 @@
 - [x] **CLI-01**: Command `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
 - [x] **CLI-02**: Command `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
 - [x] **CLI-03**: Command `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
-- [ ] **CLI-04**: Command `astro-clock job status <job-id>` — get job status and results
-- [ ] **CLI-05**: Command `astro-clock job list` — list recent jobs with statuses
+- [x] **CLI-04**: Command `astro-clock job status <job-id>` — get job status and results
+- [x] **CLI-05**: Command `astro-clock job list` — list recent jobs with statuses
 
 ### HTTP API
 
@@ -109,8 +109,8 @@
 | CLI-01 | Phase 8 | Planned |
 | CLI-02 | Phase 8 | Planned |
 | CLI-03 | Phase 8 | Planned |
-| CLI-04 | Phase 8 | Planned |
-| CLI-05 | Phase 8 | Planned |
+| CLI-04 | Phase 8 | Complete |
+| CLI-05 | Phase 8 | Complete |
 | API-01 | Phase 8 | Planned |
 | API-02 | Phase 8 | Planned |
 | API-03 | Phase 8 | Planned |
