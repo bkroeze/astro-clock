@@ -1,7 +1,7 @@
 # Roadmap: Astro Clock
 
 **Created:** 2026-02-24
-**Last Updated:** 2026-03-01T23:52:54Z
+**Last Updated:** 2026-03-02T13:50:00Z
 
 ---
 
@@ -25,8 +25,8 @@
 
 - [x] **Phase 5: Job Infrastructure** — Job tables, state machine, sync/async executor
 - [x] **Phase 6: Data Loading** — Day-level incremental loading with tracking
-- [🔄] **Phase 7: Named Queries** — Wedding, project, travel query templates (2/2 complete)
-- [ ] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling
+- [x] **Phase 7: Named Queries** — Wedding, project, travel query templates (3/3 complete)
+- [📋] **Phase 8: CLI & API Integration** — Commands, endpoints, and result handling (5 plans ready)
 
 ---
 
@@ -73,8 +73,8 @@
 | 4. Performance | v1.0 | 6/6 | ✅ Complete | 2026-03-01 |
 | 5. Job Infrastructure | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
 | 6. Data Loading | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
-| 7. Named Queries | v1.1 | 1/3 | 🔄 In Progress | — |
-| 8. CLI & API Integration | v1.1 | 0/TBD | 📋 Planned | — |
+| 7. Named Queries | v1.1 | 3/3 | ✅ Complete | 2026-03-01 |
+| 8. CLI & API Integration | v1.1 | 0/5 | 📋 Planned | — |
 
 ---
 
@@ -124,10 +124,10 @@
 5. Named queries automatically load missing data before executing query
 6. Named queries support both sync (block until complete) and async (return job-id) modes
 7. Complete query jobs include results in JSON format
-**Plans:** 2 plans complete
+**Plans:** 3/3 plans complete
 - [x] 07-01-PLAN.md — QueryJobHandler and QueryTemplateRegistry (QUERY-10, QUERY-11, RESULT-05) — completed 2026-03-01
 - [x] 07-02-PLAN.md — Project and Travel query implementations (QUERY-07, QUERY-08) — completed 2026-03-01
-
+- [x] 07-03-PLAN.md — Query API endpoints (QUERY-06, QUERY-09) — completed 2026-03-01
 
 ### Phase 8: CLI & API Integration
 **Goal:** Expose complete job system through CLI commands and HTTP endpoints
@@ -142,7 +142,12 @@
 6. HTTP endpoint `GET /api/v1/jobs/{job-id}` returns job status with payload, result/error, timestamps
 7. HTTP endpoint `GET /api/v1/jobs` lists recent jobs with pagination
 8. Job result responses include status, created_at, completed_at, result (JSON) or error (object)
-**Plans:** TBD
+**Plans:** 5 plans created (ready for execution)
+- [ ] 08-01-PLAN.md — CLI query commands (wedding, project, travel)
+- [ ] 08-02-PLAN.md — CLI job commands (status, list)
+- [ ] 08-03-PLAN.md — API list jobs endpoint (GET /api/v1/jobs)
+- [ ] 08-04-PLAN.md — API query endpoints (POST /api/v1/query/*)
+- [ ] 08-05-PLAN.md — Integration tests
 
 ---
 
