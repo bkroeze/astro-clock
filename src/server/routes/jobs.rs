@@ -460,4 +460,97 @@ mod tests {
         assert!(json.contains("\"offset\":0"));
         assert!(json.contains("\"jobs\""));
     }
+
+    #[test]
+    fn test_list_jobs_handler_response_format() {
+        // This test verifies the response structure matches API-06 requirements
+        let job = Job::new(
+            JobType::Query,
+            serde_json::json!({
+                "query_name": "wedding",
+                "start_date": "2024-06-01",
+                "days": 30
+            }),
+        );
+
+        let response = build_job_response(job);
+
+        // Verify all API-06 required fields are present
+        assert!(!response.job_id.to_string().is_empty());
+        assert!(!response.job_type.is_empty());
+        assert!(!response.status.is_empty());
+        assert!(!response.created_at.is_empty());
+        assert!(!response.updated_at.is_empty());
+        // started_at and completed_at are optional
+        // payload, result, error are optional
+
+        // Serialize and verify JSON structure
+        let json = serde_json::to_value(&response).unwrap();
+        assert!(json.get("job_id").is_some());
+        assert!(json.get("job_type").is_some());
+        assert!(json.get("status").is_some());
+        assert!(json.get("created_at").is_some());
+        assert!(json.get("updated_at").is_some());
+    }
+
+    #[test]
+    fn test_list_jobs_response_includes_pagination() {
+        let job1 = Job::new(JobType::Load, serde_json::json!({"test": 1}));
+        let job2 = Job::new(JobType::Query, serde_json::json!({"test": 2}));
+
+        let response = ListJobsResponse {
+            jobs: vec![build_job_response(job1), build_job_response(job2)],
+            total: 2,
+            limit: 20,
+            offset: 0,
+        };
+
+        let json = serde_json::to_value(&response).unwrap();
+        assert!(json.get("jobs").is_some());
+        assert!(json.get("total").is_some());
+        assert!(json.get("limit").is_some());
+        assert!(json.get("offset").is_some());
+
+        let jobs = json.get("jobs").unwrap().as_array().unwrap();
+        assert_eq!(jobs.len(), 2);
+    }
+
+    #[test]
+    fn test_job_response_with_optional_fields() {
+        let mut job = Job::new(JobType::Load, serde_json::json!({"test": true}));
+
+        // Set optional fields
+        job.started_at = Some(chrono::Utc::now());
+        job.completed_at = Some(chrono::Utc::now());
+        job.result = Some(serde_json::json!({"loaded": 7}));
+
+        let response = build_job_response(job);
+
+        // Verify required fields
+        assert!(!response.job_id.to_string().is_empty());
+        assert_eq!(response.job_type, "load");
+        assert_eq!(response.status, "pending");
+
+        // Verify optional fields are present
+        assert!(response.started_at.is_some());
+        assert!(response.completed_at.is_some());
+        assert!(response.result.is_some());
+        assert!(response.error.is_none());
+    }
+
+    #[test]
+    fn test_job_response_with_error() {
+        let mut job = Job::new(JobType::Query, serde_json::json!({}));
+        job.error = Some(serde_json::json!({
+            "code": "validation_failed",
+            "message": "Invalid query parameters"
+        }));
+
+        let response = build_job_response(job);
+
+        assert!(response.error.is_some());
+        let error = response.error.unwrap();
+        assert_eq!(error.code, "validation_failed");
+        assert_eq!(error.message, "Invalid query parameters");
+    }
 }
