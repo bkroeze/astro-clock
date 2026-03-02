@@ -1029,4 +1029,28 @@ mod tests {
             .expect("travel subcommand exists");
         let _help = travel_cmd.render_help();
     }
+
+    #[test]
+    fn test_job_status_help() {
+        let mut cmd = Cli::command();
+        let job_cmd = cmd
+            .find_subcommand_mut("job")
+            .expect("job subcommand exists");
+        let status_cmd = job_cmd
+            .find_subcommand_mut("status")
+            .expect("status subcommand exists");
+        let _help = status_cmd.render_help();
+    }
+
+    #[test]
+    fn test_job_list_help() {
+        let mut cmd = Cli::command();
+        let job_cmd = cmd
+            .find_subcommand_mut("job")
+            .expect("job subcommand exists");
+        let list_cmd = job_cmd
+            .find_subcommand_mut("list")
+            .expect("list subcommand exists");
+        let _help = list_cmd.render_help();
+    }
 }
