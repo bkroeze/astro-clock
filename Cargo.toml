@@ -3,6 +3,14 @@ name = "astro-clock"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "astro-clock"
+path = "src/main.rs"
+
+[lib]
+name = "astro_clock"
+path = "src/lib.rs"
+
 [dependencies]
 chrono = "0.4"
 tiny-skia = "0.8"
@@ -45,3 +53,5 @@ tempfile = "3"
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 http = "1.0"
+assert_cmd = "2.0"
+predicates = "3.0"
