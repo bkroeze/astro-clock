@@ -25,6 +25,63 @@ pub struct Cli {
     pub command: Commands,
 }
 
+/// Job subcommands for managing async jobs
+#[derive(Subcommand, Debug)]
+pub enum JobCommands {
+    /// Get job status and results
+    Status {
+        /// Job ID (UUID format)
+        job_id: String,
+    },
+    /// List recent jobs
+    List {
+        /// Filter by status (pending, in_process, complete, failed)
+        #[arg(long, value_name = "STATUS")]
+        status: Option<String>,
+        /// Number of jobs to show (default: 20)
+        #[arg(long, value_name = "N")]
+        limit: Option<i64>,
+        /// Offset for pagination (default: 0)
+        #[arg(long, value_name = "N")]
+        offset: Option<i64>,
+    },
+}
+
+/// Subcommands for named queries (wedding, project, travel)
+#[derive(Subcommand, Debug)]
+pub enum QueryCommands {
+    /// Find auspicious wedding dates
+    Wedding {
+        /// Start date (YYYY-MM-DD)
+        #[arg(long, value_name = "DATE")]
+        start: String,
+        /// Number of days to query (1-366)
+        #[arg(long, value_name = "N")]
+        days: i64,
+        /// Execute synchronously and wait for completion
+        #[arg(long)]
+        sync: bool,
+    },
+    /// Find good dates to start projects
+    Project {
+        #[arg(long, value_name = "DATE")]
+        start: String,
+        #[arg(long, value_name = "N")]
+        days: i64,
+        #[arg(long)]
+        sync: bool,
+    },
+    /// Find favorable travel dates
+    Travel {
+        #[arg(long, value_name = "DATE")]
+        start: String,
+        #[arg(long, value_name = "N")]
+        days: i64,
+        #[arg(long)]
+        sync: bool,
+    },
+}
+
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Generate an astrological chart
@@ -106,6 +163,14 @@ pub enum Commands {
         #[arg(long)]
         sync: bool,
     },
+
+    /// Execute named queries (wedding, project, travel)
+    #[command(subcommand)]
+    Query(QueryCommands),
+
+    /// Manage async jobs
+    #[command(subcommand)]
+    Job(JobCommands),
 }
 
 #[derive(Debug)]
@@ -445,6 +510,12 @@ impl App {
                     ))
                 }
             }
+            Commands::Query(query_cmd) => {
+                self.handle_query_command(query_cmd, &config)
+            }
+            Commands::Job(job_cmd) => {
+                self.handle_job_command(job_cmd, &config)
+            }
         }
     }
 
@@ -486,6 +557,193 @@ impl App {
             }
             new_path
         }
+    }
+
+    fn handle_query_command(
+        &self,
+        query_cmd: &QueryCommands,
+        config: &crate::config::AppConfig,
+    ) -> Result<(), crate::errors::Error> {
+        // Extract query parameters based on variant
+        let (query_name, start, days, sync) = match query_cmd {
+            QueryCommands::Wedding { start, days, sync } => ("wedding", start, days, sync),
+            QueryCommands::Project { start, days, sync } => ("project", start, days, sync),
+            QueryCommands::Travel { start, days, sync } => ("travel", start, days, sync),
+        };
+
+        tracing::info!(
+            "Running query mode: query={}, start={}, days={}, sync={}",
+            query_name,
+            start,
+            days,
+            sync
+        );
+
+        // Validate date format
+        let _start_date = chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d").map_err(|_| {
+            crate::errors::Error::Config(format!(
+                "Invalid date format: {}. Expected YYYY-MM-DD",
+                start
+            ))
+        })?;
+
+        // Validate days range (1-366 for queries)
+        if *days < 1 || *days > 366 {
+            return Err(crate::errors::Error::Config(format!(
+                "Days must be between 1 and 366, got {}",
+                days
+            )));
+        }
+
+        // Check if db feature is enabled
+        #[cfg(feature = "db")]
+        {
+            use crate::database::pool::DatabasePool;
+            use crate::jobs::executor::JobExecutor;
+            use crate::jobs::handlers::QueryJobHandler;
+            use crate::jobs::repository::JobRepository;
+            use crate::jobs::types::JobType;
+            use serde_json::json;
+
+            // Get database URL from environment or config
+            let db_url = std::env::var("DATABASE_URL")
+                .unwrap_or_else(|_| config.database.url.clone());
+
+            // Create database pool
+            let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
+                DatabasePool::connect(&db_url)
+                    .await
+                    .map_err(|e| {
+                        crate::errors::Error::Config(format!(
+                            "Failed to connect to database: {}",
+                            e
+                        ))
+                    })
+            })?;
+
+            let pool = db_pool.pool().clone();
+
+            // Create repositories and handler
+            let job_repo = JobRepository::new(pool.clone());
+            let query_handler = QueryJobHandler::new(pool);
+
+            // Create executor with the query handler
+            let executor = JobExecutor::new(
+                job_repo,
+                vec![std::sync::Arc::new(query_handler)],
+                "cli-worker".to_string(),
+            );
+
+            // Build payload
+            let payload = json!({
+                "query_name": query_name,
+                "start_date": start,
+                "days": days
+            });
+
+            // Execute based on sync flag
+            if *sync {
+                println!(
+                    "Running {} query for {} days starting from {}...",
+                    query_name, days, start
+                );
+
+                let result = tokio::runtime::Runtime::new()?.block_on(async {
+                    executor.execute_sync(JobType::Query, payload).await
+                });
+
+                match result {
+                    Ok(job) => {
+                        if let Some(ref result) = job.result {
+                            // Deserialize and pretty-print the result
+                            if let Ok(query_result) = serde_json::from_value::<
+                                crate::jobs::handlers::QueryJobResult,
+                            >(result.clone())
+                            {
+                                println!("\n✓ Query completed successfully");
+                                println!("  Query: {}", query_result.query_name);
+                                println!("  Date range: {} to {} ({} days)",
+                                    query_result.start_date,
+                                    query_result.start_date, // Note: we'd need to calculate end date
+                                    query_result.days
+                                );
+                                println!("  Total results: {}", query_result.total_results);
+                                println!("  Execution time: {}ms", query_result.execution_time_ms);
+
+                                // Pretty-print the results
+                                if query_result.total_results > 0 {
+                                    println!("\n  Results:");
+                                    if let Ok(results_json) = serde_json::to_string_pretty(&query_result.results) {
+                                        // Indent the JSON output
+                                        for line in results_json.lines() {
+                                            println!("    {}", line);
+                                        }
+                                    }
+                                }
+
+                                if let Some(warnings) = query_result.warnings {
+                                    if !warnings.is_empty() {
+                                        println!("\n  Warnings:");
+                                        for warning in &warnings {
+                                            println!("    - {}", warning);
+                                        }
+                                    }
+                                }
+                            } else {
+                                println!("✓ Query completed: {:?}", job.result);
+                            }
+                        } else if let Some(error) = job.error {
+                            println!("✗ Query failed: {:?}", error);
+                        }
+                    }
+                    Err(e) => {
+                        return Err(crate::errors::Error::Chart(format!(
+                            "Query failed: {}",
+                            e
+                        )));
+                    }
+                }
+            } else {
+                let job_id = tokio::runtime::Runtime::new()?.block_on(async {
+                    executor.execute_async(JobType::Query, payload).await
+                });
+
+                match job_id {
+                    Ok(id) => {
+                        println!("{} query job started in background", query_name);
+                        println!("Job ID: {}", id);
+                        println!("Poll status: /api/v1/jobs/{}", id);
+                    }
+                    Err(e) => {
+                        return Err(crate::errors::Error::Chart(format!(
+                            "Failed to start query job: {}",
+                            e
+                        )));
+                    }
+                }
+            }
+
+            Ok(())
+        }
+
+        #[cfg(not(feature = "db"))]
+        {
+            Err(crate::errors::Error::Config(
+                "Database support not enabled. Build with --features db to use the query command."
+                    .to_string(),
+            ))
+        }
+    }
+
+    fn handle_job_command(
+        &self,
+        _job_cmd: &JobCommands,
+        _config: &crate::config::AppConfig,
+    ) -> Result<(), crate::errors::Error> {
+        // Job command implementation - placeholder for future plan
+        Err(crate::errors::Error::Config(
+            "Job commands not yet implemented".to_string()
+        ))
     }
 }
 
@@ -535,5 +793,41 @@ mod tests {
         let path = PathBuf::from("myfile.txt");
         let result = App::ensure_extension(path, "md");
         assert_eq!(result.to_string_lossy(), "myfile.md");
+    }
+
+    #[test]
+    fn test_query_wedding_help() {
+        let mut cmd = Cli::command();
+        let query_cmd = cmd
+            .find_subcommand_mut("query")
+            .expect("query subcommand exists");
+        let wedding_cmd = query_cmd
+            .find_subcommand_mut("wedding")
+            .expect("wedding subcommand exists");
+        let _help = wedding_cmd.render_help();
+    }
+
+    #[test]
+    fn test_query_project_help() {
+        let mut cmd = Cli::command();
+        let query_cmd = cmd
+            .find_subcommand_mut("query")
+            .expect("query subcommand exists");
+        let project_cmd = query_cmd
+            .find_subcommand_mut("project")
+            .expect("project subcommand exists");
+        let _help = project_cmd.render_help();
+    }
+
+    #[test]
+    fn test_query_travel_help() {
+        let mut cmd = Cli::command();
+        let query_cmd = cmd
+            .find_subcommand_mut("query")
+            .expect("query subcommand exists");
+        let travel_cmd = query_cmd
+            .find_subcommand_mut("travel")
+            .expect("travel subcommand exists");
+        let _help = travel_cmd.render_help();
     }
 }
