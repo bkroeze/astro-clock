@@ -44,9 +44,9 @@
 - [ ] **API-01**: Endpoint `POST /api/v1/query/wedding` with `{start_date, days, sync?}`
 - [ ] **API-02**: Endpoint `POST /api/v1/query/project` with `{start_date, days, sync?}`
 - [ ] **API-03**: Endpoint `POST /api/v1/query/travel` with `{start_date, days, sync?}`
-- [ ] **API-04**: Endpoint `GET /api/v1/jobs/{job-id}` — get job status and results
-- [ ] **API-05**: Endpoint `GET /api/v1/jobs` — list recent jobs
-- [ ] **API-06**: Job result response includes: `status`, `created_at`, `completed_at`, `result` (JSON) or `error` (object)
+- [x] **API-04**: Endpoint `GET /api/v1/jobs/{job-id}` — get job status and results
+- [x] **API-05**: Endpoint `GET /api/v1/jobs` — list recent jobs
+- [x] **API-06**: Job result response includes: `status`, `created_at`, `completed_at`, `result` (JSON) or `error` (object)
 
 ### Job Results
 

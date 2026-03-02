@@ -1,7 +1,7 @@
 # Project State: Astro Clock v1.1
 
 **Status:** Milestone complete
-**Last Updated:** 2026-03-02T22:40:00Z
+**Last Updated:** 2026-03-02T22:46:00Z
 
 ---
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 
 **Milestone:** v1.1 Job System
 **Phase:** 8 — CLI & API Integration
-**Plan:** 02 (completed)
-**Status:** 2/5 plans complete — CLI job management commands (status, list) — Phase 8 in progress
+**Plan:** 04 (completed)
+**Status:** 4/5 plans complete — Dedicated query API endpoints — Phase 8 in progress
 
 ---
 
@@ -39,19 +39,19 @@ See: `.planning/PROJECT.md` (updated 2026-03-01)
 | 5 — Job Infrastructure | ✅ Complete | 8 | 100% (8/8) | Phase 4 (complete) |
 | 6 — Data Loading | ✅ Complete | 7 | 100% (7/7) | Phase 5 |
 | 7 — Named Queries | ✅ Complete | 7 | 100% (7/7) | Phase 6 |
-| 8 — CLI & API Integration | 🚧 In Progress | 11 | 18% (2/11) | Phase 7 |
+| 8 — CLI & API Integration | 🚧 In Progress | 11 | 45% (5/11) | Phase 7 |
 
 ---
 
 ## Progress Bar
 
 ```
-v1.1 Progress: [███████████████████░] 82% (23/28 requirements)
+v1.1 Progress: [████████████████████] 86% (24/28 requirements)
 
 Phase 5: [████████████████████] 100% (8/8)
 Phase 6: [████████████████████] 100% (7/7)
 Phase 7: [████████████████████] 100% (7/7)
-Phase 8: [████░░░░░░░░░░░░░░░░] 18% (2/11)
+Phase 8: [████████░░░░░░░░░░░░] 45% (5/11)
 ```
 
 ---
@@ -177,26 +177,27 @@ None — ready to begin Phase 5 planning.
 
 1. ✅ Phase 6 complete: Data Loading (LoadJobHandler)
 2. ✅ Phase 7 complete: Named Queries — all 3 plans complete
-3. 🚧 Phase 8: CLI & API Integration — 2/5 plans complete
+3. 🚧 Phase 8: CLI & API Integration — 4/5 plans complete
    - ✅ 08-01: CLI Query Subcommands
    - ✅ 08-02: CLI Job Management
-   - ⏳ 08-03: CLI Integration Tests
-   - ⏳ 08-04: Server Integration
+   - ✅ 08-03: API list jobs endpoint
+   - ✅ 08-04: Dedicated query API endpoints
    - ⏳ 08-05: End-to-End Testing
 
 ---
 
 ## Session Continuity
 
-**Last Session:** 2026-03-02 — Completed 08-02: CLI Job Management
-**Stopped At:** Completed 08-02-PLAN.md
+**Last Session:** 2026-03-02 — Completed 08-04: Dedicated Query API Endpoints
+**Stopped At:** Completed 08-04-PLAN.md
 
 **For Next Session:**
-- Phase 8 in progress: 2/5 plans complete
-- CLI job commands implemented: `job status <uuid>` and `job list [--status] [--limit] [--offset]`
-- Job status command validates UUID format and displays full job details with payload, result, error
-- Job list command supports status filtering, pagination with limit/offset, and formatted table output
-- All job commands feature-gated behind "db" feature
+- Phase 8 in progress: 4/5 plans complete
+- Dedicated query endpoints implemented: POST /api/v1/query/{wedding,project,travel}
+- All endpoints accept {start_date, days, sync?} JSON body
+- Route ordering ensures dedicated endpoints take precedence over generic endpoint
+- 10 unit tests passing for query handler request/response types
+- Ready for 08-05: End-to-End Testing
 - All 131 tests passing (2 new CLI help tests for job commands)
 - Ready for 08-03: CLI Integration Tests
 - Key context: JobCommands enum, handle_job_command dispatcher, job status/list handlers
