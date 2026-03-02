@@ -11,9 +11,11 @@ use crate::errors::Error;
 
 // Import job-related types when database feature is enabled
 #[cfg(feature = "db")]
-use crate::jobs::{executor::JobExecutor, repository::JobRepository, handlers::LoadJobHandler};
+use crate::jobs::{executor::JobExecutor, repository::JobRepository, handlers::{LoadJobHandler, QueryJobHandler}};
 #[cfg(feature = "db")]
 use crate::server::state::AppState;
+#[cfg(feature = "db")]
+use crate::server::routes::query_handler;
 
 pub mod state;
 pub mod routes;
@@ -88,10 +90,13 @@ impl Server {
         // Create load job handler
         let load_handler = Arc::new(LoadJobHandler::new(pool.clone()));
 
-        // Create executor with handler
+        // Create query job handler
+        let query_handler_job = Arc::new(QueryJobHandler::new(pool.clone()));
+
+        // Create executor with handlers
         let executor = JobExecutor::new(
             repository,
-            vec![load_handler],
+            vec![load_handler, query_handler_job],
             format!("server-{}", std::process::id()),
         );
 
@@ -102,8 +107,11 @@ impl Server {
         let app = axum::Router::new()
             .route("/health", get(health_handler))
             .route("/chart", get(chart_handler))
+            // Job routes (from 06-03)
             .route("/api/v1/load", post(routes::load_handler))
             .route("/api/v1/jobs/:id", get(routes::get_job_handler))
+            // Query routes (new)
+            .route("/api/v1/query/:query_name", post(query_handler))
             .with_state(app_state);
 
         Ok(app)
