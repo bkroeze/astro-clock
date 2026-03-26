@@ -102,7 +102,7 @@ pub enum Commands {
         #[arg(short, long, value_name = "FILE")]
         output: Option<PathBuf>,
 
-        /// Output format (png/webp/md)
+        /// Output format (png/webp/svg/md)
         #[arg(short, long, value_name = "FORMAT", default_value = "png")]
         format: String,
 
