@@ -3,6 +3,8 @@
 //! Provides access to the job executor and database pool
 //! via axum's State extractor pattern.
 
+#![cfg(feature = "db")]
+
 use std::sync::Arc;
 
 use crate::jobs::executor::JobExecutor;

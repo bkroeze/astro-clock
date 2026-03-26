@@ -4,6 +4,8 @@
 //! - POST /api/v1/load - Create and execute load jobs (sync or async)
 //! - GET /api/v1/jobs/:id - Get job status and details
 
+#![cfg(feature = "db")]
+
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
