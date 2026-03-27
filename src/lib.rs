@@ -10,6 +10,7 @@ pub mod performance;
 pub mod renderer;
 pub mod server;
 pub mod svg_glyphs;
+pub mod svg_renderer;
 #[cfg(feature = "db")]
 pub mod database;
 #[cfg(feature = "db")]
