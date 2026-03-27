@@ -7,6 +7,10 @@ edition = "2024"
 name = "astro-clock"
 path = "src/main.rs"
 
+[[bin]]
+name = "extract_glyphs"
+path = "scripts/extract_glyphs.rs"
+
 [lib]
 name = "astro_clock"
 path = "src/lib.rs"
@@ -37,6 +41,7 @@ strum = "0.28"
 strum_macros = "0.28"
 svg = "0.18"
 async-trait = "0.1"
+ttf-parser = "0.25"
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [features]
