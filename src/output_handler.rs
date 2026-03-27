@@ -74,7 +74,11 @@ impl OutputHandler {
     }
 
     fn save_svg(chart_data: &ChartData, output_path: &Path) -> Result<(), crate::errors::Error> {
-        let svg_content = Self::format_svg(chart_data);
+        use crate::svg_renderer::SvgRenderer;
+        let renderer = SvgRenderer::new(800, 800);
+        let svg_content = renderer
+            .render_chart(chart_data)
+            .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
         std::fs::write(output_path, svg_content).map_err(|e| crate::errors::Error::Io(e))?;
         Ok(())
     }
