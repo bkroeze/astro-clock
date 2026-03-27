@@ -7,10 +7,6 @@ edition = "2024"
 name = "astro-clock"
 path = "src/main.rs"
 
-[[bin]]
-name = "extract_glyphs"
-path = "scripts/extract_glyphs.rs"
-
 [lib]
 name = "astro_clock"
 path = "src/lib.rs"
@@ -61,4 +57,3 @@ http-body-util = "0.1"
 http = "1.0"
 assert_cmd = "2.0"
 predicates = "3.0"
-ttf-parser = "0.25"
