@@ -191,7 +191,7 @@ impl OutputHandler {
         md.push_str("| Planet | Deg | Sign | Position | House |\n");
         md.push_str("|--------|-----|------|----------|-------|\n");
 
-        for planet in sorted_planets {
+        for planet in &sorted_planets {
             let name = &planet.name;
             let symbol = planet_symbols.get(name.as_str()).unwrap_or(&"");
             let longitude = planet.position.longitude;
@@ -257,6 +257,15 @@ impl OutputHandler {
             }
         }
 
+        // Lunar Mansion
+        if let Some(moon) = sorted_planets.iter().find(|p| p.name == planet::MOON) {
+            let mansion = Self::calculate_lunar_mansion(moon.position.longitude);
+            md.push_str(&format!(
+                "\n## Lunar Mansion\n\n**Lunar Mansion: {}**\n",
+                mansion
+            ));
+        }
+
         md
     }
 
@@ -279,6 +288,15 @@ impl OutputHandler {
             }
         }
         1 // Default to house 1
+    }
+
+    fn calculate_lunar_mansion(moon_longitude: f64) -> i32 {
+        // Lunar Mansions are 28 divisions of the zodiac, each 12°51'26" (approx 12.857°)
+        // Mansion 1 starts at 0° Aries
+        const MANSION_WIDTH: f64 = 12.0 + 51.0 / 60.0 + 26.0 / 3600.0; // 12°51'26" in decimal
+        let mansion = (moon_longitude / MANSION_WIDTH) as i32 + 1;
+        // Ensure we return 1-28 (wrap around if needed)
+        ((mansion - 1) % 28) + 1
     }
 
     fn format_svg(chart_data: &ChartData) -> String {
