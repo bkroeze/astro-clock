@@ -7,3 +7,4 @@ data/*se1
 
 /target
 .env
+.worktrees/
