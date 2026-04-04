@@ -1,0 +1,88 @@
+R,Moon
+S,Mercury
+T,Venus
+Q,Sun
+U,Mars
+V,Jupiter
+W,Saturn
+X,Uranus
+Y,Neptune
+Z,Pluto
+b,Vulcan
+g,Lunar North Node
+h,Earth
+i,Lunar South Node
+z,Lilith
+A,Ariest
+B,Taurus
+C,Gemini
+D,Cancer
+E,Leo
+F,Virgo
+G,Libra
+H,Scorpio
+I,Sagittarius
+\,Capricorn
+J,Capricorn (EU)
+K,Aquarius
+L,Pisces
+0,0
+1,1
+2,2
+3,3
+4,4
+5,5
+6,6
+7,7
+8,8
+9,9
+10,:
+11,;
+12,<
+c,AC
+d,MC
+f,DC
+e,IC
+!,Conjunction
+%,Sextile
+#,Square
+$,Trine
+\",Opposition
+&,Quincunx (Inconjunct)
+\',Semi-Sextile
+(,Semi-Square
+),Sesquisquare
+*,Biquintile
++,Quintile
+\,,Semi-Quintile (my proposal for the glyph)
+.,Quindecile
+?,Part of Fortune
+@,Part of Spirit
+l,Ceres
+m,Pallas
+n,Juno
+o,Vesta
+p,Hygiea
+q,Chiron
+r,Pholus
+¡,Cupido
+¢,Hades
+£,Zeus
+¤,Kronos
+¥,Apollon
+¦,Admetos
+§,Vulcanus
+\¨,Poseidon
+s,Eris
+t,Haumea
+u,Makemake
+v,Gonggong
+w,Quaoar
+x,Sedna
+y,Orcus
+j,East Point
+k,Vertex
+M,Radix
+N,Retrograde
+O,Transiting
+P,Progressed
