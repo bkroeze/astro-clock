@@ -37,6 +37,7 @@ fn test_job_list_help() {
     assert!(stdout.contains("--offset"));
 }
 
+#[cfg(feature = "db")]
 #[test]
 fn test_job_status_invalid_uuid() {
     let output = astro_clock()
@@ -98,6 +99,7 @@ fn test_job_list_with_status_filter() {
     );
 }
 
+#[cfg(feature = "db")]
 #[test]
 fn test_job_list_invalid_status() {
     let output = astro_clock()

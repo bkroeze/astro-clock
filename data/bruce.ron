@@ -1,0 +1,28 @@
+(
+    chart: (
+        width: 800,
+        height: 800,
+        background_color: "#000000",
+        text_color: "#ffffff",
+        house_color: "#333333",
+        planet_color: "#ffcc00",
+        zodiac_color: "#444444",
+        location: (
+            latitude: Some(37.7749),
+            longitude: Some(-122.4194),
+        ),
+        orb: 3.0,
+        house_system: "Whole",
+    ),
+    server: (
+        host: "127.0.0.1",
+        port: 3000,
+        cors_origins: ["http://localhost:3000"],
+    ),
+    database: (
+        enabled: false,
+        url: "postgresql://user:password@localhost/astro",
+        table_name: "charts",
+    ),
+)
+
