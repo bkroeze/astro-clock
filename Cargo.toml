@@ -37,6 +37,7 @@ strum = "0.28"
 strum_macros = "0.28"
 svg = "0.18"
 async-trait = "0.1"
+ttf-parser = "0.25"
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [features]
@@ -56,3 +57,4 @@ http-body-util = "0.1"
 http = "1.0"
 assert_cmd = "2.0"
 predicates = "3.0"
+minidom = "0.15"

@@ -63,7 +63,7 @@ cargo run -- chart \\
 - `--lon <LON>` - Longitude (-180 to 180)
 - `--time <TIME>` - ISO 8601 timestamp (defaults to now)
 - `--output <FILE>` - Output file path (auto-generated if not specified)
-- `--format <FORMAT>` - Output format: `png`, `webp`, `md` (default: png)
+- `--format <FORMAT>` - Output format: `png`, `webp`, `md`, `svg` (default: png)
 - `--house <SYSTEM>` - House system (default: Placidus)
 - `--orb <DEGREES>` - Maximum orb for aspect detection in markdown (default: 3.0)
 
@@ -167,6 +167,14 @@ Text table with planetary positions and aspects:
 ```bash
 cargo run -- chart --lat 37.7749 --lon -122.4194 --format md --output chart.md
 ```
+
+### SVG (Standalone)
+Vector chart that works without font installation:
+```bash
+cargo run -- chart --lat 37.7749 --lon -122.4194 --format svg --output chart.svg
+```
+
+The SVG file contains embedded glyph paths and can be viewed in any browser or image viewer without the Astronomicon font installed.
 
 ## Example Usage
 

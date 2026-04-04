@@ -147,6 +147,7 @@ struct ChartQuery {
     lat: Option<f64>,
     lon: Option<f64>,
     time: Option<String>,
+    format: Option<String>,
 }
 
 async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, StatusCode> {
@@ -176,36 +177,58 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
         }
     };
 
-    let size = crate::renderer::Size::new(800.0, 800.0);
-    let mut renderer = match crate::renderer::Renderer::new(size.clone()) {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::error!("Failed to create renderer: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    // Handle different output formats
+    match query.format.as_deref() {
+        Some("svg") => {
+            use crate::svg_renderer::SvgRenderer;
+            let renderer = SvgRenderer::new(800, 800);
+            let svg = match renderer.render_chart(&chart_data) {
+                Ok(svg_data) => svg_data,
+                Err(e) => {
+                    tracing::error!("Failed to render SVG: {}", e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+            Ok((
+                StatusCode::OK,
+                [("Content-Type", "image/svg+xml")],
+                Body::from(svg),
+            ).into_response())
         }
-    };
+        _ => {
+            // Default to PNG
+            let size = crate::renderer::Size::new(800.0, 800.0);
+            let mut renderer = match crate::renderer::Renderer::new(size.clone()) {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::error!("Failed to create renderer: {}", e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
 
-    match renderer.render_chart(&chart_data) {
-        Ok(_) => {},
-        Err(e) => {
-            tracing::error!("Failed to render chart: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            match renderer.render_chart(&chart_data) {
+                Ok(_) => {},
+                Err(e) => {
+                    tracing::error!("Failed to render chart: {}", e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+
+            let buffer = match renderer.export_png() {
+                Ok(png_data) => png_data,
+                Err(e) => {
+                    tracing::error!("Failed to export PNG: {:?}", e);
+                    return Err(StatusCode::INTERNAL_SERVER_ERROR);
+                }
+            };
+
+            Ok((
+                StatusCode::OK,
+                [("Content-Type", "image/png")],
+                Body::from(buffer),
+            ).into_response())
         }
-    };
-
-    let buffer = match renderer.export_png() {
-        Ok(png_data) => png_data,
-        Err(e) => {
-            tracing::error!("Failed to export PNG: {:?}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
-
-    Ok((
-        StatusCode::OK,
-        [("Content-Type", "image/png")],
-        Body::from(buffer),
-    ).into_response())
+    }
 }
 
 // Need Arc for handlers in JobExecutor
