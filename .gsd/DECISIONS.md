@@ -1,0 +1,116 @@
+- Used SMALLINT for body IDs (0-9) and enums to save space
+- DECIMAL(8,4) for longitudes provides 0.0001° precision (sufficient for astrology)
+- 1-day chunk intervals align with natural query patterns and chunk manager design
+- Partial indexes for Moon (body_id=1) optimize most common query pattern
+- Aspect summaries table eliminates correlated subqueries (51× performance improvement)
+- Locations normalization reduces house_cusps storage by ~75%
+- PG_URL environment variable required for all migration commands
+- sqlx naming convention (NNN_description.sql) is compatible with existing migrations
+- Justfile provides unified interface for database operations
+- Kept legacy ChartRecord and PlanetPositionRecord for backward compatibility
+- Used rust_decimal::Decimal for SQL DECIMAL types to preserve precision
+- Added domain constant modules (body_ids, aspect_types, zodiac_signs, moon_phases, house_systems)
+- All new structs derive sqlx::FromRow for compile-time checked queries
+- Used lru crate instead of custom implementation (per CONTEXT.md discretion) for correctness and time savings
+- Packed struct representation with #[repr(C, packed)] for optimal memory layout
+- Integer encoding: millidegrees for angles (0.001° precision), permille for illumination (0.001 precision)
+- Flat Vec storage in ChunkData (not HashMap) for cache efficiency
+- Body ID ordering in CompactAspect (body1_id < body2_id) to avoid duplicate storage
+- Used manual row mapping with f64 conversion instead of query_as due to rust_decimal/sqlx compatibility
+- Added sqlx chrono feature for DateTime support
+- Added bigdecimal dependency for future decimal support if needed
+- Used f64 instead of Decimal for UNNEST arrays since rust_decimal doesn't implement sqlx array traits
+- Background database persistence is fire-and-forget (doesn't block chunk return)
+- Database write failures don't fail chunk load (data is still in cache)
+- VoC detection uses simplified 2° orb check (full implementation would track until sign change)
+- Spawn pre-fetching in dedicated task to avoid Send bound issues with recursive async calls
+- Use AtomicU64 with Ordering::Relaxed for statistics - sufficient for monitoring, no need for strict ordering
+- Silent pre-fetch failures - pre-fetching is best-effort and shouldn't affect main query flow
+- Configurable pre-fetch range allows future extension to multi-day lookahead
+- Use QueryError with thiserror for consistent error handling
+- All criteria structs have validate() methods with comprehensive checks
+- Date range limited to 1 year to prevent excessive queries
+- Orb threshold constrained to 0-10 degrees for validity
+- Enums use repr(i16) for database compatibility
+- Serialize/Deserialize derives for API compatibility
+- Made database/pool.rs and schema.rs public for query module access
+- Used gap-and-island pattern for VoC period aggregation instead of window functions
+- Added find_wedding_dates_with_signs() for custom favorable sign selection
+- Used dynamic SQL construction for optional filters instead of query! macro to handle variable WHERE clauses
+- Calculated retrograde status at query time based on date range overlap rather than storing status
+- Body pair filtering enforces schema constraint (body1_id < body2_id) in query construction
+- Benchmark module provides both general timing and specific 51× speedup verification for PERF-04
+- Used last() aggregation for continuous aggregates to capture most recent value in each bucket
+- Mapped Moon to 1-minute, inner planets to 5-minute, outer planets to 60-minute resolution
+- Used bucket column name for continuous aggregates vs time for raw table
+- Grouped multi-body queries by resolution to minimize database round-trips
+- Used sysinfo 0.30 for cross-platform process memory monitoring
+- 30MB soft limit / 50MB hard limit per user decision (LOCKED)
+- 90% eviction threshold (45MB) for aggressive cache cleanup
+- MemoryPressure enum with severity levels for graduated response
+- Used 8° orb for aspect filtering to match astrological conventions
+- Only 5 major aspects stored (conjunction, sextile, square, trine, opposition)
+- Minor aspects calculated on-demand when needed
+- Longitude interpolation handles 360° wraparound via shortest-path algorithm
+- Retrograde status preserved from start point during interpolation
+- Use f64 for DECIMAL column bindings - PostgreSQL auto-casts, avoiding rust_decimal/sqlx trait issues
+- Store memory pressure as VARCHAR - simpler than enum mapping for database storage
+- Baseline 2300ms (2.3s) from pre-optimization measurements
+- Target 45ms for 51× speedup verification
+- Evict 25% of cache at High pressure (45MB), 50% at Critical (50MB)
+- Check memory pressure on every cache miss for responsive eviction
+- Release MemoryMonitor lock before cache operations to prevent deadlocks
+- Moved MAJOR_ASPECT_ANGLES constant inside is_major_aspect() function to eliminate dead code warning
+- Added early filtering check before ASPECT_TYPE_IDS loop for efficiency
+- Use CHECK constraints at DB level for job status validation
+- JSONB for payload/result/error enables flexible job parameters
+- coverage_minutes (0-1440) for tracking daily data completeness
+- Used String for job_type and status in DB struct for sqlx compatibility, with helper methods for enum conversion
+- Implemented FOR UPDATE SKIP LOCKED pattern for race-free job claiming (prevents multiple workers claiming same job)
+- State machine enforced via can_transition_to method before database update
+- LoadedDaysRepository uses PostgreSQL generate_series for efficient missing date queries
+- JobExecutor::execute_sync uses spawn_blocking to avoid blocking async runtime during CPU-intensive Swiss Ephemeris FFI calls
+- JobExecutor::execute_async returns job-id immediately and spawns background task for API use cases
+- Handler registry uses Arc<dyn JobHandler> for thread-safe shared ownership
+- Store Pool<Postgres> in handler and create DatabasePool on demand - maintains compatibility with existing repository patterns
+- Sequential day processing within job - Swiss Ephemeris requires thread isolation
+- Per-day failures tracked but don't fail job - enables partial success reporting
+- Mark job Complete if >=1 day loaded, only Failed if 0 progress - matches user expectations for resumable operations
+- Runtime-per-async-block pattern - Create new tokio runtime for each async block since App::run() is sync
+- Result deserialization for display - Parse LoadJobResult JSON for formatted terminal output
+- DATABASE_URL env var priority - Check environment before config for database URL
+- Feature-gate the entire load command - #[cfg(feature = db)] ensures clean compilation without db
+- Use impl IntoResponse instead of Result<impl IntoResponse, StatusCode> for cleaner handler signatures
+- Store both executor and pool in AppState - pool needed for JobRepository in handlers
+- Parse and validate request parameters before creating jobs - fail fast for bad input
+- Feature-gate database-dependent server code - supports builds without db feature
+- Project and travel queries use placeholder implementations in 07-01, full implementation in 07-02
+- QueryTemplateRegistry uses type-erased futures (Pin<Box<dyn Future>>) to store different query types
+- Auto-loading continues on partial failure with warnings in result
+- QueryJobResult includes total_results, execution_time_ms, and optional warnings
+- Clone pool and payload data before async blocks to resolve lifetime issues
+- Use Mercury direct criteria (not in retrograde_periods) for project/travel
+- Exclude Scorpio and Capricorn from favorable signs (intensity/restriction)
+- Include Gemini in travel signs (movement) but Aries in project signs (initiation)
+- Include VoC status in travel results for traveler awareness
+- Used 202 ACCEPTED status for async mode to indicate job acceptance
+- Used 200 OK for sync mode to indicate immediate success
+- Added is_valid_date helper for YYYY-MM-DD format validation
+- Query names validated against whitelist: wedding, project, travel
+- Used #[command(subcommand)] attribute for nested query commands
+- Followed existing Load command pattern for query implementation
+- Feature-gated query commands behind 'db' feature for consistency
+- Added JobCommands stub for future job management CLI
+- Use #[command(subcommand)] attribute for nested subcommands
+- Cap limit at 100 to prevent excessive queries
+- Truncate job ID to first 8 chars for display
+- Limit capped at 100 to prevent abuse
+- Status filter validation returns 400 for invalid values
+- Consistent response format using build_job_response for all job endpoints
+- Dedicated endpoints provide better API documentation than generic endpoint
+- Route ordering: specific routes before generic :query_name pattern for proper matching
+- Shared execute_named_query helper reduces code duplication between handlers
+- Created src/main.rs to enable CLI binary for integration testing
+- Added assert_cmd and predicates as dev-dependencies for CLI testing
+- Used #[ignore] for integration tests requiring database/server
+- Handled database unavailability gracefully in CLI tests
