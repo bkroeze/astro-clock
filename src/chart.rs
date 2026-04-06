@@ -1,6 +1,8 @@
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
+use serde::Serialize;
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct GeoPos {
     pub latitude: f64,
     pub longitude: f64,
@@ -17,7 +19,7 @@ impl GeoPos {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Position {
     pub longitude: f64,
     pub latitude: f64,
@@ -47,7 +49,7 @@ impl Position {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct HouseCusps {
     pub asc: f64,
     pub mc: f64,
@@ -57,7 +59,7 @@ pub struct HouseCusps {
     pub system: HouseSystem,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum HouseSystem {
     Placidus,
     Koch,
@@ -90,7 +92,7 @@ impl fmt::Display for HouseSystem {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ChartData {
     pub geo_pos: GeoPos,
     pub julian_day: f64,
@@ -99,7 +101,7 @@ pub struct ChartData {
     pub sidereal_time: f64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct PlanetPosition {
     pub name: String,
     pub position: Position,
@@ -116,7 +118,7 @@ impl PlanetPosition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ChartConfig {
     pub house_system: HouseSystem,
     pub geo_pos: GeoPos,

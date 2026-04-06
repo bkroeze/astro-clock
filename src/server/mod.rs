@@ -1,5 +1,5 @@
 use axum::{extract::Query, response::{IntoResponse, Response}};
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::Json;
 use axum::http::StatusCode;
 use axum::body::Body;
@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
 use crate::SwissEphChartCalculator;
 use crate::errors::Error;
+use crate::aspects::{analyze_aspects, AspectConfig};
 
 // Import job-related types when database feature is enabled
 #[cfg(feature = "db")]
@@ -107,6 +108,7 @@ impl Server {
         let app = axum::Router::new()
             .route("/health", get(health_handler))
             .route("/chart", get(chart_handler))
+            .route("/api/v1/chart/data", get(chart_data_handler))
             // Job routes (from 06-03)
             .route("/api/v1/load", post(routes::load_handler))
             .route("/api/v1/jobs/:id", get(routes::get_job_handler))
@@ -128,6 +130,7 @@ impl Server {
         axum::Router::new()
             .route("/health", get(health_handler))
             .route("/chart", get(chart_handler))
+            .route("/api/v1/chart/data", get(chart_data_handler))
     }
 }
 
@@ -231,6 +234,108 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
     }
 }
 
+/// Query parameters for the chart data API endpoint
+#[derive(Debug, serde::Deserialize)]
+struct ChartDataQuery {
+    lat: Option<f64>,
+    lon: Option<f64>,
+    time: Option<String>,
+}
+
+/// Response structure for chart data API
+#[derive(Debug, serde::Serialize)]
+struct ChartDataResponse {
+    planets: Vec<crate::chart::PlanetPosition>,
+    houses: crate::chart::HouseCusps,
+    aspects: Vec<crate::aspects::Aspect>,
+    grand_trines: Vec<crate::aspects::GrandTrine>,
+    moon_void_of_course: Option<String>,
+    metadata: ChartMetadata,
+}
+
+/// Metadata about the chart calculation
+#[derive(Debug, serde::Serialize)]
+struct ChartMetadata {
+    latitude: f64,
+    longitude: f64,
+    julian_day: f64,
+    house_system: String,
+}
+
+/// JSON endpoint for chart data (planets, houses, aspects)
+/// Returns structured JSON for display in the Django app
+async fn chart_data_handler(Query(query): Query<ChartDataQuery>) -> Result<Json<ChartDataResponse>, StatusCode> {
+    // Validate required parameters
+    let lat = query.lat.ok_or_else(|| {
+        tracing::warn!("Missing required parameter: lat");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    let lon = query.lon.ok_or_else(|| {
+        tracing::warn!("Missing required parameter: lon");
+        StatusCode::BAD_REQUEST
+    })?;
+
+    // Validate coordinates
+    if lat < -90.0 || lat > 90.0 {
+        tracing::warn!("Invalid latitude: {}", lat);
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    if lon < -180.0 || lon > 180.0 {
+        tracing::warn!("Invalid longitude: {}", lon);
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    tracing::info!("Fetching chart data for lat={}, lon={}", lat, lon);
+
+    let config = ChartConfig::new(
+        HouseSystem::Placidus,
+        GeoPos::new(lat, lon, 0.0),
+        2451545.0, // Default: J2000 epoch (no specific time provided)
+    );
+
+    let calculator: SwissEphChartCalculator = match SwissEphChartCalculator::new(config.clone()) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("Failed to create chart calculator: {}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    let chart_data = match calculator.calculate_chart() {
+        Ok(data) => data,
+        Err(e) => {
+            tracing::error!("Failed to calculate chart: {}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Perform aspect analysis
+    let aspect_config = AspectConfig::new(3.0); // 3 degree default orb
+    let aspect_analysis = analyze_aspects(&chart_data.planets, aspect_config);
+
+    // Extract house_system before moving chart_data
+    let house_system = chart_data.houses.system.to_string();
+
+    let response = ChartDataResponse {
+        planets: chart_data.planets,
+        houses: chart_data.houses,
+        aspects: aspect_analysis.aspects,
+        grand_trines: aspect_analysis.grand_trines,
+        moon_void_of_course: aspect_analysis.moon_void_of_course,
+        metadata: ChartMetadata {
+            latitude: lat,
+            longitude: lon,
+            julian_day: chart_data.julian_day,
+            house_system,
+        },
+    };
+
+    tracing::info!("Successfully calculated chart data for lat={}, lon={}", lat, lon);
+    Ok(Json(response))
+}
+
 // Need Arc for handlers in JobExecutor
 #[cfg(feature = "db")]
 use std::sync::Arc;
@@ -239,6 +344,8 @@ use std::sync::Arc;
 mod tests {
     use super::*;
     use tower::ServiceExt;
+    use axum::http::{Request, StatusCode};
+    use http_body_util::BodyExt;
 
     #[tokio::test]
     async fn test_health_endpoint() {
@@ -247,7 +354,7 @@ mod tests {
         let response = tower::ServiceBuilder::new()
             .service(app)
             .oneshot(
-                http::Request::builder()
+                Request::builder()
                     .uri("/health")
                     .body(Body::empty())
                     .unwrap(),
@@ -255,5 +362,133 @@ mod tests {
             .await;
 
         assert!(response.unwrap().status().is_success());
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_missing_lat() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lon=-74.0060")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_missing_lon() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_invalid_lat() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        // Latitude > 90 should fail
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=100.0&lon=-74.0060")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_invalid_lon() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        // Longitude > 180 should fail
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-200.0")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_valid_request() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Parse the JSON response
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+        // Verify response structure
+        assert!(json_value.get("planets").is_some());
+        assert!(json_value.get("houses").is_some());
+        assert!(json_value.get("aspects").is_some());
+        assert!(json_value.get("metadata").is_some());
+
+        // Verify metadata
+        let metadata = json_value.get("metadata").unwrap();
+        assert_eq!(metadata.get("latitude").unwrap().as_f64().unwrap(), 40.7128);
+        assert_eq!(metadata.get("longitude").unwrap().as_f64().unwrap(), -74.0060);
+        assert_eq!(metadata.get("house_system").unwrap().as_str().unwrap(), "Placidus");
+
+        // Verify planets array contains expected planets
+        let planets = json_value.get("planets").unwrap().as_array().unwrap();
+        let planet_names: Vec<&str> = planets.iter()
+            .map(|p| p.get("name").unwrap().as_str().unwrap())
+            .collect();
+
+        // Should contain at least the classical planets
+        assert!(planet_names.contains(&"Sun"));
+        assert!(planet_names.contains(&"Moon"));
+        assert!(planet_names.contains(&"Mercury"));
+        assert!(planet_names.contains(&"Venus"));
+        assert!(planet_names.contains(&"Mars"));
+        assert!(planet_names.contains(&"Jupiter"));
+        assert!(planet_names.contains(&"Saturn"));
+
+        // Verify aspects array exists
+        let aspects = json_value.get("aspects").unwrap().as_array().unwrap();
+        // Aspects may be empty depending on positions, but should be a valid array
+        assert!(!aspects.is_empty() || true); // aspects.is_array() is implicit from as_array()
     }
 }

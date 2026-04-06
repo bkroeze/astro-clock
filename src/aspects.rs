@@ -1,7 +1,9 @@
+use serde::Serialize;
+
 use crate::chart::{planet, PlanetPosition};
 
 /// The type of astrological aspect
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum AspectType {
     Conjunction,
     Opposition,
@@ -50,7 +52,7 @@ impl AspectType {
 }
 
 /// Represents a single aspect between two planets
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Aspect {
     pub aspect_type: AspectType,
     pub planet1: String,
@@ -81,7 +83,7 @@ impl Aspect {
 }
 
 /// Represents a grand trine (three planets in trine aspect)
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct GrandTrine {
     pub planet1: String,
     pub planet2: String,
@@ -328,7 +330,7 @@ fn get_sign_name(longitude: f64) -> &'static str {
 }
 
 /// Results of aspect analysis
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct AspectAnalysis {
     pub aspects: Vec<Aspect>,
     pub grand_trines: Vec<GrandTrine>,
