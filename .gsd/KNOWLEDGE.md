@@ -23,3 +23,13 @@
 - Retrograde bodies: Venus (1,402 min), Mars (76,441 min), Jupiter (48,102 min), Uranus (41,304 min)
 - 68 distinct VoC periods, 48,294 VoC minutes
 - Moon transits all 12 signs with 27 sign changes
+
+## Testing Patterns
+
+- **`build_app()` must be async in `#[tokio::test]`.** Using `Runtime::new().block_on()` inside a `#[tokio::test]` function panics with "Cannot start a runtime from within a runtime". Make the helper async and use `.await` directly.
+
+- **Project/travel queries fail without derived tables.** The `aspect_summaries` and `retrograde_periods` tables are empty in the test database (seed data only populates raw tables). Project and travel queries return `status=failed` because their SQL depends on these derived tables. Wedding queries work because they use `planet_positions` and `lunar_conditions` directly.
+
+- **CLI pool-timed-out bug affects job/query commands.** `handle_job_status`, `handle_job_list`, and `handle_query_command` in `src/cli/app.rs` each created a PgPool inside one Runtime then used it in another. Fixed by using a single shared Runtime for both pool creation and all async operations (same pattern as the load command).
+
+- **Integration tests use `--ignored` flag.** All database-gated integration tests are marked `#[ignore]` with a note "requires TEST_PG_URL and TimescaleDB with seed data". Run with `cargo test --features db -- --ignored --test-threads=1` via `just test-integration`. Non-ignored tests (constant validation, unit tests) run in normal `cargo test`.

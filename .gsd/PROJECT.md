@@ -47,6 +47,11 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 
 - ✓ cargo build --features db compiles with zero errors — M002/S01 (R001)
 - ✓ Test database infrastructure with deterministic seed data — M002/S02 (R002)
+- ✓ Integration test suite for API routes and CLI commands — M002/S03 (R003)
+- ✓ Project query returns results — M002/S03 (QUERY-07)
+- ✓ Travel query returns results — M002/S03 (QUERY-08)
+- ✓ Auto-loading via ensure_data_loaded — M002/S03 (QUERY-10)
+- ✓ Sync/async query modes — M002/S03 (QUERY-11)
 
 ### Active (v1.1)
 
@@ -64,7 +69,7 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 **Progress:**
 - [x] S01: Fix build errors under --features db — **complete**
 - [x] S02: Test database infrastructure — **complete**
-- [ ] S03: Integration test suite
+- [x] S03: Integration test suite — **complete**
 
 ## Out of Scope
 
@@ -86,7 +91,7 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 ## Milestone Sequence
 
 - [x] M001: Job System — Unified job-based data loading and named queries
-- [ ] M002: Build Fix & Integration Tests — Fix db build, add integration test suite (S01, S02 done; S03 remaining)
+- [x] M002: Build Fix & Integration Tests — Fix db build, add integration test suite (S01, S02, S03 all complete)
 
 ## Constraints
 
@@ -112,6 +117,8 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 | Swiss Ephemeris seed data via CLI load | Deterministic output, tests real data pipeline | ✓ Good |
 | Justfile recipe for test DB provisioning | Separates infrastructure from test execution | ✓ Good |
 | Seed data constants from DB queries | Avoids hardcoding astronomical calculations | ✓ Good |
+| Async build_app() for tower tests | Avoids "Cannot start a runtime from within a runtime" in #[tokio::test] | ✓ Good |
+| Single tokio Runtime for CLI pool ops | Prevents pool-timed-out when pool and queries use different runtimes | ✓ Good |
 
 ---
-*Last updated: 2026-04-15 after completing M002/S02*
+*Last updated: 2026-04-15 after completing M002/S03*
