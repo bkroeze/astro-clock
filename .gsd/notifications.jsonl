@@ -1,0 +1,16 @@
+{"id":"2a153584-9914-4acf-85cf-8f642a6becc5","ts":"2026-04-15T20:42:06.450Z","severity":"warning","message":"Unknown: /gsd upgrade. Run /gsd help for available commands.","source":"notify","read":false}
+{"id":"9bd555c3-a66c-4da2-ae67-6f791bfe9660","ts":"2026-04-15T20:42:12.667Z","severity":"info","message":"Current version: v2.71.0\nChecking npm registry...","source":"notify","read":false}
+{"id":"46530570-f161-49d7-9296-b6df07831bef","ts":"2026-04-15T20:42:12.770Z","severity":"info","message":"Updating: v2.71.0 → v2.74.0...","source":"notify","read":false}
+{"id":"e8c03b59-05e0-4432-bcb0-445c1cf2668e","ts":"2026-04-15T20:42:28.677Z","severity":"info","message":"Updated to v2.74.0. Restart your GSD session to use the new version.","source":"notify","read":false}
+{"id":"352e0107-7431-4fab-b140-c5a8e60b9b75","ts":"2026-04-15T20:55:42.303Z","severity":"info","message":"Analyzing codebase...","source":"notify","read":false}
+{"id":"e4c4a122-965b-4173-ae20-1de73296bee7","ts":"2026-04-15T20:55:42.310Z","severity":"success","message":"✓ Analyzed codebase","source":"notify","read":false}
+{"id":"dfdf75f5-228b-477a-9e9b-36ebfede3020","ts":"2026-04-15T20:55:42.310Z","severity":"info","message":"Reviewing prior context...","source":"notify","read":false}
+{"id":"0af41f57-232b-4a38-ad51-c2ae3414d796","ts":"2026-04-15T20:55:42.343Z","severity":"success","message":"✓ Reviewed prior context","source":"notify","read":false}
+{"id":"58bba553-2994-440f-83c4-999052a7392b","ts":"2026-04-15T21:52:34.340Z","severity":"warning","message":"[manifest] Seeding 3 requirements from REQUIREMENTS.md into DB (first update triggers import)","source":"workflow-logger","read":false}
+{"id":"594c7892-e53c-4bee-acac-e71d10416e91","ts":"2026-04-15T21:56:29.686Z","severity":"warning","message":"[guided] manifest unlink failed: ENOENT: no such file or directory, unlink '/home/bruce/Documents/projects/astro-clock/.gsd/DISCUSSION-MANIFEST.json'","source":"workflow-logger","read":false}
+{"id":"a85e3330-882e-476c-9545-3ee035362e00","ts":"2026-04-15T21:56:29.686Z","severity":"info","message":"Milestone M002 ready.","source":"notify","read":false}
+{"id":"50e8f2eb-11c0-455c-8c05-db61cb7c2cdf","ts":"2026-04-15T21:56:30.028Z","severity":"info","message":"Step-mode started. Will loop until milestone complete.","source":"notify","read":false}
+{"id":"b201913d-8ee8-4e0a-9da1-10cd4ad41b0b","ts":"2026-04-15T21:56:30.030Z","severity":"warning","message":"[dispatch] flat-rate auth-mode lookup failed for zai: Cannot read properties of undefined (reading 'registeredProviders')","source":"workflow-logger","read":false}
+{"id":"f1032637-c972-4381-8177-01cd313ce2f7","ts":"2026-04-15T21:56:30.030Z","severity":"info","message":"Dynamic routing: enabled — simple tasks may use cheaper models (ceiling: zai/glm-5.1)","source":"notify","read":false}
+{"id":"561abd66-1f66-4d1e-93b7-b303ee622e58","ts":"2026-04-15T21:56:30.030Z","severity":"info","message":"Pre-flight: 2 milestones queued. All have full context.","source":"notify","read":false}
+{"id":"fde630cb-f14b-40b0-8f1f-cc25bd7389fd","ts":"2026-04-15T21:56:30.081Z","severity":"info","message":"Pre-dispatch: pre-dispatch: created gsd snapshot after 14075m of uncommitted changes","source":"notify","read":false}

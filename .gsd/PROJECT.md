@@ -43,28 +43,26 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 - ✓ Memory-aware cache eviction — v1.0
 - ✓ Automated benchmarking — v1.0
 
-### Current Milestone: v1.1 Job System
+### Active (v1.1)
 
-**Goal:** Build unified job-based system for data loading and named queries with async/sync execution modes.
+- [x] Job system infrastructure (async/sync modes, job states)
+- [x] Day-level incremental loading with tracking table
+- [x] Named query templates (wedding, project start, travel dates)
+- [x] CLI commands for loading and querying
+- [x] HTTP API endpoints for jobs and queries
+- [x] Job status polling and result retrieval
+
+### Current Milestone: M002 Build Fix & Integration Tests
+
+**Goal:** Fix broken `--features db` build, establish reproducible test database infrastructure, write integration tests proving db-gated code paths work end-to-end.
 
 **Target features:**
-- Job orchestration for DB population (day-level incremental loading)
-- Named query templates (starting with "wedding" query)
-- Synchronous and asynchronous execution modes
-- Job status tracking and result polling
-- CLI commands and HTTP API endpoints
-- Tracking table for loaded date ranges
+- Fix missing `post` import and Rust 2024 string concatenation errors
+- `just test-db-setup` recipe for seeded test database
+- Integration tests for API routes and CLI commands against real DB
+- Validate QUERY-07, QUERY-08, QUERY-10, QUERY-11
 
-## Active (v1.1)
-
-- [ ] Job system infrastructure (async/sync modes, job states)
-- [ ] Day-level incremental loading with tracking table
-- [ ] Named query templates (wedding, project start, travel dates)
-- [ ] CLI commands for loading and querying
-- [ ] HTTP API endpoints for jobs and queries
-- [ ] Job status polling and result retrieval
-
-### Out of Scope
+## Out of Scope
 
 - Natal chart interpretation or predictions — not a divination tool
 - Real-time chart updates — batch/offline processing only
@@ -76,12 +74,15 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 
 This is a Rust-based astrological calculation tool built around the Swiss Ephemeris library. The codebase uses a layered architecture with clear separation between CLI, domain logic, and external integrations. The rendering layer uses tiny-skia for 2D graphics.
 
-**v1.0 shipped with:**
-- 97 commits over 5 days
-- 4 phases, 16 plans, all complete
-- 22/22 v1 requirements delivered
-- 51× query performance improvement
-- ~80% storage reduction through aspect filtering
+**v1.1 shipped with:**
+- M001 completed: Full job system with sync/async modes
+- Wedding, project, and travel query handlers
+- HTTP API and CLI for all operations
+
+## Milestone Sequence
+
+- [x] M001: Job System — Unified job-based data loading and named queries
+- [ ] M002: Build Fix & Integration Tests — Fix db build, add integration test suite
 
 ## Constraints
 

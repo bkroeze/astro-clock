@@ -114,3 +114,13 @@
 - Added assert_cmd and predicates as dev-dependencies for CLI testing
 - Used #[ignore] for integration tests requiring database/server
 - Handled database unavailability gracefully in CLI tests
+
+---
+
+## Decisions Table
+
+| # | When | Scope | Decision | Choice | Rationale | Revisable? | Made By |
+|---|------|-------|----------|--------|-----------|------------|---------|
+| D001 | M002 | testing | Test database connection via TEST_PG_URL | Separate TEST_PG_URL environment variable | Prevents accidental destruction of production data. Explicit separation of test and production database connections. | No | collaborative |
+| D002 | M002 | testing | Seed data strategy | Use existing CLI load command to populate 60 days of deterministic ephemeris data | Swiss Ephemeris produces deterministic output. Tests the real data pipeline. Fixture SQL would be brittle. | Yes — if load performance becomes a bottleneck | collaborative |
+| D003 | M002 | testing | Test provisioning approach | Justfile recipe (test-db-setup) for setup, tests run separately via cargo test --ignored or feature gate | Separates infrastructure setup from test execution. Developer controls when to provision. Tests don't need to manage database lifecycle. | Yes — could move to test harness if preferred | collaborative |

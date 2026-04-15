@@ -1,306 +1,76 @@
 # Requirements
 
+This file is the explicit capability and coverage contract for the project.
+
 ## Active
 
-### QUERY-07 — Named query "project" — find good dates to start projects
-
+### QUERY-07 — Untitled
 - Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
+- Primary owning slice: M002/S03
+- Validation: mapped
+- Notes: Project query implementation exists in src/queries/project.rs. Will be validated by integration tests in M002/S03.
 
-Named query "project" — find good dates to start projects
-
-### QUERY-08 — Named query "travel" — find favorable travel dates
-
+### QUERY-08 — Untitled
 - Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
+- Primary owning slice: M002/S03
+- Validation: mapped
+- Notes: Travel query implementation exists in src/queries/travel.rs. Will be validated by integration tests in M002/S03.
 
-Named query "travel" — find favorable travel dates
-
-### QUERY-10 — Named queries intelligently load missing data before executing
-
+### QUERY-10 — Untitled
 - Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
+- Primary owning slice: M002/S03
+- Validation: mapped
+- Notes: Auto-loading implemented in QueryJobHandler::ensure_data_loaded(). Will be validated by integration tests in M002/S03.
 
-Named queries intelligently load missing data before executing
-
-### QUERY-11 — Named queries support sync/async execution modes
-
+### QUERY-11 — Untitled
 - Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Named queries support sync/async execution modes
-
-## Validated
-
-### JOB-01 — Create jobs table for tracking job state (pending, in-process, complete, failed)
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Create jobs table for tracking job state (pending, in-process, complete, failed)
-
-### JOB-02 — Create loaded_days tracking table for incremental data loading
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Create loaded_days tracking table for incremental data loading
-
-### JOB-03 — Job states: pending → in-process → (complete | failed)
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Job states: pending → in-process → (complete | failed)
-
-### JOB-04 — Jobs have unique job-id (UUID or sequential)
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Jobs have unique job-id (UUID or sequential)
-
-### JOB-05 — Jobs store payload (parameters), result (JSON), error details on failure
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Jobs store payload (parameters), result (JSON), error details on failure
-
-### JOB-06 — Support both synchronous and asynchronous execution modes
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Support both synchronous and asynchronous execution modes
-
-### LOAD-06 — CLI command to load date range: `astro-clock load --start YYYY-MM-DD --days N [--sync]`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-CLI command to load date range: `astro-clock load --start YYYY-MM-DD --days N [--sync]`
-
-### LOAD-07 — API endpoint: `POST /api/v1/load` with `{start_date, days, sync?}`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-API endpoint: `POST /api/v1/load` with `{start_date, days, sync?}`
-
-### LOAD-08 — Day-level incremental loading — skip already-loaded days
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Day-level incremental loading — skip already-loaded days
-
-### LOAD-09 — Loading jobs populate planet_positions, aspects, lunar_conditions tables
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Loading jobs populate planet_positions, aspects, lunar_conditions tables
-
-### LOAD-10 — Track loaded days in tracking table for resume capability
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Track loaded days in tracking table for resume capability
-
-### QUERY-06 — Named query "wedding" — find auspicious wedding dates
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Named query "wedding" — find auspicious wedding dates
-
-### QUERY-09 — Named queries accept date range parameters (start_date, days)
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Named queries accept date range parameters (start_date, days)
-
-### CLI-01 — Command `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Command `astro-clock query wedding --start YYYY-MM-DD --days N [--sync]`
-
-### CLI-02 — Command `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Command `astro-clock query project --start YYYY-MM-DD --days N [--sync]`
-
-### CLI-03 — Command `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Command `astro-clock query travel --start YYYY-MM-DD --days N [--sync]`
-
-### CLI-04 — Command `astro-clock job status <job-id>` — get job status and results
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Command `astro-clock job status <job-id>` — get job status and results
-
-### CLI-05 — Command `astro-clock job list` — list recent jobs with statuses
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Command `astro-clock job list` — list recent jobs with statuses
-
-### API-01 — Endpoint `POST /api/v1/query/wedding` with `{start_date, days, sync?}`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Endpoint `POST /api/v1/query/wedding` with `{start_date, days, sync?}`
-
-### API-02 — Endpoint `POST /api/v1/query/project` with `{start_date, days, sync?}`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Endpoint `POST /api/v1/query/project` with `{start_date, days, sync?}`
-
-### API-03 — Endpoint `POST /api/v1/query/travel` with `{start_date, days, sync?}`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Endpoint `POST /api/v1/query/travel` with `{start_date, days, sync?}`
-
-### API-04 — Endpoint `GET /api/v1/jobs/{job-id}` — get job status and results
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Endpoint `GET /api/v1/jobs/{job-id}` — get job status and results
-
-### API-05 — Endpoint `GET /api/v1/jobs` — list recent jobs
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Endpoint `GET /api/v1/jobs` — list recent jobs
-
-### API-06 — Job result response includes: `status`, `created_at`, `completed_at`, `result` (JSON) or `error` (object)
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Job result response includes: `status`, `created_at`, `completed_at`, `result` (JSON) or `error` (object)
-
-### RESULT-01 — Synchronous jobs block until complete, return result directly
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Synchronous jobs block until complete, return result directly
-
-### RESULT-02 — Asynchronous jobs return immediately with job-id
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Asynchronous jobs return immediately with job-id
-
-### RESULT-03 — Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Job status endpoint returns: `{job_id, status, payload, result?, error?, created_at, updated_at}`
-
-### RESULT-04 — Failed jobs include error code and message in error field
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Failed jobs include error code and message in error field
-
-### RESULT-05 — Complete jobs include query results in result field (JSON)
-
-- Status: validated
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Complete jobs include query results in result field (JSON)
-
-## Deferred
-
-## Out of Scope
+- Primary owning slice: M002/S03
+- Validation: mapped
+- Notes: Sync/async modes implemented in JobExecutor::execute_sync/execute_async and server routes. Will be validated by integration tests in M002/S03.
+
+### R001 — cargo build --features db compiles with zero errors. Currently blocked by missing `axum::routing::post` import (5 errors) and Rust 2024 edition string concatenation issues in svg_renderer.rs (2 errors).
+- Class: quality-attribute
+- Status: active
+- Description: cargo build --features db compiles with zero errors. Currently blocked by missing `axum::routing::post` import (5 errors) and Rust 2024 edition string concatenation issues in svg_renderer.rs (2 errors).
+- Why it matters: The db feature gate hides a significant chunk of the server, jobs, and query code from normal builds. Build failures in this path must not recur.
+- Source: user
+- Primary owning slice: M002/S01
+- Validation: unmapped
+- Notes: Covers BUILD-01, BUILD-02, BUILD-03
+
+### R002 — Justfile recipe (test-db-setup) that idempotently drops, recreates, migrates, and seeds a test database using TEST_PG_URL. Seed data covers a 60-day range loaded via the ephemeris data-range filling functions, producing deterministic planet_positions, aspects, aspect_summaries, lunar_conditions, and retrograde_periods.
+- Class: operability
+- Status: active
+- Description: Justfile recipe (test-db-setup) that idempotently drops, recreates, migrates, and seeds a test database using TEST_PG_URL. Seed data covers a 60-day range loaded via the ephemeris data-range filling functions, producing deterministic planet_positions, aspects, aspect_summaries, lunar_conditions, and retrograde_periods.
+- Why it matters: Integration tests need a reproducible known-state database. Deterministic seed data enables tests to assert against specific expected values.
+- Source: user
+- Primary owning slice: M002/S02
+- Validation: unmapped
+
+### R003 — Integration tests for API routes (load, query/wedding, query/project, query/travel, jobs status, jobs list) and CLI commands (load --sync, query wedding/project/travel --sync, job status, job list) run against the seeded test database and assert correct behavior including happy paths, validation errors, and job lifecycle.
+- Class: quality-attribute
+- Status: active
+- Description: Integration tests for API routes (load, query/wedding, query/project, query/travel, jobs status, jobs list) and CLI commands (load --sync, query wedding/project/travel --sync, job status, job list) run against the seeded test database and assert correct behavior including happy paths, validation errors, and job lifecycle.
+- Why it matters: The existing integration tests are hollow shells with commented-out code. Real integration tests prove the db-gated code paths actually work end-to-end.
+- Source: user
+- Primary owning slice: M002/S03
+- Validation: unmapped
+
+## Traceability
+
+| ID | Class | Status | Primary owner | Supporting | Proof |
+|---|---|---|---|---|---|
+| QUERY-07 |  | active | M002/S03 | none | mapped |
+| QUERY-08 |  | active | M002/S03 | none | mapped |
+| QUERY-10 |  | active | M002/S03 | none | mapped |
+| QUERY-11 |  | active | M002/S03 | none | mapped |
+| R001 | quality-attribute | active | M002/S01 | none | unmapped |
+| R002 | operability | active | M002/S02 | none | unmapped |
+| R003 | quality-attribute | active | M002/S03 | none | unmapped |
+
+## Coverage Summary
+
+- Active requirements: 7
+- Mapped to slices: 7
+- Validated: 0
+- Unmapped active requirements: 0
