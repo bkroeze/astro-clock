@@ -131,8 +131,9 @@ test-db-setup:
     sqlx migrate run --database-url "${TEST_PG_URL}"
 
     # Load 60 days of seed data starting from 2025-01-01
+    # CLI reads DATABASE_URL env var, not PG_URL
     echo "Loading 60 days of seed data..."
-    cargo run --bin astro-clock --features db -- load --start 2025-01-01 --days 60 --sync
+    DATABASE_URL="${TEST_PG_URL}" cargo run --bin astro-clock --features db -- load --start 2025-01-01 --days 60 --sync
 
     echo ""
     echo "=== Test database setup complete ==="

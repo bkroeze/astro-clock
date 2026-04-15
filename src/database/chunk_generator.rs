@@ -69,7 +69,7 @@ impl ChunkGenerator {
         // Generate data for each minute of the day
         for minute in 0..MINUTES_PER_DAY {
             let timestamp = date
-                .and_hms_opt(0, minute, 0)
+                .and_hms_opt(minute / 60, minute % 60, 0)
                 .ok_or_else(|| {
                     ChunkGeneratorError::InvalidDate(format!(
                         "Invalid time for minute {} on date {}",
@@ -350,7 +350,7 @@ impl ChunkGenerator {
             .iter()
             .map(|p| {
                 chunk_date
-                    .and_hms_opt(0, p.timestamp_minutes, 0)
+                    .and_hms_opt(p.timestamp_minutes / 60, p.timestamp_minutes % 60, 0)
                     .unwrap()
                     .and_utc()
             })
@@ -390,7 +390,8 @@ impl ChunkGenerator {
                 $7::boolean[],
                 $8::smallint[]
             )
-            ON CONFLICT (time, body_id) DO NOTHING
+            -- ON CONFLICT not supported on TimescaleDB hypertables in all versions
+            -- Use plain INSERT since test DB is always freshly created
             "#,
         )
         .bind(&times)
@@ -421,7 +422,7 @@ impl ChunkGenerator {
             .iter()
             .map(|a| {
                 chunk_date
-                    .and_hms_opt(0, a.timestamp_minutes, 0)
+                    .and_hms_opt(a.timestamp_minutes / 60, a.timestamp_minutes % 60, 0)
                     .unwrap()
                     .and_utc()
             })
@@ -447,7 +448,7 @@ impl ChunkGenerator {
                 $5::float8[],
                 $6::boolean[]
             )
-            ON CONFLICT (time, body1_id, body2_id) DO NOTHING
+            -- ON CONFLICT not supported on TimescaleDB hypertables in all versions
             "#,
         )
         .bind(&times)
@@ -476,7 +477,7 @@ impl ChunkGenerator {
             .iter()
             .map(|l| {
                 chunk_date
-                    .and_hms_opt(0, l.timestamp_minutes, 0)
+                    .and_hms_opt(l.timestamp_minutes / 60, l.timestamp_minutes % 60, 0)
                     .unwrap()
                     .and_utc()
             })
@@ -505,7 +506,7 @@ impl ChunkGenerator {
                 $5::float8[],
                 $6::boolean[]
             )
-            ON CONFLICT (time) DO NOTHING
+            -- ON CONFLICT not supported on TimescaleDB hypertables in all versions
             "#,
         )
         .bind(&times)

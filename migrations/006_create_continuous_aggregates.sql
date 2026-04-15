@@ -24,7 +24,7 @@ SELECT
     last(latitude, time) AS latitude,
     last(distance, time) AS distance,
     last(speed_lon, time) AS speed_lon,
-    last(retrograde::smallint, time)::boolean AS retrograde,
+    last(CASE WHEN retrograde THEN 1::smallint ELSE 0::smallint END, time) AS retrograde_smallint,
     last(zodiac_sign, time) AS zodiac_sign
 FROM planet_positions
 WHERE body_id IN (0, 2, 3, 4)  -- Sun, Mercury, Venus, Mars
@@ -48,7 +48,7 @@ SELECT
     last(latitude, time) AS latitude,
     last(distance, time) AS distance,
     last(speed_lon, time) AS speed_lon,
-    last(retrograde::smallint, time)::boolean AS retrograde,
+    last(CASE WHEN retrograde THEN 1::smallint ELSE 0::smallint END, time) AS retrograde_smallint,
     last(zodiac_sign, time) AS zodiac_sign
 FROM planet_positions
 WHERE body_id IN (5, 6, 7, 8, 9)  -- Jupiter, Saturn, Uranus, Neptune, Pluto

@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-04-15T22:18:14Z | Files: 117 | Described: 0/117
-<!-- gsd:codebase-meta {"generatedAt":"2026-04-15T22:18:14Z","fingerprint":"af9e10c894518d25bc71286ec7c5d5fa73a4131d","fileCount":117,"truncated":false} -->
+Generated: 2026-04-15T22:30:40Z | Files: 119 | Described: 0/119
+<!-- gsd:codebase-meta {"generatedAt":"2026-04-15T22:30:40Z","fingerprint":"1d7e889755a93524f0e8e94ca372ed6e23adf0bf","fileCount":119,"truncated":false} -->
 
 ### (root)/
 - `.emdash.json`
@@ -137,7 +137,11 @@ Generated: 2026-04-15T22:18:14Z | Files: 117 | Described: 0/117
 - `src/server/routes/queries.rs`
 
 ### tests/
+- `tests/api_integration.rs`
 - `tests/api_query_tests.rs`
 - `tests/cli_job_tests.rs`
 - `tests/cli_query_tests.rs`
 - `tests/svg_output_test.rs`
+
+### tests/common/
+- `tests/common/mod.rs`

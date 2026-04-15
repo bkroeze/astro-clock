@@ -80,7 +80,51 @@ fn test_zodiac_sign_constants() {
     assert_eq!(PISCES, 11);
 }
 
-/// Test database connection and seed data verification.
+/// Verify the discovered seed data constants are internally consistent.
+#[test]
+fn test_discovered_seed_data_constants() {
+    use common::*;
+
+    // Total positions = 10 bodies × positions_per_body
+    assert_eq!(
+        TOTAL_POSITIONS,
+        POSITIONS_PER_BODY * TOTAL_BODIES as i64,
+        "Total positions should equal positions_per_body × total_bodies"
+    );
+
+    // Aspect type counts should sum to total
+    let aspect_sum = known_aspects::CONJUNCTIONS
+        + known_aspects::SEXTILES
+        + known_aspects::SQUARES
+        + known_aspects::TRINES
+        + known_aspects::OPPOSITIONS;
+    assert_eq!(aspect_sum, TOTAL_ASPECTS, "Aspect type counts should sum to total");
+
+    // Lunar conditions = 1 per minute × minutes per day × days
+    assert_eq!(
+        TOTAL_LUNAR_CONDITIONS,
+        POSITIONS_PER_BODY,
+        "Lunar conditions should have 1 record per minute for the range"
+    );
+
+    // All retrograde bodies should be valid body IDs
+    for (body_id, _) in known_retrogrades::RETROGRADE_BODIES {
+        assert!(
+            *body_id >= 0 && *body_id <= 9,
+            "Retrograde body ID {} should be 0-9",
+            body_id
+        );
+    }
+
+    // Moon should visit all 12 signs in 60 days (> 2 full lunar cycles)
+    assert!(
+        known_lunar::MOON_SIGN_COUNT == TOTAL_ZODIAC_SIGNS,
+        "Moon should transit all {} zodiac signs",
+        TOTAL_ZODIAC_SIGNS,
+    );
+}
+
+/// Test database connection and seed data verification with deterministic values.
 #[test]
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
 fn test_seed_data_loaded() {
@@ -98,12 +142,12 @@ fn test_seed_data_loaded() {
         let counts = position_counts_per_body(&pool).await;
         assert_all_bodies_present(&counts);
 
-        // Each body should have at least one record per day
+        // Each body should have exactly POSITIONS_PER_BODY records
         for (body_id, count) in &counts {
-            assert!(
-                *count > 0,
-                "Body {} should have position records in seed range",
-                body_id,
+            assert_eq!(
+                *count, POSITIONS_PER_BODY,
+                "Body {} should have exactly {} position records",
+                body_id, POSITIONS_PER_BODY
             );
         }
 
@@ -111,7 +155,7 @@ fn test_seed_data_loaded() {
     });
 }
 
-/// Test that aspects table has data for the seed range.
+/// Test that aspects table has the expected deterministic counts.
 #[test]
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
 fn test_aspects_present() {
@@ -122,63 +166,97 @@ fn test_aspects_present() {
         let pool = test_pool().await;
 
         let aspect_count = count_aspects(&pool).await;
-        assert!(
-            aspect_count > 0,
-            "Aspects table should contain records for the seed range",
+        assert_eq!(
+            aspect_count, TOTAL_ASPECTS,
+            "Aspects table should contain exactly {} records for the seed range",
+            TOTAL_ASPECTS,
         );
 
         pool.close().await;
     });
 }
 
-/// Test that retrograde periods are present in the seed range.
+/// Test that retrograde bodies match the known deterministic values.
 #[test]
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
-fn test_retrograde_periods_present() {
+fn test_retrograde_bodies_match_known() {
     use common::*;
 
     let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
     rt.block_on(async {
         let pool = test_pool().await;
 
-        let retrograde_count = count_retrograde_periods(&pool).await;
-        assert!(
-            retrograde_count > 0,
-            "Retrograde periods should exist within the 60-day seed range",
-        );
+        // Query retrograde minute counts per body
+        let rows: Vec<(i16, i64)> = sqlx::query_as(
+            "SELECT body_id, COUNT(*) FROM planet_positions WHERE retrograde = true GROUP BY body_id ORDER BY body_id",
+        )
+        .fetch_all(&pool)
+        .await
+        .expect("Failed to query retrograde counts");
+
+        // Verify each known retrograde body is present
+        for (known_body, known_minutes) in known_retrogrades::RETROGRADE_BODIES {
+            let found = rows.iter().find(|(b, _)| *b == *known_body);
+            assert!(
+                found.is_some(),
+                "Body {} should have retrograde records",
+                known_body
+            );
+            let (_, actual_minutes) = found.unwrap();
+            assert_eq!(
+                *actual_minutes, *known_minutes,
+                "Body {} retrograde minutes should be {}",
+                known_body, known_minutes
+            );
+        }
+
+        // Verify non-retrograde bodies have zero retrograde records
+        for non_retro_body in known_retrogrades::NON_RETROGRADE_BODIES {
+            let found = rows.iter().find(|(b, _)| *b == *non_retro_body);
+            assert!(
+                found.is_none(),
+                "Body {} should NOT have retrograde records",
+                non_retro_body
+            );
+        }
 
         pool.close().await;
     });
 }
 
-/// Test that lunar conditions and VoC periods are present.
+/// Test that lunar conditions match the deterministic values.
 #[test]
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
-fn test_lunar_conditions_present() {
+fn test_lunar_conditions_match_known() {
     use common::*;
 
     let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
     rt.block_on(async {
         let pool = test_pool().await;
 
+        // Total lunar conditions
         let lunar_count = count_lunar_conditions(&pool).await;
-        assert!(
-            lunar_count > 0,
-            "Lunar conditions should exist for the seed range",
+        assert_eq!(
+            lunar_count, TOTAL_LUNAR_CONDITIONS,
+            "Lunar conditions should be {}",
+            TOTAL_LUNAR_CONDITIONS,
         );
 
-        // VoC periods should also exist in a 60-day range
+        // VoC periods — count distinct VoC transitions
         let voc_count = count_voc_periods(&pool).await;
-        assert!(
-            voc_count > 0,
-            "VoC Moon periods should exist in a 60-day range",
+        assert_eq!(
+            voc_count, known_lunar::VOC_MINUTES,
+            "VoC minutes should be {}",
+            known_lunar::VOC_MINUTES,
         );
 
-        // Moon should transit through multiple signs in 60 days
+        // Moon signs — should cover all 12 signs
         let moon_signs = moon_signs_in_range(&pool).await;
-        assert!(
-            moon_signs.len() > 1,
-            "Moon should transit through multiple zodiac signs in 60 days",
+        assert_eq!(
+            moon_signs.len(),
+            known_lunar::MOON_SIGN_COUNT,
+            "Moon should transit through {} zodiac signs",
+            known_lunar::MOON_SIGN_COUNT,
         );
 
         pool.close().await;

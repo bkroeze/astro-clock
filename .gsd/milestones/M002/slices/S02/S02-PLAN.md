@@ -31,7 +31,7 @@ Test helper module and seed data constants available for S03 integration tests
   - Files: `tests/common/mod.rs`
   - Verify: cargo test --features db --test api_integration 2>&1 | grep 'error' | wc -l returns 0 (compiles, may fail at runtime without DB)
 
-- [ ] **T03: Load seed data and discover deterministic values** `est:30 min`
+- [x] **T03: Load seed data and discover deterministic values** `est:30 min`
   Run just test-db-setup to load 60 days of seed data. Query the database to discover and document the deterministic values: how many retrograde periods exist, which bodies are retrograde, what Moon signs appear, VoC periods present, aspect summary counts. Record these as constants in the test helper module so integration tests can assert against them.
   - Files: `tests/common/mod.rs`
   - Verify: Queries against the test database return the documented seed data values

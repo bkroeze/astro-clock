@@ -115,35 +115,96 @@ pub mod moon_phase_ids {
 
 // ============================================================================
 // KNOWN ASTRONOMICAL VALUES FOR SEED RANGE
+// Queried from test database after loading 60 days of seed data (2025-01-01 to 2025-03-02)
 // ============================================================================
 
-/// Known retrograde periods within the seed data range (2025-01-01 to 2025-03-02).
-///
-/// These are approximate values based on ephemeris data for the seed range.
-/// Mercury retrograde: approximately Jan 15 - Feb 4, 2025 (not exact — will be
-/// determined by T03's database queries). These placeholders will be refined after
-/// querying the seeded database.
-///
-/// IMPORTANT: These constants will be updated in T03 after loading and querying
-/// actual seed data. Until then, tests using these values should be marked #[ignore].
+/// Total position records in seed data (10 bodies × 86400 minutes/day × 60 days)
+pub const TOTAL_POSITIONS: i64 = 864_000;
+
+/// Positions per body per day (1440 minutes × 60 days = 86400)
+pub const POSITIONS_PER_BODY: i64 = 86_400;
+
+/// Total aspect records in seed data
+pub const TOTAL_ASPECTS: i64 = 1_465_067;
+
+/// Total lunar conditions records in seed data (86400 minutes × 1 day-condition)
+pub const TOTAL_LUNAR_CONDITIONS: i64 = 86_400;
+
+/// Retrograde bodies during seed range with their retrograde minute counts.
+/// Venus (3): 1402 min, Mars (4): 76441 min, Jupiter (5): 48102 min, Uranus (7): 41304 min
 pub mod known_retrogrades {
-    /// Bodies that may be retrograde during the seed range
-    /// (Mercury and outer planets are candidates)
-    pub const LIKELY_RETROGRADE_BODIES: &[i16] = &[
-        2,  // Mercury — frequent retrograde cycles
-        7,  // Uranus — slow-moving, often retrograde
-        8,  // Neptune — slow-moving, often retrograde
-        9,  // Pluto — slow-moving, often retrograde
+    /// Bodies that are retrograde during the seed range, with their total retrograde minutes
+    pub const RETROGRADE_BODIES: &[(i16, i64)] = &[
+        (3, 1_402),   // Venus — brief retrograde at start of range
+        (4, 76_441),  // Mars — retrograde majority of range
+        (5, 48_102),  // Jupiter — retrograde most of range
+        (7, 41_304),  // Uranus — retrograde much of range
+    ];
+
+    /// Bodies that are NOT retrograde during the seed range
+    pub const NON_RETROGRADE_BODIES: &[i16] = &[
+        0, // Sun — never retrograde
+        1, // Moon — never retrograde
+        2, // Mercury — not retrograde in this range
+        6, // Saturn — not retrograde in this range
+        8, // Neptune — not retrograde in this range
+        9, // Pluto — not retrograde in this range
+    ];
+
+    /// Retrograde days per body
+    pub const RETROGRADE_DAYS: &[(i16, i64)] = &[
+        (3, 1),   // Venus
+        (4, 54),  // Mars
+        (5, 34),  // Jupiter
+        (7, 29),  // Uranus
+    ];
+
+    /// Zodiac signs occupied by retrograde bodies
+    pub const RETROGRADE_ZODIAC_SIGNS: &[(i16, i16)] = &[
+        (3, 0),   // Venus in Aries
+        (4, 3),   // Mars in Cancer
+        (4, 4),   // Mars in Leo
+        (5, 2),   // Jupiter in Gemini
+        (7, 1),   // Uranus in Taurus
     ];
 }
 
-/// Known planetary longitude ranges for validation.
+/// Aspect count breakdown by type
+pub mod known_aspects {
+    pub const CONJUNCTIONS: i64 = 178_226;
+    pub const SEXTILES: i64 = 630_355;
+    pub const SQUARES: i64 = 265_324;
+    pub const TRINES: i64 = 295_184;
+    pub const OPPOSITIONS: i64 = 95_978;
+}
+
+/// Known lunar data for the seed range
+pub mod known_lunar {
+    /// Number of distinct void-of-course periods
+    pub const VOC_PERIODS: i64 = 68;
+
+    /// Total VoC minutes
+    pub const VOC_MINUTES: i64 = 48_294;
+
+    /// Number of Moon sign changes (transits through zodiac)
+    pub const MOON_SIGN_CHANGES: i64 = 27;
+
+    /// All 12 zodiac signs are visited by the Moon
+    pub const MOON_SIGN_COUNT: usize = 12;
+
+    /// All 8 Moon phases appear in the range
+    pub const MOON_PHASE_COUNT: usize = 8;
+}
+
+/// Known planetary longitude values for validation.
 ///
 /// These provide sanity-check bounds for positions that should be present
 /// in the seed data. Longitudes are always 0-360 degrees.
 pub mod known_positions {
-    /// Sun moves ~1 degree per day, starting from ~280° (Capricorn) on 2025-01-01
-    pub const SUN_LONGITUDE_JAN01_APPROX: (f64, f64) = (279.0, 282.0);
+    /// Sun longitude on 2025-01-01 00:00 UTC: ~280.8° (Capricorn, sign 9)
+    pub const SUN_LONGITUDE_JAN01_APPROX: (f64, f64) = (280.0, 282.0);
+    /// Sun longitude on 2025-03-02 00:00 UTC: ~341.7° (Pisces, sign 11)
+    pub const SUN_LONGITUDE_MAR02_APPROX: (f64, f64) = (340.0, 343.0);
     /// Moon moves ~13 degrees per day, covering all 360° in ~27.3 days
     pub const MOON_LONGITUDE_RANGE: (f64, f64) = (0.0, 360.0);
 }

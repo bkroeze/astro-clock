@@ -418,85 +418,89 @@ impl App {
                     let db_url = std::env::var("DATABASE_URL")
                         .unwrap_or_else(|_| config.database.url.clone());
 
-                    // Create database pool
-                    let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
-                        DatabasePool::connect(&db_url).await
-                            .map_err(|e| crate::errors::Error::Config(
-                                format!("Failed to connect to database: {}", e)
-                            ))
-                    })?;
+                    // Use a single runtime for pool creation and execution to avoid
+                    // "pool timed out" from using connections across dropped runtimes
+                    let rt = tokio::runtime::Runtime::new()?;
 
-                    let pool = db_pool.pool().clone();
-
-                    // Create repositories and handler
-                    let job_repo = JobRepository::new(pool.clone());
-                    let load_handler = LoadJobHandler::new(pool);
-
-                    // Create executor with the load handler
-                    let executor = JobExecutor::new(
-                        job_repo,
-                        vec![std::sync::Arc::new(load_handler)],
-                        "cli-worker".to_string(),
-                    );
-
-                    // Build payload
-                    let payload = json!({
-                        "start_date": start,
-                        "days": days
-                    });
-
-                    // Execute based on sync flag
                     if *sync {
-                        println!("Loading planetary data for {} days starting from {}...", days, start);
-                        
-                        let result = tokio::runtime::Runtime::new()?.block_on(async {
+                        let result: crate::errors::Result<_> = rt.block_on(async {
+                            let db_pool = DatabasePool::connect(&db_url).await
+                                .map_err(|e| crate::errors::Error::Database(
+                                    format!("Failed to connect to database: {}", e)
+                                ))?;
+                            let pool = db_pool.pool().clone();
+                            let job_repo = JobRepository::new(pool.clone());
+                            let load_handler = LoadJobHandler::new(pool);
+                            let executor = JobExecutor::new(
+                                job_repo,
+                                vec![std::sync::Arc::new(load_handler)],
+                                "cli-worker".to_string(),
+                            );
+                            let payload = json!({
+                                "start_date": start,
+                                "days": days
+                            });
                             executor.execute_sync(JobType::Load, payload).await
+                                .map_err(|e| crate::errors::Error::Chart(format!("{}", e)))
                         });
 
-                        match result {
-                            Ok(job) => {
-                                if let Some(ref result) = job.result {
-                                    // Parse the result JSON
-                                    if let Ok(load_result) = serde_json::from_value::<crate::jobs::handlers::LoadJobResult>(result.clone()) {
-                                        println!("\n✓ Load completed successfully");
-                                        println!("  Dates loaded: {}", load_result.dates_loaded);
-                                        println!("  Dates skipped: {}", load_result.dates_skipped);
-                                        println!("  Dates failed: {}", load_result.dates_failed);
-                                        println!("  Total positions: {}", load_result.total_positions);
-                                        println!("  Total aspects: {}", load_result.total_aspects);
-                                        println!("  Total lunar conditions: {}", load_result.total_lunar_conditions);
-                                        
-                                        if !load_result.failed.is_empty() {
-                                            println!("\nFailed dates:");
-                                            for failure in &load_result.failed {
-                                                println!("  - {}: {}", failure.date, failure.error);
-                                            }
+                        let result = result.map_err(|e| crate::errors::Error::Chart(format!("Load failed: {}", e)))?;
+
+                        println!("Loading planetary data for {} days starting from {}...", days, start);
+                        {
+                            let job = result;
+                            if let Some(ref job_result) = job.result {
+                                if let Ok(load_result) = serde_json::from_value::<crate::jobs::handlers::LoadJobResult>(job_result.clone()) {
+                                    println!("\n✓ Load completed successfully");
+                                    println!("  Dates loaded: {}", load_result.dates_loaded);
+                                    println!("  Dates skipped: {}", load_result.dates_skipped);
+                                    println!("  Dates failed: {}", load_result.dates_failed);
+                                    println!("  Total positions: {}", load_result.total_positions);
+                                    println!("  Total aspects: {}", load_result.total_aspects);
+                                    println!("  Total lunar conditions: {}", load_result.total_lunar_conditions);
+                                    
+                                    if !load_result.failed.is_empty() {
+                                        println!("\nFailed dates:");
+                                        for failure in &load_result.failed {
+                                            println!("  - {}: {}", failure.date, failure.error);
                                         }
-                                    } else {
-                                        println!("✓ Load completed: {:?}", job.result);
                                     }
-                                } else if let Some(error) = job.error {
-                                    println!("✗ Load failed: {:?}", error);
+                                } else {
+                                    println!("✓ Load completed: {:?}", job.result);
                                 }
-                            }
-                            Err(e) => {
-                                return Err(crate::errors::Error::Chart(format!("Load failed: {}", e)));
+                            } else if let Some(error) = job.error {
+                                println!("✗ Load failed: {:?}", error);
                             }
                         }
                     } else {
-                        let job_id = tokio::runtime::Runtime::new()?.block_on(async {
+                        let job_id: crate::errors::Result<_> = rt.block_on(async {
+                            let db_pool = DatabasePool::connect(&db_url).await
+                                .map_err(|e| crate::errors::Error::Database(
+                                    format!("Failed to connect to database: {}", e)
+                                ))?;
+                            let pool = db_pool.pool().clone();
+                            let job_repo = JobRepository::new(pool.clone());
+                            let load_handler = LoadJobHandler::new(pool);
+                            let executor = JobExecutor::new(
+                                job_repo,
+                                vec![std::sync::Arc::new(load_handler)],
+                                "cli-worker".to_string(),
+                            );
+                            let payload = json!({
+                                "start_date": start,
+                                "days": days
+                            });
                             executor.execute_async(JobType::Load, payload).await
+                                .map_err(|e| crate::errors::Error::Chart(format!("{}", e)))
                         });
 
-                        match job_id {
-                            Ok(id) => {
-                                println!("Load job started in background");
-                                println!("Job ID: {}", id);
-                                println!("Poll status: /api/v1/jobs/{}", id);
-                            }
-                            Err(e) => {
-                                return Err(crate::errors::Error::Chart(format!("Failed to start load job: {}", e)));
-                            }
+                        let job_id = job_id.map_err(|e| crate::errors::Error::Chart(format!("Failed to start load job: {}", e)))?;
+
+                        {
+                            let id = job_id;
+                            println!("Load job started in background");
+                            println!("Job ID: {}", id);
+                            println!("Poll status: /api/v1/jobs/{}", id);
                         }
                     }
 
