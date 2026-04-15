@@ -31,7 +31,7 @@ Clean compile — downstream slices depend on a compilable binary with db featur
   - Files: `src/svg_renderer.rs`
   - Verify: cargo test --all-features 2>&1 | grep 'E0277' | wc -l returns 0
 
-- [ ] **T03: Verify cargo test --all-features passes clean** `est:10 min`
+- [x] **T03: Verify cargo test --all-features passes clean** `est:10 min`
   Run full test suite with all features enabled. Verify zero errors, zero test failures. Check for any additional Rust 2024 edition regressions or warnings in db-gated code that weren't caught by the first two fixes.
   - Verify: cargo test --all-features exits 0
 
