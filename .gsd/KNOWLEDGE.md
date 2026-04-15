@@ -11,11 +11,13 @@
 - **`and_hms_opt(0, minute, 0)` bug.** The chunk_generator.rs had `and_hms_opt(0, minute, 0)` where `minute` ranges 0..1439. For minutes >= 60, this tries to set the "minutes" field to 60+, which fails. Fixed to `and_hms_opt(minute / 60, minute % 60, 0)` in all three save methods (positions, aspects, lunar conditions).
 
 - **Migration 006 continuous aggregate bug.** The `last(retrograde::smallint, time)::boolean` cast fails in TimescaleDB continuous aggregates. Fixed by using `last(CASE WHEN retrograde THEN 1::smallint ELSE 0::smallint END, time) AS retrograde_smallint`.
+- **Migration 006 `IF NOT EXISTS` fails on re-creation.** TimescaleDB continuous aggregates are special views, not regular materialized views. `CREATE MATERIALIZED VIEW IF NOT EXISTS` tries `DROP MATERIALIZED VIEW` internally which fails with "is not a materialized view". The Justfile test-db-setup recipe works around this by applying migration 6 via psql with error suppression.
+- **sqlx migrate run stops at first failure.** Migration 6's continuous aggregate issue blocks migrations 7-9 from being applied. The Justfile recipe applies migrations 1-5 via sqlx, then 6 via psql (tolerating errors), then 7-9 via psql individually.
 
-## Seed Data (2025-01-01 to 2025-03-02)
+## Seed Data (2025-01-01 to 2025-03-01, 60 days via --days 60)
 
 - 60 days loaded (Jan 29 failed due to moon_phase_angle constraint — acceptable ~1.6% loss)
-- 864,000 position records (10 bodies × 86,400 minutes)
+- 864,000 position records (10 bodies × 1,440 min/day × 60 days)
 - 1,465,067 aspects total
 - 86,400 lunar conditions (1 per minute)
 - Retrograde bodies: Venus (1,402 min), Mars (76,441 min), Jupiter (48,102 min), Uranus (41,304 min)

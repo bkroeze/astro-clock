@@ -28,15 +28,6 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: mapped
 - Notes: Sync/async modes implemented in JobExecutor::execute_sync/execute_async and server routes. Will be validated by integration tests in M002/S03.
 
-### R002 — Justfile recipe (test-db-setup) that idempotently drops, recreates, migrates, and seeds a test database using TEST_PG_URL. Seed data covers a 60-day range loaded via the ephemeris data-range filling functions, producing deterministic planet_positions, aspects, aspect_summaries, lunar_conditions, and retrograde_periods.
-- Class: operability
-- Status: active
-- Description: Justfile recipe (test-db-setup) that idempotently drops, recreates, migrates, and seeds a test database using TEST_PG_URL. Seed data covers a 60-day range loaded via the ephemeris data-range filling functions, producing deterministic planet_positions, aspects, aspect_summaries, lunar_conditions, and retrograde_periods.
-- Why it matters: Integration tests need a reproducible known-state database. Deterministic seed data enables tests to assert against specific expected values.
-- Source: user
-- Primary owning slice: M002/S02
-- Validation: unmapped
-
 ### R003 — Integration tests for API routes (load, query/wedding, query/project, query/travel, jobs status, jobs list) and CLI commands (load --sync, query wedding/project/travel --sync, job status, job list) run against the seeded test database and assert correct behavior including happy paths, validation errors, and job lifecycle.
 - Class: quality-attribute
 - Status: active
@@ -58,6 +49,15 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: cargo build --features db compiles with zero errors (verified via just verify-full). All 197 tests pass with --all-features. The missing post import (T01) and Rust 2024 &&str deref issue (T02) are both fixed.
 - Notes: Covers BUILD-01, BUILD-02, BUILD-03
 
+### R002 — Justfile recipe (test-db-setup) that idempotently drops, recreates, migrates, and seeds a test database using TEST_PG_URL. Seed data covers a 60-day range loaded via the ephemeris data-range filling functions, producing deterministic planet_positions, aspects, aspect_summaries, lunar_conditions, and retrograde_periods.
+- Class: operability
+- Status: validated
+- Description: Justfile recipe (test-db-setup) that idempotently drops, recreates, migrates, and seeds a test database using TEST_PG_URL. Seed data covers a 60-day range loaded via the ephemeris data-range filling functions, producing deterministic planet_positions, aspects, aspect_summaries, lunar_conditions, and retrograde_periods.
+- Why it matters: Integration tests need a reproducible known-state database. Deterministic seed data enables tests to assert against specific expected values.
+- Source: user
+- Primary owning slice: M002/S02
+- Validation: just test-db-setup creates a seeded test DB idempotently; 9 integration tests pass (5 pure + 4 DB-dependent) asserting exact seed data counts; just test-integration runs full suite against seeded DB. Seed data covers 60 days with deterministic values for all 10 bodies, 5 aspect types, retrograde periods, lunar conditions, VoC periods, and moon sign transits.
+
 ## Traceability
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
@@ -67,12 +67,12 @@ This file is the explicit capability and coverage contract for the project.
 | QUERY-10 |  | active | M002/S03 | none | mapped |
 | QUERY-11 |  | active | M002/S03 | none | mapped |
 | R001 | quality-attribute | validated | M002/S01 | none | cargo build --features db compiles with zero errors (verified via just verify-full). All 197 tests pass with --all-features. The missing post import (T01) and Rust 2024 &&str deref issue (T02) are both fixed. |
-| R002 | operability | active | M002/S02 | none | unmapped |
+| R002 | operability | validated | M002/S02 | none | just test-db-setup creates a seeded test DB idempotently; 9 integration tests pass (5 pure + 4 DB-dependent) asserting exact seed data counts; just test-integration runs full suite against seeded DB. Seed data covers 60 days with deterministic values for all 10 bodies, 5 aspect types, retrograde periods, lunar conditions, VoC periods, and moon sign transits. |
 | R003 | quality-attribute | active | M002/S03 | none | unmapped |
 
 ## Coverage Summary
 
-- Active requirements: 6
-- Mapped to slices: 6
-- Validated: 1 (R001)
+- Active requirements: 5
+- Mapped to slices: 5
+- Validated: 2 (R001, R002)
 - Unmapped active requirements: 0

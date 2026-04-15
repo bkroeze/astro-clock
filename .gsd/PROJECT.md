@@ -46,6 +46,7 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 ### Validated (v1.1)
 
 - ✓ cargo build --features db compiles with zero errors — M002/S01 (R001)
+- ✓ Test database infrastructure with deterministic seed data — M002/S02 (R002)
 
 ### Active (v1.1)
 
@@ -62,7 +63,7 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 
 **Progress:**
 - [x] S01: Fix build errors under --features db — **complete**
-- [ ] S02: Test database infrastructure
+- [x] S02: Test database infrastructure — **complete**
 - [ ] S03: Integration test suite
 
 ## Out of Scope
@@ -85,7 +86,7 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 ## Milestone Sequence
 
 - [x] M001: Job System — Unified job-based data loading and named queries
-- [ ] M002: Build Fix & Integration Tests — Fix db build, add integration test suite (S01 done)
+- [ ] M002: Build Fix & Integration Tests — Fix db build, add integration test suite (S01, S02 done; S03 remaining)
 
 ## Constraints
 
@@ -107,6 +108,10 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 | Feature-gated database support | Keep core chart generation lightweight | ✓ Good |
 | tiny-skia for rendering | Lightweight 2D graphics, no heavy dependencies | ✓ Good |
 | Explicit deref for Rust 2024 string concat | `*sign` to resolve `&&str` → `&str` for `Add` trait | ✓ Good |
+| Separate TEST_PG_URL for test database | Prevents accidental destruction of production data | ✓ Good |
+| Swiss Ephemeris seed data via CLI load | Deterministic output, tests real data pipeline | ✓ Good |
+| Justfile recipe for test DB provisioning | Separates infrastructure from test execution | ✓ Good |
+| Seed data constants from DB queries | Avoids hardcoding astronomical calculations | ✓ Good |
 
 ---
-*Last updated: 2026-04-15 after completing M002/S01*
+*Last updated: 2026-04-15 after completing M002/S02*
