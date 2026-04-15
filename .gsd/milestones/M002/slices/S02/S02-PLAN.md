@@ -26,7 +26,7 @@ Test helper module and seed data constants available for S03 integration tests
   - Files: `Justfile`, `.env.example`
   - Verify: just test-db-setup exits 0 (requires TEST_PG_URL set and TimescaleDB available)
 
-- [ ] **T02: Create test helper module with seed data constants** `est:45 min`
+- [x] **T02: Create test helper module with seed data constants** `est:45 min`
   Create `tests/common/mod.rs` as a shared test helper module. Provides: database connection helper (reads TEST_PG_URL, creates pool), seed data constants (date range, known planet positions, expected query results), test fixture functions (verify seed data loaded, get specific position assertions). This module is shared across integration test files.
   - Files: `tests/common/mod.rs`
   - Verify: cargo test --features db --test api_integration 2>&1 | grep 'error' | wc -l returns 0 (compiles, may fail at runtime without DB)
