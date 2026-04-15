@@ -209,7 +209,7 @@ impl SvgRenderer {
             if let Some(glyph) = self.glyph_registry.get(sign) {
                 let transform = self.calculate_glyph_transform(glyph, x, y, symbol_size);
                 let use_element =
-                    "<use href=\"#".to_string() + sign + "\" transform=\"" + &transform + "\"/>";
+                    "<use href=\"#".to_string() + *sign + "\" transform=\"" + &transform + "\"/>";
                 svg.push(use_element);
             }
         }

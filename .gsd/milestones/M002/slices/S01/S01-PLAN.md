@@ -26,7 +26,7 @@ Clean compile — downstream slices depend on a compilable binary with db featur
   - Files: `src/server/mod.rs`
   - Verify: cargo build --features db 2>&1 | grep 'E0425' | wc -l returns 0
 
-- [ ] **T02: Fix Rust 2024 string concatenation in svg_renderer.rs** `est:15 min`
+- [x] **T02: Fix Rust 2024 string concatenation in svg_renderer.rs** `est:15 min`
   Fix string concatenation on line 212 (`String + &&str`) and line 353 (`String + &String`) in `src/svg_renderer.rs`. Rust 2024 edition tightened deref coercion — `+` operator on String requires `&str`, not `&&str` or `&String`. Use `format!()` or explicit derefs.
   - Files: `src/svg_renderer.rs`
   - Verify: cargo test --all-features 2>&1 | grep 'E0277' | wc -l returns 0
