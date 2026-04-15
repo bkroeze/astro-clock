@@ -31,7 +31,7 @@ Terminal slice — milestone complete when integration tests pass
   - Files: `tests/cli_integration.rs`
   - Verify: cargo test --features db --test cli_integration -- --ignored (after just test-db-setup) exits 0
 
-- [ ] **T03: Full verification and requirements validation** `est:20 min`
+- [x] **T03: Full verification and requirements validation** `est:20 min`
   Run the full test suite: cargo test --all-features plus the integration tests against the seeded database. Verify QUERY-07, QUERY-08, QUERY-10, QUERY-11 are satisfied. Update REQUIREMENTS.md to mark them validated. Run just verify-full as the final gate.
   - Files: `.gsd/REQUIREMENTS.md`
   - Verify: just verify-full exits 0 and just test-integration exits 0
