@@ -613,19 +613,21 @@ impl App {
             let db_url = std::env::var("DATABASE_URL")
                 .unwrap_or_else(|_| config.database.url.clone());
 
-            // Create database pool
-            let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
-                DatabasePool::connect(&db_url)
+            // Create database pool — use a single runtime to avoid "pool timed out"
+            // from connections bound to a dropped runtime.
+            let rt = tokio::runtime::Runtime::new()?;
+
+            let pool = rt.block_on(async {
+                let db_pool = DatabasePool::connect(&db_url)
                     .await
                     .map_err(|e| {
                         crate::errors::Error::Config(format!(
                             "Failed to connect to database: {}",
                             e
                         ))
-                    })
+                    })?;
+                Ok::<_, crate::errors::Error>(db_pool.pool().clone())
             })?;
-
-            let pool = db_pool.pool().clone();
 
             // Create repositories and handler
             let job_repo = JobRepository::new(pool.clone());
@@ -652,7 +654,7 @@ impl App {
                     query_name, days, start
                 );
 
-                let result = tokio::runtime::Runtime::new()?.block_on(async {
+                let result = rt.block_on(async {
                     executor.execute_sync(JobType::Query, payload).await
                 });
 
@@ -708,7 +710,7 @@ impl App {
                     }
                 }
             } else {
-                let job_id = tokio::runtime::Runtime::new()?.block_on(async {
+                let job_id = rt.block_on(async {
                     executor.execute_async(JobType::Query, payload).await
                 });
 
@@ -787,18 +789,20 @@ impl App {
         let db_url = std::env::var("DATABASE_URL")
             .unwrap_or_else(|_| config.database.url.clone());
 
-        // Create database pool
-        let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
-            crate::database::pool::DatabasePool::connect(&db_url).await
+        // Create database pool — use a single runtime to avoid "pool timed out" from
+        // connections bound to a dropped runtime.
+        let rt = tokio::runtime::Runtime::new()?;
+
+        let pool = rt.block_on(async {
+            let db_pool = crate::database::pool::DatabasePool::connect(&db_url).await
                 .map_err(|e| crate::errors::Error::Config(
                     format!("Failed to connect to database: {}", e)
-                ))
+                ))?;
+            Ok::<_, crate::errors::Error>(db_pool.pool().clone())
         })?;
 
-        let pool = db_pool.pool().clone();
-
         // Query job
-        let job = tokio::runtime::Runtime::new()?.block_on(async {
+        let job = rt.block_on(async {
             let repo = JobRepository::new(pool);
             repo.get_job(job_id).await
         });
@@ -897,18 +901,20 @@ impl App {
         let db_url = std::env::var("DATABASE_URL")
             .unwrap_or_else(|_| config.database.url.clone());
 
-        // Create database pool
-        let db_pool = tokio::runtime::Runtime::new()?.block_on(async {
-            crate::database::pool::DatabasePool::connect(&db_url).await
+        // Create database pool — use a single runtime to avoid "pool timed out" from
+        // connections bound to a dropped runtime.
+        let rt = tokio::runtime::Runtime::new()?;
+
+        let pool = rt.block_on(async {
+            let db_pool = crate::database::pool::DatabasePool::connect(&db_url).await
                 .map_err(|e| crate::errors::Error::Config(
                     format!("Failed to connect to database: {}", e)
-                ))
+                ))?;
+            Ok::<_, crate::errors::Error>(db_pool.pool().clone())
         })?;
 
-        let pool = db_pool.pool().clone();
-
         // Query jobs
-        let result: Result<(Vec<_>, i64), crate::jobs::error::JobError> = tokio::runtime::Runtime::new()?.block_on(async {
+        let result: Result<(Vec<_>, i64), crate::jobs::error::JobError> = rt.block_on(async {
             let repo = JobRepository::new(pool);
             let jobs = repo.list_jobs(status, limit, offset).await?;
             let total = repo.count_jobs(status).await?;
