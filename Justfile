@@ -261,6 +261,9 @@ tree:
 verify:
     cargo check && cargo test && cargo fmt -- --check && cargo clippy
 
+# Full verification gate: build with db feature + test all features
+verify-full: build-db test-all
+
 # ============================================================================
 # Ephemeris Data
 # ============================================================================

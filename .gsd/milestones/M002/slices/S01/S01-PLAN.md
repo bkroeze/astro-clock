@@ -35,7 +35,7 @@ Clean compile — downstream slices depend on a compilable binary with db featur
   Run full test suite with all features enabled. Verify zero errors, zero test failures. Check for any additional Rust 2024 edition regressions or warnings in db-gated code that weren't caught by the first two fixes.
   - Verify: cargo test --all-features exits 0
 
-- [ ] **T04: Add justfile verify-full recipe as compile smoke test** `est:10 min`
+- [x] **T04: Add justfile verify-full recipe as compile smoke test** `est:10 min`
   Add `just build-db` and `just test-all` as verification steps in the Justfile to ensure these gates are always checked. Currently these recipes exist but there's no documented expectation that they should pass. Add a `just verify-full` recipe that runs build-db + test-all + clippy as a single gate.
   - Files: `Justfile`
   - Verify: just verify-full exits 0
