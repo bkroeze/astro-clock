@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T04",
+  "unitId": "M002/S01/T04",
+  "timestamp": 1776291673693,
+  "passed": false,
+  "discoverySource": "task-plan",
+  "checks": [
+    {
+      "command": "just verify-full exits 0",
+      "exitCode": 1,
+      "durationMs": 4,
+      "verdict": "fail"
+    }
+  ],
+  "retryAttempt": 1,
+  "maxRetries": 2
+}

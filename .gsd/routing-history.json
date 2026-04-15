@@ -7,7 +7,21 @@
         "fail": 0
       },
       "standard": {
-        "success": 4,
+        "success": 5,
+        "fail": 0
+      },
+      "heavy": {
+        "success": 0,
+        "fail": 0
+      }
+    },
+    "complete-slice": {
+      "light": {
+        "success": 1,
+        "fail": 0
+      },
+      "standard": {
+        "success": 0,
         "fail": 0
       },
       "heavy": {
@@ -17,5 +31,5 @@
     }
   },
   "feedback": [],
-  "updatedAt": "2026-04-15T22:21:13.556Z"
+  "updatedAt": "2026-04-15T22:26:17.440Z"
 }

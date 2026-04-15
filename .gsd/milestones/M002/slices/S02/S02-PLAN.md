@@ -21,7 +21,7 @@ Test helper module and seed data constants available for S03 integration tests
 
 ## Tasks
 
-- [ ] **T01: Add just test-db-setup and test-integration recipes** `est:30 min`
+- [x] **T01: Add just test-db-setup and test-integration recipes** `est:30 min`
   Add `test-db-setup` and `test-integration` recipes to Justfile. test-db-setup: drops and recreates the test database using TEST_PG_URL, runs migrations via sqlx, loads 60 days of seed data via the CLI load command. test-integration: runs cargo test with the integration tests enabled. Also update .env.example to include TEST_PG_URL.
   - Files: `Justfile`, `.env.example`
   - Verify: just test-db-setup exits 0 (requires TEST_PG_URL set and TimescaleDB available)

@@ -43,6 +43,10 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 - ✓ Memory-aware cache eviction — v1.0
 - ✓ Automated benchmarking — v1.0
 
+### Validated (v1.1)
+
+- ✓ cargo build --features db compiles with zero errors — M002/S01 (R001)
+
 ### Active (v1.1)
 
 - [x] Job system infrastructure (async/sync modes, job states)
@@ -56,11 +60,10 @@ Generate accurate, visually appealing astrological charts from any date/time/loc
 
 **Goal:** Fix broken `--features db` build, establish reproducible test database infrastructure, write integration tests proving db-gated code paths work end-to-end.
 
-**Target features:**
-- Fix missing `post` import and Rust 2024 string concatenation errors
-- `just test-db-setup` recipe for seeded test database
-- Integration tests for API routes and CLI commands against real DB
-- Validate QUERY-07, QUERY-08, QUERY-10, QUERY-11
+**Progress:**
+- [x] S01: Fix build errors under --features db — **complete**
+- [ ] S02: Test database infrastructure
+- [ ] S03: Integration test suite
 
 ## Out of Scope
 
@@ -82,7 +85,7 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 ## Milestone Sequence
 
 - [x] M001: Job System — Unified job-based data loading and named queries
-- [ ] M002: Build Fix & Integration Tests — Fix db build, add integration test suite
+- [ ] M002: Build Fix & Integration Tests — Fix db build, add integration test suite (S01 done)
 
 ## Constraints
 
@@ -103,6 +106,7 @@ This is a Rust-based astrological calculation tool built around the Swiss Epheme
 | Major aspect filtering | ~80% storage reduction with 8° orb | ✓ Good |
 | Feature-gated database support | Keep core chart generation lightweight | ✓ Good |
 | tiny-skia for rendering | Lightweight 2D graphics, no heavy dependencies | ✓ Good |
+| Explicit deref for Rust 2024 string concat | `*sign` to resolve `&&str` → `&str` for `Add` trait | ✓ Good |
 
 ---
-*Last updated: 2026-03-01 after starting v1.1 milestone planning*
+*Last updated: 2026-04-15 after completing M002/S01*

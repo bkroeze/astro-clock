@@ -99,6 +99,58 @@ test-one TEST_NAME:
 watch-test:
     cargo watch -x test
 
+# Set up test database: drop/recreate, run migrations, load 60 days of seed data
+# Requires TEST_PG_URL env var (e.g. postgresql://postgres:password@localhost:5432/astrology_test)
+test-db-setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ -z "${TEST_PG_URL:-}" ]; then
+        echo "Error: TEST_PG_URL environment variable is not set"
+        echo "Set it with: export TEST_PG_URL=postgresql://user:password@host:port/astrology_test"
+        exit 1
+    fi
+
+    # Extract the database name and host from TEST_PG_URL for drop/create
+    DB_NAME=$(echo "${TEST_PG_URL}" | sed 's|.*/||')
+    MAINTENANCE_URL=$(echo "${TEST_PG_URL}" | sed "s|/${DB_NAME}|/postgres|")
+
+    echo "=== Test Database Setup ==="
+    echo "  Database: ${DB_NAME}"
+
+    # Drop existing test database (ignore errors if it doesn't exist)
+    echo "Dropping existing test database..."
+    psql "${MAINTENANCE_URL}" -c "DROP DATABASE IF EXISTS \"${DB_NAME}\";" 2>/dev/null || true
+
+    # Create fresh test database
+    echo "Creating test database..."
+    psql "${MAINTENANCE_URL}" -c "CREATE DATABASE \"${DB_NAME}\";"
+
+    # Run migrations
+    echo "Running migrations..."
+    sqlx migrate run --database-url "${TEST_PG_URL}"
+
+    # Load 60 days of seed data starting from 2025-01-01
+    echo "Loading 60 days of seed data..."
+    cargo run --bin astro-clock --features db -- load --start 2025-01-01 --days 60 --sync
+
+    echo ""
+    echo "=== Test database setup complete ==="
+    echo "  Seed data range: 2025-01-01 to 2025-03-02 (60 days)"
+
+# Run integration tests (requires TEST_PG_URL and test database set up)
+test-integration:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [ -z "${TEST_PG_URL:-}" ]; then
+        echo "Error: TEST_PG_URL environment variable is not set"
+        echo "Set it with: export TEST_PG_URL=postgresql://user:password@host:port/astrology_test"
+        exit 1
+    fi
+
+    cargo test --features db -- --ignored --test-threads=1
+
 # ============================================================================
 # Documentation
 # ============================================================================
