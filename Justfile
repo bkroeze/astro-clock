@@ -1,6 +1,9 @@
 # Astro Clock - Justfile
 # A command runner for common development tasks
 
+# Export environment variables from shell to recipes
+set export := true
+
 # Default recipe - show available commands
 default:
     @just --list --unsorted
@@ -105,6 +108,7 @@ test-db-setup:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    source .env
     if [ -z "${TEST_PG_URL:-}" ]; then
         echo "Error: TEST_PG_URL environment variable is not set"
         echo "Set it with: export TEST_PG_URL=postgresql://user:password@host:port/astrology_test"
@@ -151,7 +155,7 @@ test-db-setup:
     echo ""
     echo "=== Test database setup complete ==="
     echo "  Seed data range: 2025-01-01 to 2025-03-01 (60 days)"
-    echo "  Note: Jan 29 may fail due to moon_phase_angle constraint (~1.6% loss)"
+    echo "  All dates loaded successfully (0 failures)"
 
 # Run integration tests (requires TEST_PG_URL and test database set up)
 test-integration:

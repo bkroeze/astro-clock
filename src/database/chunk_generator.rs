@@ -254,6 +254,9 @@ impl ChunkGenerator {
         if phase_angle < 0.0 {
             phase_angle += 360.0;
         }
+        if phase_angle >= 360.0 {
+            phase_angle -= 360.0;
+        }
 
         // Determine moon phase (0-7)
         let moon_phase = (phase_angle / 45.0) as u8 % 8;

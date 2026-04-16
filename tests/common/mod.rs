@@ -24,8 +24,8 @@ pub const SEED_START_DATE: &str = "2025-01-01";
 /// Seed data end date (inclusive)
 pub const SEED_END_DATE: &str = "2025-03-02";
 
-/// Number of days covered by seed data
-pub const SEED_DAY_COUNT: usize = 60;
+/// Number of days covered by seed data (inclusive of both start and end dates)
+pub const SEED_DAY_COUNT: usize = 61;
 
 /// Total number of celestial bodies (Sun through Pluto)
 pub const TOTAL_BODIES: usize = 10;
@@ -118,17 +118,17 @@ pub mod moon_phase_ids {
 // Queried from test database after loading 60 days of seed data (2025-01-01 to 2025-03-02)
 // ============================================================================
 
-/// Total position records in seed data (10 bodies × 86400 minutes/day × 60 days)
-pub const TOTAL_POSITIONS: i64 = 864_000;
+/// Total position records in seed data (10 bodies × 1440 minutes/day × 61 days)
+pub const TOTAL_POSITIONS: i64 = 878_400;
 
-/// Positions per body per day (1440 minutes × 60 days = 86400)
-pub const POSITIONS_PER_BODY: i64 = 86_400;
+/// Positions per body per day (1440 minutes × 61 days = 87840)
+pub const POSITIONS_PER_BODY: i64 = 87_840;
 
 /// Total aspect records in seed data
-pub const TOTAL_ASPECTS: i64 = 1_465_067;
+pub const TOTAL_ASPECTS: i64 = 1_494_144;
 
-/// Total lunar conditions records in seed data (86400 minutes × 1 day-condition)
-pub const TOTAL_LUNAR_CONDITIONS: i64 = 86_400;
+/// Total lunar conditions records in seed data (1440 minutes × 61 days)
+pub const TOTAL_LUNAR_CONDITIONS: i64 = 87_840;
 
 /// Retrograde bodies during seed range with their retrograde minute counts.
 /// Venus (3): 1402 min, Mars (4): 76441 min, Jupiter (5): 48102 min, Uranus (7): 41304 min
@@ -136,9 +136,9 @@ pub mod known_retrogrades {
     /// Bodies that are retrograde during the seed range, with their total retrograde minutes
     pub const RETROGRADE_BODIES: &[(i16, i64)] = &[
         (3, 1_402),   // Venus — brief retrograde at start of range
-        (4, 76_441),  // Mars — retrograde majority of range
-        (5, 48_102),  // Jupiter — retrograde most of range
-        (7, 41_304),  // Uranus — retrograde much of range
+        (4, 77_881),  // Mars — retrograde majority of range
+        (5, 49_542),  // Jupiter — retrograde most of range
+        (7, 42_744),  // Uranus — retrograde much of range
     ];
 
     /// Bodies that are NOT retrograde during the seed range
@@ -154,9 +154,9 @@ pub mod known_retrogrades {
     /// Retrograde days per body
     pub const RETROGRADE_DAYS: &[(i16, i64)] = &[
         (3, 1),   // Venus
-        (4, 54),  // Mars
-        (5, 34),  // Jupiter
-        (7, 29),  // Uranus
+        (4, 55),  // Mars
+        (5, 35),  // Jupiter
+        (7, 30),  // Uranus
     ];
 
     /// Zodiac signs occupied by retrograde bodies
@@ -171,20 +171,20 @@ pub mod known_retrogrades {
 
 /// Aspect count breakdown by type
 pub mod known_aspects {
-    pub const CONJUNCTIONS: i64 = 178_226;
-    pub const SEXTILES: i64 = 630_355;
-    pub const SQUARES: i64 = 265_324;
-    pub const TRINES: i64 = 295_184;
+    pub const CONJUNCTIONS: i64 = 186_704;
+    pub const SEXTILES: i64 = 642_271;
+    pub const SQUARES: i64 = 266_890;
+    pub const TRINES: i64 = 302_301;
     pub const OPPOSITIONS: i64 = 95_978;
 }
 
 /// Known lunar data for the seed range
 pub mod known_lunar {
     /// Number of distinct void-of-course periods
-    pub const VOC_PERIODS: i64 = 68;
+    pub const VOC_PERIODS: i64 = 69;
 
     /// Total VoC minutes
-    pub const VOC_MINUTES: i64 = 48_294;
+    pub const VOC_MINUTES: i64 = 49_049;
 
     /// Number of Moon sign changes (transits through zodiac)
     pub const MOON_SIGN_CHANGES: i64 = 27;

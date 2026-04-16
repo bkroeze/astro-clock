@@ -25,14 +25,13 @@ fn test_helper_constants_are_valid() {
 
     assert_eq!(SEED_START_DATE, "2025-01-01");
     assert_eq!(SEED_END_DATE, "2025-03-02");
-    assert_eq!(SEED_DAY_COUNT, 60);
     assert_eq!(TOTAL_BODIES, 10);
 
     let start = seed_start_date();
     let end = seed_end_date();
     assert!(end > start);
     let span = (end - start).num_days() as usize;
-    assert_eq!(span, SEED_DAY_COUNT);
+    assert_eq!(span + 1, SEED_DAY_COUNT); // inclusive of both endpoints
 }
 
 #[cfg(feature = "db")]

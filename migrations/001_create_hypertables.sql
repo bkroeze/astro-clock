@@ -74,7 +74,7 @@ CREATE TABLE lunar_conditions (
     time TIMESTAMPTZ NOT NULL,
     moon_phase SMALLINT CHECK (moon_phase >= 0 AND moon_phase <= 7),
     moon_sign SMALLINT CHECK (moon_sign >= 0 AND moon_sign <= 11),
-    moon_phase_angle DECIMAL(6,2) CHECK (moon_phase_angle >= 0 AND moon_phase_angle < 360),
+    moon_phase_angle DECIMAL(7,3) CHECK (moon_phase_angle >= 0 AND moon_phase_angle < 360),
     moon_illumination DECIMAL(5,4) CHECK (moon_illumination >= 0 AND moon_illumination <= 1),
     is_void_of_course BOOLEAN DEFAULT FALSE,
     voc_start TIMESTAMPTZ, -- NULL if not VoC
