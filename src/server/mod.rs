@@ -135,7 +135,10 @@ impl Server {
 }
 
 async fn health_handler() -> Json<serde_json::Value> {
-    Json(serde_json::json!({"status": "healthy"}))
+    Json(serde_json::json!({
+        "status": "healthy",
+        "db_enabled": cfg!(feature = "db")
+    }))
 }
 
 // #[derive(serde::Deserialize)]

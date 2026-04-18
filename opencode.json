@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "marima": {
+      "type": "remote",
+      "url": " http://localhost:2718/mcp/server?access_token=TMFqbdvG__n-u2MP5vnrPQ",
+      "enabled": true
+    }
+  }
+}

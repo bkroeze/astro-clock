@@ -1,6 +1,9 @@
 # Astro Clock - Justfile
 # A command runner for common development tasks
 
+# Load environment from .env file
+set dotenv-load := true
+
 # Export environment variables from shell to recipes
 set export := true
 
@@ -38,7 +41,7 @@ run *ARGS:
 
 # Run the HTTP server
 run-server:
-    cargo run serve
+    cargo run --features db serve
 
 # Run with database feature
 run-db *ARGS:
@@ -52,8 +55,13 @@ check:
 check-all:
     cargo check --all-features
 
+# Start the api server
 serve:
-    cargo run --bin astro-clock serve --port 8086
+    cargo run --features db --bin astro-clock serve --port 8086
+
+# Run the explore notebook
+notebook:
+    marimo edit notebooks/explore.py --mcp
 
 # ============================================================================
 # Code Quality
@@ -102,60 +110,29 @@ test-one TEST_NAME:
 watch-test:
     cargo watch -x test
 
-# Set up test database: drop/recreate, run migrations, load 60 days of seed data
+# Reset and set up test database with seed data
 # Requires TEST_PG_URL env var (e.g. postgresql://postgres:password@localhost:5432/astrology_test)
 test-db-setup:
     #!/usr/bin/env bash
     set -euo pipefail
-
-    source .env
     if [ -z "${TEST_PG_URL:-}" ]; then
         echo "Error: TEST_PG_URL environment variable is not set"
         echo "Set it with: export TEST_PG_URL=postgresql://user:password@host:port/astrology_test"
         exit 1
     fi
+    scripts/reset-db.sh "${TEST_PG_URL}" --seed
 
-    # Extract the database name and host from TEST_PG_URL for drop/create
-    DB_NAME=$(echo "${TEST_PG_URL}" | sed 's|.*/||')
-    MAINTENANCE_URL=$(echo "${TEST_PG_URL}" | sed "s|/${DB_NAME}|/postgres|")
-
-    echo "=== Test Database Setup ==="
-    echo "  Database: ${DB_NAME}"
-
-    # Drop existing test database (ignore errors if it doesn't exist)
-    echo "Dropping existing test database..."
-    psql "${MAINTENANCE_URL}" -c "DROP DATABASE IF EXISTS \"${DB_NAME}\";" 2>/dev/null || true
-
-    # Create fresh test database
-    echo "Creating test database..."
-    psql "${MAINTENANCE_URL}" -c "CREATE DATABASE \"${DB_NAME}\";"
-
-    # Run migrations 1-5 (sqlx migrate run stops at first failure)
-    echo "Running migrations 1-5..."
-    sqlx migrate run --database-url "${TEST_PG_URL}" || true
-
-    # Migration 6 has a known issue with TimescaleDB continuous aggregates
-    # (IF NOT EXISTS fails on re-creation of continuous aggregate views).
-    # Apply it individually, ignoring errors from already-existing views.
-    echo "Applying migration 6 (continuous aggregates)..."
-    psql "${TEST_PG_URL}" -f migrations/006_create_continuous_aggregates.sql 2>&1 || true
-
-    # Apply remaining migrations 7-9
-    echo "Applying migrations 7-9..."
-    for m in migrations/00[7-9]*.sql; do
-        echo "  Applying $(basename "${m}")..."
-        psql "${TEST_PG_URL}" -f "${m}" 2>&1 || true
-    done
-
-    # Load 60 days of seed data starting from 2025-01-01
-    # CLI reads DATABASE_URL env var, not PG_URL
-    echo "Loading 60 days of seed data..."
-    DATABASE_URL="${TEST_PG_URL}" cargo run --bin astro-clock --features db -- load --start 2025-01-01 --days 60 --sync
-
-    echo ""
-    echo "=== Test database setup complete ==="
-    echo "  Seed data range: 2025-01-01 to 2025-03-01 (60 days)"
-    echo "  All dates loaded successfully (0 failures)"
+# Reset and set up the primary database (no seed data)
+# Requires PG_URL env var (e.g. postgresql://postgres:password@localhost:5432/astrology)
+reset-db:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "${PG_URL:-}" ]; then
+        echo "Error: PG_URL environment variable is not set"
+        echo "Set it with: export PG_URL=postgresql://user:password@host:port/database"
+        exit 1
+    fi
+    scripts/reset-db.sh "${PG_URL}"
 
 # Run integration tests (requires TEST_PG_URL and test database set up)
 test-integration:
