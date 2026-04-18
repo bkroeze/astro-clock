@@ -305,7 +305,7 @@ def _(created_jobs, mo):
 
 
 @app.cell
-def _(BASE_URL, created_jobs, json, mo, pl, requests, time):
+def _(BASE_URL, created_jobs, datetime, json, mo, pl, requests, time):
     # Show job results
     _job_details = []
     _out = None
@@ -336,11 +336,12 @@ def _(BASE_URL, created_jobs, json, mo, pl, requests, time):
                 _job_details.append({"job_id": job_id[:8] + "...", "error": str(e)})
 
         _job_details_df = pl.DataFrame(_job_details)
-        _out = mo.vstack([mo.md("### Job Status & Results"), _job_details_df])
+        _now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        _out = mo.vstack([mo.md(f"### Job Status & Results: {_now}"), _job_details_df])
     else:
         _out = mo.md("_No jobs to check. Create some jobs first._")
     _out or "ERROR"
-    return (job_id,)
+    return
 
 
 @app.cell
@@ -426,22 +427,25 @@ def _(BASE_URL, created_jobs, datetime, mo, pl, requests, time, timedelta):
 
 
 @app.cell
-def _(created_jobs, mo):
-    query_job_ids = list(created_jobs) if created_jobs else []
+def _(created_jobs, mo, query_df):
+    _all_ids = list(created_jobs) if created_jobs else []
+    if query_df is not None and len(query_df) > 0 and "job_id" in query_df.columns:
+        _all_ids.extend(query_df["job_id"].to_list())
+    query_job_ids = _all_ids
     poll_button = mo.ui.button(label="Refresh Job Status", value=0)
     mo.hstack([poll_button, mo.md(f"**{len(query_job_ids)} jobs to poll**")])
     return poll_button, query_job_ids
 
 
 @app.cell
-def _(BASE_URL, job_id, json, mo, pl, poll_button, query_job_ids, requests):
+def _(BASE_URL, json, mo, pl, poll_button, query_job_ids, requests):
     poll_button
     _out = None
     _polled = []
     if query_job_ids:
         for _job_id in query_job_ids:
             try:
-                _resp = requests.get(f"{BASE_URL}/api/v1/jobs/{job_id}", timeout=5)
+                _resp = requests.get(f"{BASE_URL}/api/v1/jobs/{_job_id}", timeout=5)
                 _data = _resp.json() if _resp.status_code == 200 else {}
                 _result = _data.get("result")
                 _error = _data.get("error")
