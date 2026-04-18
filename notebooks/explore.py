@@ -49,7 +49,7 @@ def _(mo):
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(BASE_URL, pl, requests, time):
     _health_results = []
 
@@ -68,7 +68,7 @@ def _(BASE_URL, pl, requests, time):
                 else "❌ Disabled"
                 if _db_enabled is not None
                 else "Unknown"
-            ) 
+            )
             _health_results.append(
                 {
                     "attempt": i + 1,
@@ -229,53 +229,59 @@ def _(datetime, mo, timedelta):
     start_date_ui = mo.ui.date(
         value=datetime.now().date() - timedelta(days=7), label="Start Date"
     )
-    days_slider_ui = mo.ui.slider(1, 30, value=7, label="Days to Load")
-    _sync_toggle_ui = mo.ui.checkbox(value=True, label="Synchronous Execution")
+    days_slider_ui = mo.ui.slider(1, 365, value=7, label="Days to Load", debounce=True)
+    sync_toggle_ui = mo.ui.checkbox(value=True, label="Synchronous Execution")
 
-    mo.hstack([start_date_ui, days_slider_ui, _sync_toggle_ui])
-    return days_slider_ui, start_date_ui
+    mo.hstack([start_date_ui, days_slider_ui, sync_toggle_ui])
+    return days_slider_ui, start_date_ui, sync_toggle_ui
 
 
 @app.cell
-def _(BASE_URL, days_slider_ui, mo, pl, requests, start_date_ui, time):
+def _(
+    BASE_URL,
+    days_slider_ui,
+    mo,
+    pl,
+    requests,
+    start_date_ui,
+    sync_toggle_ui,
+    time,
+):
     _load_results = []
     created_jobs = []
 
-    for sync in [True, False]:
-        _payload = {
-            "start_date": start_date_ui.value.strftime("%Y-%m-%d"),
-            "days": days_slider_ui.value,
-            "sync": sync,
-        }
+    _payload = {
+        "start_date": start_date_ui.value.strftime("%Y-%m-%d"),
+        "days": days_slider_ui.value,
+        "sync": sync_toggle_ui.value,
+    }
 
-        _start = time.time()
-        try:
-            _response = requests.post(
-                f"{BASE_URL}/api/v1/load", json=_payload, timeout=30
-            )
-            _elapsed_ms = (time.time() - _start) * 1000
-            _data = _response.json() if _response.status_code in [200, 202] else {}
+    _start = time.time()
+    try:
+        _response = requests.post(f"{BASE_URL}/api/v1/load", json=_payload, timeout=30)
+        _elapsed_ms = (time.time() - _start) * 1000
+        _data = _response.json() if _response.status_code in [200, 202] else {}
 
-            _load_results.append(
-                {
-                    "sync_mode": "Synchronous" if sync else "Asynchronous",
-                    "status_code": _response.status_code,
-                    "response_time_ms": round(_elapsed_ms, 2),
-                    "job_id": _data.get("job_id"),
-                    "job_status": _data.get("status"),
-                }
-            )
+        _load_results.append(
+            {
+                "sync_mode": "Synchronous" if sync_toggle_ui.value else "Asynchronous",
+                "status_code": _response.status_code,
+                "response_time_ms": round(_elapsed_ms, 2),
+                "job_id": _data.get("job_id"),
+                "job_status": _data.get("status"),
+            }
+        )
 
-            if _data.get("job_id"):
-                created_jobs.append(_data.get("job_id"))
-        except Exception as e:
-            _load_results.append(
-                {
-                    "sync_mode": "Synchronous" if sync else "Asynchronous",
-                    "status_code": None,
-                    "error": str(e),
-                }
-            )
+        if _data.get("job_id"):
+            created_jobs.append(_data.get("job_id"))
+    except Exception as e:
+        _load_results.append(
+            {
+                "sync_mode": "Synchronous" if sync_toggle_ui.value else "Asynchronous",
+                "status_code": None,
+                "error": str(e),
+            }
+        )
 
     load_df = pl.DataFrame(_load_results)
     mo.md("### Load Job Creation Results")
@@ -299,37 +305,42 @@ def _(created_jobs, mo):
 
 
 @app.cell
-def _(created_jobs, mo, pl, requests, time):
+def _(BASE_URL, created_jobs, json, mo, pl, requests, time):
+    # Show job results
     _job_details = []
+    _out = None
     if created_jobs:
         for job_id in created_jobs:
             _start = time.time()
             try:
-                _response = requests.get(f"{_BASE_URL}/api/v1/jobs/{job_id}", timeout=5)
+                _response = requests.get(f"{BASE_URL}/api/v1/jobs/{job_id}", timeout=5)
                 _elapsed_ms = (time.time() - _start) * 1000
                 _data = _response.json() if _response.status_code == 200 else {}
+
+                _payload = _data.get("payload") or {}
+                _result = _data.get("result")
 
                 _job_details.append(
                     {
                         "job_id": job_id[:8] + "...",
-                        "full_id": job_id,
                         "status": _data.get("status"),
                         "job_type": _data.get("job_type"),
+                        "payload": json.dumps(_payload) if _payload else None,
+                        "result": json.dumps(_result) if _result else None,
                         "created_at": _data.get("created_at"),
+                        "completed_at": _data.get("completed_at"),
                         "response_time_ms": round(_elapsed_ms, 2),
                     }
                 )
             except Exception as e:
-                _job_details.append(
-                    {"job_id": job_id[:8] + "...", "full_id": job_id, "error": str(e)}
-                )
+                _job_details.append({"job_id": job_id[:8] + "...", "error": str(e)})
 
         _job_details_df = pl.DataFrame(_job_details)
-        mo.md("### Job Status Details")
-        _job_details_df
+        _out = mo.vstack([mo.md("### Job Status & Results"), _job_details_df])
     else:
-        mo.md("_No jobs to check. Create some jobs first._")
-    return
+        _out = mo.md("_No jobs to check. Create some jobs first._")
+    _out or "ERROR"
+    return (job_id,)
 
 
 @app.cell
@@ -376,7 +387,7 @@ def _(mo):
 
 
 @app.cell
-def _(BASE_URL, datetime, mo, pl, requests, time, timedelta):
+def _(BASE_URL, created_jobs, datetime, mo, pl, requests, time, timedelta):
     _query_results = []
 
     _query_types = ["wedding", "project", "travel"]
@@ -392,13 +403,14 @@ def _(BASE_URL, datetime, mo, pl, requests, time, timedelta):
             )
             _elapsed_ms = (time.time() - _start) * 1000
             _data = _response.json() if _response.status_code in [200, 202] else {}
-
+            _job_id = _data.get("job_id")
+            created_jobs.append(_job_id)
             _query_results.append(
                 {
                     "query_type": query_type,
                     "status_code": _response.status_code,
                     "response_time_ms": round(_elapsed_ms, 2),
-                    "job_id": _data.get("job_id"),
+                    "job_id": _job_id,
                     "job_status": _data.get("status"),
                 }
             )
@@ -411,6 +423,48 @@ def _(BASE_URL, datetime, mo, pl, requests, time, timedelta):
     mo.md("### Query Endpoint Results")
     query_df
     return (query_df,)
+
+
+@app.cell
+def _(created_jobs, mo):
+    query_job_ids = list(created_jobs) if created_jobs else []
+    poll_button = mo.ui.button(label="Refresh Job Status", value=0)
+    mo.hstack([poll_button, mo.md(f"**{len(query_job_ids)} jobs to poll**")])
+    return poll_button, query_job_ids
+
+
+@app.cell
+def _(BASE_URL, job_id, json, mo, pl, poll_button, query_job_ids, requests):
+    poll_button
+    _out = None
+    _polled = []
+    if query_job_ids:
+        for _job_id in query_job_ids:
+            try:
+                _resp = requests.get(f"{BASE_URL}/api/v1/jobs/{job_id}", timeout=5)
+                _data = _resp.json() if _resp.status_code == 200 else {}
+                _result = _data.get("result")
+                _error = _data.get("error")
+                _polled.append(
+                    {
+                        "job_id": str(_job_id)[:8] + "...",
+                        "job_type": _data.get("job_type"),
+                        "status": _data.get("status"),
+                        "payload": json.dumps(_data.get("payload"))
+                        if _data.get("payload")
+                        else None,
+                        "result": json.dumps(_result)[:200] if _result else None,
+                        "error": json.dumps(_error) if _error else None,
+                        "completed_at": _data.get("completed_at"),
+                    }
+                )
+            except Exception as e:
+                _polled.append({"job_id": str(_job_id)[:8] + "...", "error": str(e)})
+        _out = mo.vstack([mo.md("### Polled Job Results"), pl.DataFrame(_polled)])
+    else:
+        _out = mo.md("_No jobs to poll._")
+    _out or "ERROR"
+    return
 
 
 @app.cell
@@ -600,7 +654,7 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    _debug_endpoint = mo.ui.dropdown(
+    debug_endpoint = mo.ui.dropdown(
         options=[
             ("/health", "Health Check"),
             ("/api/v1/jobs", "List Jobs"),
@@ -609,15 +663,15 @@ def _(mo):
         value="/health",
         label="Select Endpoint",
     )
-    _debug_endpoint
-    return
+    debug_endpoint
+    return (debug_endpoint,)
 
 
 @app.cell
-def _(json, mo, requests):
-    if _debug_endpoint.value:
+def _(BASE_URL, debug_endpoint, json, mo, requests):
+    if debug_endpoint.value:
         try:
-            _url = f"{_BASE_URL}{_debug_endpoint.value}"
+            _url = f"{BASE_URL}{debug_endpoint.value}"
             _response = requests.get(_url, timeout=5)
 
             _headers_str = json.dumps(dict(_response.headers), indent=2)

@@ -68,7 +68,7 @@ pub async fn find_travel_dates(
           AND NOT EXISTS (
               SELECT 1 FROM retrograde_periods rp
               WHERE rp.body_id = $6  -- Mercury
-                AND pp.time BETWEEN rp.start_time AND rp.end_time
+                AND pp.time BETWEEN rp.retrograde_start AND rp.retrograde_end
           )
         ORDER BY asum.total_favorable DESC NULLS LAST, pp.time
         LIMIT $7

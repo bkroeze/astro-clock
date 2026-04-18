@@ -1,0 +1,306 @@
+{
+  "version": "1",
+  "metadata": {
+    "marimo_version": "0.23.1",
+    "script_metadata_hash": null
+  },
+  "cells": [
+    {
+      "id": "Hbol",
+      "code_hash": "5fce50b78a58cd4eb2e4bfc5aafc2712",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"environment-setup\">Environment Setup</h2>\n<ul>\n<li>Env Loaded: <em>True</em></li>\n<li>API Base URL: <code>http://localhost:8086</code></li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "MJUe",
+      "code_hash": "15327fa3668ac3ea3352cef7582f3396",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h1 id=\"astro-clock-api-explorer\">\ud83d\udd2d Astro Clock API Explorer</h1>\n<span class=\"paragraph\">Interactive exploration of the Astro Clock REST API endpoints.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "vblA",
+      "code_hash": "f1725957d9e0f4354caa20862a828a40",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-1-health-check\">Section 1: Health Check</h2>\n<span class=\"paragraph\">Quick health check to verify the API is running.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "bkHC",
+      "code_hash": "6bf953d3b641dce3516dc513dead1dac",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='bkHC-0' random-id='eff84f70-2d2e-724d-7887-9891271188c3'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;attempt&#92;&quot;:1,&#92;&quot;status_code&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:2.13,&#92;&quot;healthy&#92;&quot;:true,&#92;&quot;db&#92;&quot;:&#92;&quot;&#92;&#92;u2705 Enabled&#92;&quot;},{&#92;&quot;attempt&#92;&quot;:2,&#92;&quot;status_code&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:2.81,&#92;&quot;healthy&#92;&quot;:true,&#92;&quot;db&#92;&quot;:&#92;&quot;&#92;&#92;u2705 Enabled&#92;&quot;},{&#92;&quot;attempt&#92;&quot;:3,&#92;&quot;status_code&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:3.37,&#92;&quot;healthy&#92;&quot;:true,&#92;&quot;db&#92;&quot;:&#92;&quot;&#92;&#92;u2705 Enabled&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;attempt&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;status_code&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;response_time_ms&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;healthy&quot;,[&quot;boolean&quot;,&quot;bool&quot;]],[&quot;db&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "lEQa",
+      "code_hash": "ed7538df3a85a0ab80e8767be866f586",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-2-chart-generation\">Section 2: Chart Generation</h2>\n<span class=\"paragraph\">Test chart generation endpoints with various parameters and formats.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "PKri",
+      "code_hash": "85a3085c3df14e690ab38a46b099f279",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='PKri-0' random-id='8e4ab373-68b3-ce83-9b53-5de7ab3c3c6c'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;test&#92;&quot;:&#92;&quot;NYC PNG&#92;&quot;,&#92;&quot;format&#92;&quot;:&#92;&quot;png&#92;&quot;,&#92;&quot;status&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:223.88,&#92;&quot;content_length&#92;&quot;:107121,&#92;&quot;success&#92;&quot;:true},{&#92;&quot;test&#92;&quot;:&#92;&quot;London SVG&#92;&quot;,&#92;&quot;format&#92;&quot;:&#92;&quot;svg&#92;&quot;,&#92;&quot;status&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:2.12,&#92;&quot;content_length&#92;&quot;:30086,&#92;&quot;success&#92;&quot;:true},{&#92;&quot;test&#92;&quot;:&#92;&quot;Tokyo (30 days ago)&#92;&quot;,&#92;&quot;format&#92;&quot;:&#92;&quot;png&#92;&quot;,&#92;&quot;status&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:209.43,&#92;&quot;content_length&#92;&quot;:105307,&#92;&quot;success&#92;&quot;:true}]&quot;' data-total-rows='3' data-total-columns='6' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;test&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;format&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;response_time_ms&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;content_length&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;success&quot;,[&quot;boolean&quot;,&quot;bool&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Xref",
+      "code_hash": "04c2127ea257325d0a08ba26eee022a6",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"chart-data-json-endpoint\">Chart Data (JSON Endpoint)</h3>\n<span class=\"paragraph\">Retrieve structured astrological chart data.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "SFPL",
+      "code_hash": "174de81f8fc14c27d6447b6d4b8835fa",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='SFPL-0' random-id='b0c2f59e-dc10-7b95-ef1e-e644b454aa20'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;location&#92;&quot;:&#92;&quot;New York&#92;&quot;,&#92;&quot;status&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:2.78,&#92;&quot;num_planets&#92;&quot;:13,&#92;&quot;num_aspects&#92;&quot;:11,&#92;&quot;house_system&#92;&quot;:&#92;&quot;Placidus&#92;&quot;,&#92;&quot;moon_void&#92;&quot;:&#92;&quot;Moon is void of course (at 13.31&#92;&#92;u00b0 Scorpio, will not aspect before leaving sign)&#92;&quot;},{&#92;&quot;location&#92;&quot;:&#92;&quot;London&#92;&quot;,&#92;&quot;status&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:2.04,&#92;&quot;num_planets&#92;&quot;:13,&#92;&quot;num_aspects&#92;&quot;:11,&#92;&quot;house_system&#92;&quot;:&#92;&quot;Placidus&#92;&quot;,&#92;&quot;moon_void&#92;&quot;:&#92;&quot;Moon is void of course (at 13.31&#92;&#92;u00b0 Scorpio, will not aspect before leaving sign)&#92;&quot;},{&#92;&quot;location&#92;&quot;:&#92;&quot;Sydney&#92;&quot;,&#92;&quot;status&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:2.22,&#92;&quot;num_planets&#92;&quot;:13,&#92;&quot;num_aspects&#92;&quot;:11,&#92;&quot;house_system&#92;&quot;:&#92;&quot;Placidus&#92;&quot;,&#92;&quot;moon_void&#92;&quot;:&#92;&quot;Moon is void of course (at 13.31&#92;&#92;u00b0 Scorpio, will not aspect before leaving sign)&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='7' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;location&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;response_time_ms&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;num_planets&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;num_aspects&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;house_system&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;moon_void&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "BYtC",
+      "code_hash": "884772243854a4fcf530ff7799e9c98c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-3-job-management\">Section 3: Job Management</h2>\n<span class=\"paragraph\">Explore job creation, status checking, and listing.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "RGSE",
+      "code_hash": "03c9de0300c60220e944448dbbf9c09c",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='RGSE-0' random-id='92a368a0-60a7-0ed3-05b3-315220ea05e8'><marimo-date data-initial-value='&quot;2026-04-11&quot;' data-label='&quot;&lt;span class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&gt;&lt;span class=&#92;&quot;paragraph&#92;&quot;&gt;Start Date&lt;/span&gt;&lt;/span&gt;&quot;' data-start='&quot;0001-01-01&quot;' data-stop='&quot;9999-12-31&quot;' data-full-width='false' data-disabled='false'></marimo-date></marimo-ui-element><marimo-ui-element object-id='RGSE-1' random-id='7acd21e9-22c4-eedc-8b1a-81c17654369b'><marimo-slider data-initial-value='7' data-label='&quot;&lt;span class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&gt;&lt;span class=&#92;&quot;paragraph&#92;&quot;&gt;Days to Load&lt;/span&gt;&lt;/span&gt;&quot;' data-start='1' data-stop='365' data-steps='[]' data-debounce='true' data-disabled='false' data-orientation='&quot;horizontal&quot;' data-show-value='false' data-include-input='false' data-full-width='false'></marimo-slider></marimo-ui-element><marimo-ui-element object-id='RGSE-2' random-id='3d41dcc1-9277-f1ef-bfa0-2ff826a19de7'><marimo-checkbox data-initial-value='true' data-label='&quot;&lt;span class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&gt;&lt;span class=&#92;&quot;paragraph&#92;&quot;&gt;Synchronous Execution&lt;/span&gt;&lt;/span&gt;&quot;' data-disabled='false'></marimo-checkbox></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Kclp",
+      "code_hash": "185ccfd623ad26a9a944d8f1f4e09aea",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='Kclp-0' random-id='6bc241cf-ad1c-f6f8-28a9-f95f39c802a6'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;sync_mode&#92;&quot;:&#92;&quot;Synchronous&#92;&quot;,&#92;&quot;status_code&#92;&quot;:200,&#92;&quot;response_time_ms&#92;&quot;:94.33,&#92;&quot;job_id&#92;&quot;:&#92;&quot;22e46c9f-8cdd-4bb7-a1ec-81ba0c268a7b&#92;&quot;,&#92;&quot;job_status&#92;&quot;:&#92;&quot;complete&#92;&quot;}]&quot;' data-total-rows='1' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;sync_mode&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status_code&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;response_time_ms&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;job_id&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;job_status&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "emfo",
+      "code_hash": "450bb4bcc8307323776864354db03714",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"created-job-ids\">Created Job IDs</h3>\n<ul>\n<li><code>22e46c9f-8cdd-4bb7-a1ec-81ba0c268a7b</code></li>\n</ul></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Hstk",
+      "code_hash": "28b905c862ec539f78000e73f0b763df",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"job-status-results\">Job Status &amp; Results</h3></span><marimo-ui-element object-id='Hstk-0' random-id='4153acd4-f34e-460d-09e1-3ed17e171202'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;job_id&#92;&quot;:&#92;&quot;22e46c9f...&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;complete&#92;&quot;,&#92;&quot;job_type&#92;&quot;:&#92;&quot;load&#92;&quot;,&#92;&quot;payload&#92;&quot;:&#92;&quot;{&#92;&#92;&#92;&quot;days&#92;&#92;&#92;&quot;: 7, &#92;&#92;&#92;&quot;start_date&#92;&#92;&#92;&quot;: &#92;&#92;&#92;&quot;2026-04-11&#92;&#92;&#92;&quot;}&#92;&quot;,&#92;&quot;result&#92;&quot;:&#92;&quot;{&#92;&#92;&#92;&quot;dates_failed&#92;&#92;&#92;&quot;: 0, &#92;&#92;&#92;&quot;dates_loaded&#92;&#92;&#92;&quot;: 0, &#92;&#92;&#92;&quot;dates_skipped&#92;&#92;&#92;&quot;: 7, &#92;&#92;&#92;&quot;days_requested&#92;&#92;&#92;&quot;: 7, &#92;&#92;&#92;&quot;failed&#92;&#92;&#92;&quot;: [], &#92;&#92;&#92;&quot;loaded&#92;&#92;&#92;&quot;: [], &#92;&#92;&#92;&quot;skipped&#92;&#92;&#92;&quot;: [&#92;&#92;&#92;&quot;2026-04-11&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-12&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-13&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-14&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-15&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-16&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-17&#92;&#92;&#92;&quot;], &#92;&#92;&#92;&quot;start_date&#92;&#92;&#92;&quot;: &#92;&#92;&#92;&quot;2026-04-11&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;total_aspects&#92;&#92;&#92;&quot;: 0, &#92;&#92;&#92;&quot;total_lunar_conditions&#92;&#92;&#92;&quot;: 0, &#92;&#92;&#92;&quot;total_positions&#92;&#92;&#92;&quot;: 0}&#92;&quot;,&#92;&quot;created_at&#92;&quot;:&#92;&quot;2026-04-18T17:04:36.213585+00:00&#92;&quot;,&#92;&quot;completed_at&#92;&quot;:&#92;&quot;2026-04-18T17:04:36.296287+00:00&#92;&quot;,&#92;&quot;response_time_ms&#92;&quot;:8.29}]&quot;' data-total-rows='1' data-total-columns='8' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;job_id&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;job_type&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;payload&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;result&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;created_at&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;completed_at&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;response_time_ms&quot;,[&quot;number&quot;,&quot;f64&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "nWHF",
+      "code_hash": "5e86351f1dc10f688196f327d1076da2",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='nWHF-0' random-id='72a819a3-a19a-db79-824b-c8fc402dbf53'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;filter&#92;&quot;:&#92;&quot;all&#92;&quot;,&#92;&quot;count&#92;&quot;:20,&#92;&quot;total&#92;&quot;:24,&#92;&quot;limit&#92;&quot;:20,&#92;&quot;status&#92;&quot;:200},{&#92;&quot;filter&#92;&quot;:&#92;&quot;pending&#92;&quot;,&#92;&quot;count&#92;&quot;:0,&#92;&quot;total&#92;&quot;:0,&#92;&quot;limit&#92;&quot;:20,&#92;&quot;status&#92;&quot;:200},{&#92;&quot;filter&#92;&quot;:&#92;&quot;in_process&#92;&quot;,&#92;&quot;count&#92;&quot;:0,&#92;&quot;total&#92;&quot;:0,&#92;&quot;limit&#92;&quot;:20,&#92;&quot;status&#92;&quot;:200},{&#92;&quot;filter&#92;&quot;:&#92;&quot;complete&#92;&quot;,&#92;&quot;count&#92;&quot;:14,&#92;&quot;total&#92;&quot;:14,&#92;&quot;limit&#92;&quot;:20,&#92;&quot;status&#92;&quot;:200},{&#92;&quot;filter&#92;&quot;:&#92;&quot;failed&#92;&quot;,&#92;&quot;count&#92;&quot;:10,&#92;&quot;total&#92;&quot;:10,&#92;&quot;limit&#92;&quot;:20,&#92;&quot;status&#92;&quot;:200}]&quot;' data-total-rows='5' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;filter&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;count&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;total&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;limit&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;status&quot;,[&quot;integer&quot;,&quot;i64&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "iLit",
+      "code_hash": "11334c2b466960434fc6888a6497990b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-4-query-endpoints\">Section 4: Query Endpoints</h2>\n<span class=\"paragraph\">Test wedding, project, and travel query endpoints.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ZHCJ",
+      "code_hash": "afad36c797bf1d42faaaffd96bf7743a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<marimo-ui-element object-id='ZHCJ-0' random-id='36bb6b29-f0aa-c369-d902-21e2c3f09de8'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;query_type&#92;&quot;:&#92;&quot;wedding&#92;&quot;,&#92;&quot;status_code&#92;&quot;:202,&#92;&quot;response_time_ms&#92;&quot;:10.92,&#92;&quot;job_id&#92;&quot;:&#92;&quot;0d817f2f-af8e-40bd-ba67-d8678fd023af&#92;&quot;,&#92;&quot;job_status&#92;&quot;:&#92;&quot;pending&#92;&quot;},{&#92;&quot;query_type&#92;&quot;:&#92;&quot;project&#92;&quot;,&#92;&quot;status_code&#92;&quot;:202,&#92;&quot;response_time_ms&#92;&quot;:13.05,&#92;&quot;job_id&#92;&quot;:&#92;&quot;57f3de22-371a-44c2-be41-abaae7c84074&#92;&quot;,&#92;&quot;job_status&#92;&quot;:&#92;&quot;pending&#92;&quot;},{&#92;&quot;query_type&#92;&quot;:&#92;&quot;travel&#92;&quot;,&#92;&quot;status_code&#92;&quot;:202,&#92;&quot;response_time_ms&#92;&quot;:16.01,&#92;&quot;job_id&#92;&quot;:&#92;&quot;ac3f4460-d4f5-449b-99f2-af262ab6a77e&#92;&quot;,&#92;&quot;job_status&#92;&quot;:&#92;&quot;pending&#92;&quot;}]&quot;' data-total-rows='3' data-total-columns='5' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;query_type&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status_code&quot;,[&quot;integer&quot;,&quot;i64&quot;]],[&quot;response_time_ms&quot;,[&quot;number&quot;,&quot;f64&quot;]],[&quot;job_id&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;job_status&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ROlb",
+      "code_hash": "b3f84023008d20413d7803cdca44cd0b",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: row;justify-content: space-between;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><marimo-ui-element object-id='ROlb-0' random-id='16162b72-446e-0b7b-5b26-89a462ab6fcf'><marimo-button data-initial-value='0' data-label='&quot;&lt;span class=&#92;&quot;markdown prose dark:prose-invert contents&#92;&quot;&gt;&lt;span class=&#92;&quot;paragraph&#92;&quot;&gt;Refresh Job Status&lt;/span&gt;&lt;/span&gt;&quot;' data-kind='&quot;neutral&quot;' data-disabled='false' data-full-width='false'></marimo-button></marimo-ui-element><span class=\"markdown prose dark:prose-invert contents\"><span class=\"paragraph\"><strong>1 jobs to poll</strong></span></span></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "qnkX",
+      "code_hash": "cad39f399aeb060f8f050cece4f022f8",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/html": "<div style='display: flex;flex: 1;flex-direction: column;justify-content: flex-start;align-items: normal;flex-wrap: nowrap;gap: 0.5rem'><span class=\"markdown prose dark:prose-invert contents\"><h3 id=\"polled-job-results\">Polled Job Results</h3></span><marimo-ui-element object-id='qnkX-0' random-id='fe89b320-e00d-834c-6375-d7c6dae53820'><marimo-table data-initial-value='[]' data-label='null' data-data='&quot;[{&#92;&quot;job_id&#92;&quot;:&#92;&quot;22e46c9f...&#92;&quot;,&#92;&quot;job_type&#92;&quot;:&#92;&quot;load&#92;&quot;,&#92;&quot;status&#92;&quot;:&#92;&quot;complete&#92;&quot;,&#92;&quot;payload&#92;&quot;:&#92;&quot;{&#92;&#92;&#92;&quot;days&#92;&#92;&#92;&quot;: 7, &#92;&#92;&#92;&quot;start_date&#92;&#92;&#92;&quot;: &#92;&#92;&#92;&quot;2026-04-11&#92;&#92;&#92;&quot;}&#92;&quot;,&#92;&quot;result&#92;&quot;:&#92;&quot;{&#92;&#92;&#92;&quot;dates_failed&#92;&#92;&#92;&quot;: 0, &#92;&#92;&#92;&quot;dates_loaded&#92;&#92;&#92;&quot;: 0, &#92;&#92;&#92;&quot;dates_skipped&#92;&#92;&#92;&quot;: 7, &#92;&#92;&#92;&quot;days_requested&#92;&#92;&#92;&quot;: 7, &#92;&#92;&#92;&quot;failed&#92;&#92;&#92;&quot;: [], &#92;&#92;&#92;&quot;loaded&#92;&#92;&#92;&quot;: [], &#92;&#92;&#92;&quot;skipped&#92;&#92;&#92;&quot;: [&#92;&#92;&#92;&quot;2026-04-11&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-12&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-13&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-14&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-15&#92;&#92;&#92;&quot;, &#92;&#92;&#92;&quot;2026-04-1&#92;&quot;,&#92;&quot;error&#92;&quot;:null,&#92;&quot;completed_at&#92;&quot;:&#92;&quot;2026-04-18T17:04:36.296287+00:00&#92;&quot;}]&quot;' data-total-rows='1' data-total-columns='7' data-max-columns='50' data-banner-text='&quot;&quot;' data-pagination='false' data-page-size='10' data-field-types='[[&quot;job_id&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;job_type&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;status&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;payload&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;result&quot;,[&quot;string&quot;,&quot;str&quot;]],[&quot;error&quot;,[&quot;unknown&quot;,&quot;null&quot;]],[&quot;completed_at&quot;,[&quot;string&quot;,&quot;str&quot;]]]' data-show-filters='true' data-show-download='true' data-show-column-summaries='false' data-show-data-types='true' data-show-page-size-selector='false' data-show-column-explorer='true' data-show-chart-builder='true' data-row-headers='[]' data-has-stable-row-id='false' data-lazy='false' data-preload='false'></marimo-table></marimo-ui-element></div>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "TqIu",
+      "code_hash": "e96de0c7915471832ac78d4a3d0afe60",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-5-performance-visualization\">Section 5: Performance Visualization</h2>\n<span class=\"paragraph\">Visualize API response times across endpoints.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Vxnm",
+      "code_hash": "455fd55152fd6605af5c1de9bfdcbd17",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "DnEU",
+      "code_hash": "572da29415b5ac0c2170e4c69579173a",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><h2 id=\"section-6-summary-statistics\">Section 6: Summary Statistics</h2>\n<span class=\"paragraph\">Quick overview of API exploration results.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "ulZA",
+      "code_hash": "c57f17b2f80b1555e4fbf90bd1e6ccc9",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "ecfG",
+      "code_hash": "b31045825b062c4afd3a10ab0770c8ef",
+      "outputs": [
+        {
+          "type": "data",
+          "data": {
+            "text/markdown": "<span class=\"markdown prose dark:prose-invert contents\"><hr />\n<h2 id=\"raw-response-explorer\">Raw Response Explorer</h2>\n<span class=\"paragraph\">View raw API responses for debugging.</span></span>"
+          }
+        }
+      ],
+      "console": []
+    },
+    {
+      "id": "Pvdt",
+      "code_hash": "3347586adf08b7b74cdab87f4843b27d",
+      "outputs": [],
+      "console": []
+    },
+    {
+      "id": "ZBYS",
+      "code_hash": "d622c1df1bd6e83ee36e8696f31e5537",
+      "outputs": [],
+      "console": []
+    }
+  ]
+}

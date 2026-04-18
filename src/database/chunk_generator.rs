@@ -393,8 +393,7 @@ impl ChunkGenerator {
                 $7::boolean[],
                 $8::smallint[]
             )
-            -- ON CONFLICT not supported on TimescaleDB hypertables in all versions
-            -- Use plain INSERT since test DB is always freshly created
+            ON CONFLICT (time, body_id) DO NOTHING
             "#,
         )
         .bind(&times)
@@ -451,7 +450,7 @@ impl ChunkGenerator {
                 $5::float8[],
                 $6::boolean[]
             )
-            -- ON CONFLICT not supported on TimescaleDB hypertables in all versions
+            ON CONFLICT (time, body1_id, body2_id, aspect_type) DO NOTHING
             "#,
         )
         .bind(&times)
@@ -509,7 +508,7 @@ impl ChunkGenerator {
                 $5::float8[],
                 $6::boolean[]
             )
-            -- ON CONFLICT not supported on TimescaleDB hypertables in all versions
+            ON CONFLICT (time) DO NOTHING
             "#,
         )
         .bind(&times)
