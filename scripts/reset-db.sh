@@ -43,8 +43,8 @@ sqlx migrate run --database-url "${DB_URL}" || true
 echo "Applying migration 6 (continuous aggregates)..."
 psql "${DB_URL}" -f migrations/006_create_continuous_aggregates.sql 2>&1 || true
 
-echo "Applying migrations 7-9..."
-for m in migrations/00[7-9]*.sql; do
+echo "Applying migrations 7+..."
+for m in migrations/00[7-9]*.sql migrations/01*.sql; do
     echo "  Applying $(basename "${m}")..."
     psql "${DB_URL}" -f "${m}" 2>&1 || true
 done

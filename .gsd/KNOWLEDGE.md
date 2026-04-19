@@ -67,6 +67,6 @@
 
 - **Response shape changes break downstream tests across slices.** S02's change from `{total, limit, offset}` to `{next, prev}` broke 3 pre-existing integration tests. When a slice changes a shared response shape, plan to fix all consumers in the same slice or explicitly list the broken tests as a follow-up for the integration test slice.
 
-- **Pre-existing test failures can mask regressions.** The `test_seed_data_loaded` test fails because seed data has only 39 days instead of 61+. This pre-dates M003 but should be fixed to avoid confusing future milestone verification where "1 test failed" could be either old or new.
+- **Pre-existing test failures can mask regressions.** The `test_seed_data_loaded` test was failing because seed data had only 39 days instead of 61+. Resolved by reseeding the test database — the root cause was stale/incomplete seed data. The `--days 60` flag starting from Jan 1 covers 61 calendar days (Jan 1 through Mar 1 inclusive) when no days fail.
 
 - **Cursor pagination walking pattern for integration tests.** The `cursor_pagination_last_page` test walks all pages following `next` URLs with a 50-page safety limit. This pattern is more robust than assuming exact job counts and handles edge cases like empty result sets naturally.
