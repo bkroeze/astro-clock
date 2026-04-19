@@ -215,7 +215,7 @@ All handler tests pass including new cursor-specific tests.
   - Files: `src/server/routes/jobs.rs`
   - Verify: cargo test --features db --lib -- server::routes::jobs
 
-- [ ] **T03: Update CLI call site, existing tests, and add comprehensive cursor tests** `est:1h`
+- [x] **T03: Update CLI call site, existing tests, and add comprehensive cursor tests** `est:1h`
   ## Steps
 
 1. **Update CLI `JobCommands::List` variant** in `src/cli/app.rs`:

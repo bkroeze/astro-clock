@@ -1144,4 +1144,229 @@ mod tests {
         assert!(!cursor_part.contains('='));
         assert!(!cursor_part.contains('+'));
     }
+
+    // ── Comprehensive cursor-specific tests (T03) ──
+
+    #[test]
+    fn test_cursor_roundtrip_various_timestamps() {
+        // Past timestamp
+        let cursor_past = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2020, 1, 1, 0, 0, 0).unwrap(),
+            id: Uuid::nil(),
+        };
+        let encoded = cursor_past.encode();
+        let decoded = JobCursor::decode(&encoded).unwrap();
+        assert_eq!(decoded.created_at, cursor_past.created_at);
+        assert_eq!(decoded.id, cursor_past.id);
+
+        // Future timestamp
+        let cursor_future = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2099, 12, 31, 23, 59, 59).unwrap(),
+            id: Uuid::new_v4(),
+        };
+        let encoded = cursor_future.encode();
+        let decoded = JobCursor::decode(&encoded).unwrap();
+        assert_eq!(decoded.created_at, cursor_future.created_at);
+        assert_eq!(decoded.id, cursor_future.id);
+
+        // Edge case: leap second boundary (Feb 29)
+        let cursor_leap = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2024, 2, 29, 12, 0, 0).unwrap(),
+            id: Uuid::parse_str("ffffffff-ffff-ffff-ffff-ffffffffffff").unwrap(),
+        };
+        let encoded = cursor_leap.encode();
+        let decoded = JobCursor::decode(&encoded).unwrap();
+        assert_eq!(decoded.created_at, cursor_leap.created_at);
+        assert_eq!(decoded.id, cursor_leap.id);
+
+        // Edge case: Unix epoch
+        let cursor_epoch = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 1970, 1, 1, 0, 0, 0).unwrap(),
+            id: Uuid::nil(),
+        };
+        let encoded = cursor_epoch.encode();
+        let decoded = JobCursor::decode(&encoded).unwrap();
+        assert_eq!(decoded.created_at, cursor_epoch.created_at);
+    }
+
+    #[test]
+    fn test_build_page_url_preserves_status_filter() {
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            20,
+            &cursor,
+            Some("complete,failed"),
+            None,
+            None,
+            None,
+        );
+
+        assert!(
+            url.contains("status=complete,failed"),
+            "URL should preserve multi-value status filter, got: {}",
+            url
+        );
+        assert!(url.contains("count=20"));
+        assert!(url.contains("cursor="));
+        // No other filters present
+        assert!(!url.contains("job_type="));
+        assert!(!url.contains("created_after="));
+        assert!(!url.contains("created_before="));
+    }
+
+    #[test]
+    fn test_build_page_url_preserves_job_type_filter() {
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            50,
+            &cursor,
+            None,
+            Some("load"),
+            None,
+            None,
+        );
+
+        assert!(
+            url.contains("job_type=load"),
+            "URL should preserve job_type filter, got: {}",
+            url
+        );
+        assert!(url.contains("count=50"));
+        // No other filters present
+        assert!(!url.contains("status="));
+        assert!(!url.contains("created_after="));
+        assert!(!url.contains("created_before="));
+    }
+
+    #[test]
+    fn test_build_page_url_preserves_date_filters() {
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            10,
+            &cursor,
+            None,
+            None,
+            Some("2025-01-01"),
+            Some("2025-12-31T23:59:59Z"),
+        );
+
+        assert!(
+            url.contains("created_after=2025-01-01"),
+            "URL should preserve created_after filter, got: {}",
+            url
+        );
+        assert!(
+            url.contains("created_before=2025-12-31T23:59:59Z"),
+            "URL should preserve created_before filter, got: {}",
+            url
+        );
+        // No other filters present
+        assert!(!url.contains("status="));
+        assert!(!url.contains("job_type="));
+    }
+
+    #[test]
+    fn test_build_page_url_minimal() {
+        // Minimal URL: only count and cursor, no filters at all
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            5,
+            &cursor,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        // Should start with base path
+        assert!(url.starts_with("/api/v1/jobs?"));
+        // Must have count and cursor
+        assert!(url.contains("count=5"));
+        assert!(url.contains("cursor="));
+        // Must NOT have any filter params
+        assert!(!url.contains("status="));
+        assert!(!url.contains("job_type="));
+        assert!(!url.contains("created_after="));
+        assert!(!url.contains("created_before="));
+        // Verify the URL has exactly 2 query params
+        let query_part = url.split('?').nth(1).unwrap();
+        let params: Vec<&str> = query_part.split('&').collect();
+        assert_eq!(params.len(), 2, "Minimal URL should have exactly 2 params (count, cursor), got: {:?}", params);
+    }
+
+    #[test]
+    fn test_empty_results_no_next_prev() {
+        // When 0 results returned, both next and prev should be None
+        let response = ListJobsResponse {
+            jobs: vec![],
+            next: None,
+            prev: None,
+        };
+
+        let json = serde_json::to_value(&response).unwrap();
+        assert!(
+            json.get("next").unwrap().is_null(),
+            "Empty results should have next=null"
+        );
+        assert!(
+            json.get("prev").unwrap().is_null(),
+            "Empty results should have prev=null"
+        );
+        assert!(
+            json.get("jobs").unwrap().as_array().unwrap().is_empty(),
+            "Empty results should have empty jobs array"
+        );
+        // Ensure response doesn't leak old pagination fields
+        assert!(json.get("total").is_none());
+        assert!(json.get("limit").is_none());
+        assert!(json.get("offset").is_none());
+    }
+
+    #[test]
+    fn test_single_page_no_next() {
+        // When results fit in one page (no extra row fetched), next should be None
+        let job1 = Job::new(JobType::Load, serde_json::json!({"test": 1}));
+        let job2 = Job::new(JobType::Query, serde_json::json!({"test": 2}));
+
+        let response = ListJobsResponse {
+            jobs: vec![build_job_response(job1), build_job_response(job2)],
+            next: None,  // Fits in one page
+            prev: None,  // First page
+        };
+
+        let json = serde_json::to_value(&response).unwrap();
+        assert!(
+            json.get("next").unwrap().is_null(),
+            "Single page should have next=null"
+        );
+        assert!(
+            json.get("prev").unwrap().is_null(),
+            "First page should have prev=null"
+        );
+        let jobs = json.get("jobs").unwrap().as_array().unwrap();
+        assert_eq!(jobs.len(), 2, "Should have exactly 2 jobs");
+        // Ensure old fields are absent
+        assert!(json.get("total").is_none());
+        assert!(json.get("offset").is_none());
+    }
 }

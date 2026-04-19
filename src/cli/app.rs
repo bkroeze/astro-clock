@@ -38,12 +38,9 @@ pub enum JobCommands {
         /// Filter by status (pending, in_process, complete, failed)
         #[arg(long, value_name = "STATUS")]
         status: Option<String>,
-        /// Number of jobs to show (default: 20)
+        /// Number of jobs to show (default: 20, max: 100)
         #[arg(long, value_name = "N")]
-        limit: Option<i64>,
-        /// Offset for pagination (default: 0)
-        #[arg(long, value_name = "N")]
-        offset: Option<i64>,
+        count: Option<i64>,
     },
 }
 
@@ -752,8 +749,8 @@ impl App {
                 JobCommands::Status { job_id } => {
                     self.handle_job_status(job_id, config)
                 }
-                JobCommands::List { status, limit, offset } => {
-                    self.handle_job_list(status.as_ref(), *limit, *offset, config)
+                JobCommands::List { status, count } => {
+                    self.handle_job_list(status.as_ref(), *count, config)
                 }
             }
         }
@@ -868,8 +865,7 @@ impl App {
     fn handle_job_list(
         &self,
         status_filter: Option<&String>,
-        limit: Option<i64>,
-        offset: Option<i64>,
+        count: Option<i64>,
         config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
         use crate::jobs::types::JobStatus;
@@ -899,9 +895,8 @@ impl App {
             ..Default::default()
         };
 
-        // Set defaults and cap limit
-        let limit = limit.unwrap_or(20).min(100);
-        let _offset = offset.unwrap_or(0); // kept for CLI arg compat; cursor-based pagination used internally
+        // Set defaults and cap count
+        let count = count.unwrap_or(20).min(100).max(1);
 
         // Get database URL from environment or config
         let db_url = std::env::var("DATABASE_URL")
@@ -919,31 +914,29 @@ impl App {
             Ok::<_, crate::errors::Error>(db_pool.pool().clone())
         })?;
 
-        // Query jobs
-        let result: Result<(Vec<_>, i64), crate::jobs::error::JobError> = rt.block_on(async {
+        // Query jobs — fetch count+1 to detect next page
+        let result: Result<Vec<_>, crate::jobs::error::JobError> = rt.block_on(async {
             let repo = JobRepository::new(pool);
-            let jobs = repo.list_jobs(filters.clone(), limit, None, CursorDirection::Forward).await?;
-            let total = repo.count_jobs(filters).await?;
-            Ok::<_, crate::jobs::error::JobError>((jobs, total))
+            repo.list_jobs(filters.clone(), count, None, CursorDirection::Forward).await
         });
 
         match result {
-            Ok((jobs, total)) => {
-                let has_next = jobs.len() > limit as usize;
-                let display_jobs: Vec<_> = jobs.into_iter().take(limit as usize).collect();
+            Ok(mut jobs) => {
+                let has_next = jobs.len() > count as usize;
+                jobs.truncate(count as usize);
 
-                if display_jobs.is_empty() {
+                if jobs.is_empty() {
                     if let Some(s) = status_filter {
                         println!("No {} jobs found", s);
                     } else {
                         println!("No jobs found");
                     }
                 } else {
-                    println!("Jobs (showing {} of {}):\n", display_jobs.len(), total);
+                    println!("Jobs (cursor-based pagination, showing {}):\n", jobs.len());
                     println!("{:<40} {:<10} {:<12} {:<20}", "ID", "Type", "Status", "Created");
                     println!("{}", "-".repeat(82));
 
-                    for job in display_jobs {
+                    for job in &jobs {
                         let id_short = format!("{}...", &job.id.to_string()[..8]);
                         let created = job.created_at.format("%Y-%m-%d %H:%M");
                         let status_str = format!("{:>10}", job.status);
