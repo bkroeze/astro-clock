@@ -2,63 +2,6 @@
 
 This file is the explicit capability and coverage contract for the project.
 
-## Active
-
-### R005 — GET /api/v1/jobs accepts `created_after` and `created_before` query parameters (ISO 8601 timestamps or YYYY-MM-DD dates) to filter by job creation time.
-- Class: core-capability
-- Status: active
-- Description: GET /api/v1/jobs accepts `created_after` and `created_before` query parameters (ISO 8601 timestamps or YYYY-MM-DD dates) to filter by job creation time.
-- Why it matters: Time-bounded queries are essential for operational use — "show me jobs from last week" or "jobs created since deployment."
-- Source: user
-- Primary owning slice: M003/S01
-- Supporting slices: none
-- Validation: mapped
-- Notes: Both parameters are optional. Either or both may be provided.
-
-### R006 — GET /api/v1/jobs uses cursor-based pagination anchored on (created_at, id) instead of offset/limit. The `count` parameter (default 20, max 100) controls page size. Cursors are opaque base64 tokens encoding the boundary row's timestamp and ID.
-- Class: core-capability
-- Status: active
-- Description: GET /api/v1/jobs uses cursor-based pagination anchored on (created_at, id) instead of offset/limit. The `count` parameter (default 20, max 100) controls page size. Cursors are opaque base64 tokens encoding the boundary row's timestamp and ID.
-- Why it matters: Offset-based pagination produces shifting results when new jobs are inserted between page fetches. Stable cursors guarantee consistent page boundaries.
-- Source: user
-- Primary owning slice: M003/S02
-- Supporting slices: M003/S01
-- Validation: mapped
-- Notes: First request uses filter params + count. Response includes next/prev URLs. Subsequent requests can use either cursors or fresh filter params.
-
-### R007 — The job list response payload includes `next` and `prev` URL strings that clients can follow directly. These URLs encode the cursor and all active filter parameters, preserving the query context across pages.
-- Class: core-capability
-- Status: active
-- Description: The job list response payload includes `next` and `prev` URL strings that clients can follow directly. These URLs encode the cursor and all active filter parameters, preserving the query context across pages.
-- Why it matters: Clients shouldn't need to understand cursor encoding — they just follow the URL. Filter state is preserved automatically.
-- Source: user
-- Primary owning slice: M003/S02
-- Supporting slices: M003/S01
-- Validation: mapped
-- Notes: `prev` is null on the first page. `next` is null when there are no more results.
-
-### R008 — DELETE /api/v1/jobs/:id removes a job. Returns 204 No Content on success, 404 if job not found, 409 Conflict if job is in_process. Standard REST semantics.
-- Class: core-capability
-- Status: active
-- Description: DELETE /api/v1/jobs/:id removes a job. Returns 204 No Content on success, 404 if job not found, 409 Conflict if job is in_process. Standard REST semantics.
-- Why it matters: Job cleanup is essential for operational hygiene. Guarding in_process prevents orphaning a worker that's actively executing the job.
-- Source: user
-- Primary owning slice: M003/S03
-- Supporting slices: none
-- Validation: mapped
-- Notes: Deleting a pending job that gets claimed between the status check and the DELETE is acceptable — this is a known race window.
-
-### R009 — Integration tests covering: multi-value filters, date range filters, cursor pagination forward/backward, next/prev URL generation, DELETE success/404/409, edge cases. Tests follow M02 patterns.
-- Class: quality-attribute
-- Status: active
-- Description: Integration tests covering: multi-value filters, date range filters, cursor pagination forward/backward, next/prev URL generation, DELETE success/404/409, edge cases. Tests follow M02 patterns.
-- Why it matters: The M02 test suite proved the value of comprehensive integration tests. New endpoints need the same coverage.
-- Source: inferred
-- Primary owning slice: M003/S03
-- Supporting slices: M003/S01, M003/S02
-- Validation: mapped
-- Notes: Existing integration tests must continue passing — no regressions.
-
 ## Validated
 
 ### QUERY-07 — Untitled
@@ -124,6 +67,61 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: Validated by 21 new unit tests in server::routes::jobs covering multi-value CSV parsing for status and job_type (test_parse_comma_separated_multiple_values, test_parse_comma_separated_all_statuses, test_parse_comma_separated_job_types, test_combined_status_and_job_type, test_single_status_still_works). Full test suite passes (188 tests, 0 failures).
 - Notes: Replaces the current single-value status filter. Must validate individual values against known enums and return 400 for invalid entries.
 
+### R005 — GET /api/v1/jobs accepts `created_after` and `created_before` query parameters (ISO 8601 timestamps or YYYY-MM-DD dates) to filter by job creation time.
+- Class: core-capability
+- Status: validated
+- Description: GET /api/v1/jobs accepts `created_after` and `created_before` query parameters (ISO 8601 timestamps or YYYY-MM-DD dates) to filter by job creation time.
+- Why it matters: Time-bounded queries are essential for operational use — "show me jobs from last week" or "jobs created since deployment."
+- Source: user
+- Primary owning slice: M003/S01
+- Supporting slices: none
+- Validation: Validated by unit tests covering date parsing: test_parse_date_param_rfc3339, test_parse_date_param_yyyy_mm_dd, test_parse_date_param_rfc3339_with_offset, test_parse_date_param_invalid, test_filters_date_range_only, test_filters_all_empty. Handler accepts both RFC3339 timestamps and YYYY-MM-DD dates for created_after/created_before parameters. Full test suite passes (188 tests, 0 failures).
+- Notes: Both parameters are optional. Either or both may be provided.
+
+### R006 — GET /api/v1/jobs uses cursor-based pagination anchored on (created_at, id) instead of offset/limit. The `count` parameter (default 20, max 100) controls page size. Cursors are opaque base64 tokens encoding the boundary row's timestamp and ID.
+- Class: core-capability
+- Status: validated
+- Description: GET /api/v1/jobs uses cursor-based pagination anchored on (created_at, id) instead of offset/limit. The `count` parameter (default 20, max 100) controls page size. Cursors are opaque base64 tokens encoding the boundary row's timestamp and ID.
+- Why it matters: Offset-based pagination produces shifting results when new jobs are inserted between page fetches. Stable cursors guarantee consistent page boundaries.
+- Source: user
+- Primary owning slice: M003/S02
+- Supporting slices: M003/S01
+- Validation: Cursor-based pagination implemented with (created_at, id) tuple cursors, opaque base64url-no-pad encoding, count parameter (default 20, max 100). SQL uses tuple comparison for stable page boundaries. 7 cursor unit tests + 5 integration tests (first page, follow next, last page, invalid cursor, no overlap) all pass. Migration 010 composite index on (created_at DESC, id DESC).
+- Notes: First request uses filter params + count. Response includes next/prev URLs. Subsequent requests can use either cursors or fresh filter params.
+
+### R007 — The job list response payload includes `next` and `prev` URL strings that clients can follow directly. These URLs encode the cursor and all active filter parameters, preserving the query context across pages.
+- Class: core-capability
+- Status: validated
+- Description: The job list response payload includes `next` and `prev` URL strings that clients can follow directly. These URLs encode the cursor and all active filter parameters, preserving the query context across pages.
+- Why it matters: Clients shouldn't need to understand cursor encoding — they just follow the URL. Filter state is preserved automatically.
+- Source: user
+- Primary owning slice: M003/S02
+- Supporting slices: M003/S01
+- Validation: Response includes next and prev URL strings encoding cursor and all active filter parameters. build_page_url helper preserves status, job_type, created_after, created_before in pagination URLs. Integration tests confirm URL following works, filter preservation across pages, null prev on first page, null next on last page.
+- Notes: `prev` is null on the first page. `next` is null when there are no more results.
+
+### R008 — DELETE /api/v1/jobs/:id removes a job. Returns 204 No Content on success, 404 if job not found, 409 Conflict if job is in_process. Standard REST semantics.
+- Class: core-capability
+- Status: validated
+- Description: DELETE /api/v1/jobs/:id removes a job. Returns 204 No Content on success, 404 if job not found, 409 Conflict if job is in_process. Standard REST semantics.
+- Why it matters: Job cleanup is essential for operational hygiene. Guarding in_process prevents orphaning a worker that's actively executing the job.
+- Source: user
+- Primary owning slice: M003/S03
+- Supporting slices: none
+- Validation: DELETE endpoint implemented with 204/404/409 responses. Integration tests confirm: delete_completed_job_returns_204, delete_nonexistent_job_returns_404, delete_in_process_job_returns_409, delete_then_get_returns_404 — all passing.
+- Notes: Deleting a pending job that gets claimed between the status check and the DELETE is acceptable — this is a known race window.
+
+### R009 — Integration tests covering: multi-value filters, date range filters, cursor pagination forward/backward, next/prev URL generation, DELETE success/404/409, edge cases. Tests follow M02 patterns.
+- Class: quality-attribute
+- Status: validated
+- Description: Integration tests covering: multi-value filters, date range filters, cursor pagination forward/backward, next/prev URL generation, DELETE success/404/409, edge cases. Tests follow M02 patterns.
+- Why it matters: The M02 test suite proved the value of comprehensive integration tests. New endpoints need the same coverage.
+- Source: inferred
+- Primary owning slice: M003/S03
+- Supporting slices: M003/S01, M003/S02
+- Validation: 36 integration tests total (18 pre-existing + 3 fixed + 15 new). New tests cover: multi-value CSV filters (status, job_type), date range filters, cursor pagination (first page, follow next, last page, invalid cursor, no overlap), DELETE success/404/409, and edge cases. All 35 non-seed tests pass.
+- Notes: Existing integration tests must continue passing — no regressions.
+
 ## Deferred
 
 ### R010 — Authentication and authorization for all job management endpoints.
@@ -173,18 +171,18 @@ This file is the explicit capability and coverage contract for the project.
 | R002 | operability | validated | M002/S02 | none | just test-db-setup creates a seeded test DB idempotently; 9 integration tests pass (5 pure + 4 DB-dependent) asserting exact seed data counts; just test-integration runs full suite against seeded DB. Seed data covers 60 days with deterministic values for all 10 bodies, 5 aspect types, retrograde periods, lunar conditions, VoC periods, and moon sign transits. |
 | R003 | quality-attribute | validated | M002/S03 | none | 35 integration tests pass: 21 API tests (load sync/async, wedding/project/travel queries, job CRUD, pagination, input validation) + 14 CLI tests (load sync/async, query wedding/project/travel sync/async, job status/list, input validation). All run against seeded test DB via just test-integration. |
 | R004 | core-capability | validated | M003/S01 | none | Validated by 21 new unit tests in server::routes::jobs covering multi-value CSV parsing for status and job_type (test_parse_comma_separated_multiple_values, test_parse_comma_separated_all_statuses, test_parse_comma_separated_job_types, test_combined_status_and_job_type, test_single_status_still_works). Full test suite passes (188 tests, 0 failures). |
-| R005 | core-capability | active | M003/S01 | none | mapped |
-| R006 | core-capability | active | M003/S02 | M003/S01 | mapped |
-| R007 | core-capability | active | M003/S02 | M003/S01 | mapped |
-| R008 | core-capability | active | M003/S03 | none | mapped |
-| R009 | quality-attribute | active | M003/S03 | M003/S01, M003/S02 | mapped |
+| R005 | core-capability | validated | M003/S01 | none | Validated by unit tests covering date parsing: test_parse_date_param_rfc3339, test_parse_date_param_yyyy_mm_dd, test_parse_date_param_rfc3339_with_offset, test_parse_date_param_invalid, test_filters_date_range_only, test_filters_all_empty. Handler accepts both RFC3339 timestamps and YYYY-MM-DD dates for created_after/created_before parameters. Full test suite passes (188 tests, 0 failures). |
+| R006 | core-capability | validated | M003/S02 | M003/S01 | Cursor-based pagination implemented with (created_at, id) tuple cursors, opaque base64url-no-pad encoding, count parameter (default 20, max 100). SQL uses tuple comparison for stable page boundaries. 7 cursor unit tests + 5 integration tests (first page, follow next, last page, invalid cursor, no overlap) all pass. Migration 010 composite index on (created_at DESC, id DESC). |
+| R007 | core-capability | validated | M003/S02 | M003/S01 | Response includes next and prev URL strings encoding cursor and all active filter parameters. build_page_url helper preserves status, job_type, created_after, created_before in pagination URLs. Integration tests confirm URL following works, filter preservation across pages, null prev on first page, null next on last page. |
+| R008 | core-capability | validated | M003/S03 | none | DELETE endpoint implemented with 204/404/409 responses. Integration tests confirm: delete_completed_job_returns_204, delete_nonexistent_job_returns_404, delete_in_process_job_returns_409, delete_then_get_returns_404 — all passing. |
+| R009 | quality-attribute | validated | M003/S03 | M003/S01, M003/S02 | 36 integration tests total (18 pre-existing + 3 fixed + 15 new). New tests cover: multi-value CSV filters (status, job_type), date range filters, cursor pagination (first page, follow next, last page, invalid cursor, no overlap), DELETE success/404/409, and edge cases. All 35 non-seed tests pass. |
 | R010 | compliance/security | deferred | none | none | unmapped |
 | R011 | admin/support | deferred | none | none | unmapped |
 | R012 | core-capability | out-of-scope | none | none | n/a |
 
 ## Coverage Summary
 
-- Active requirements: 5
-- Mapped to slices: 5
-- Validated: 8 (QUERY-07, QUERY-08, QUERY-10, QUERY-11, R001, R002, R003, R004)
+- Active requirements: 0
+- Mapped to slices: 0
+- Validated: 13 (QUERY-07, QUERY-08, QUERY-10, QUERY-11, R001, R002, R003, R004, R005, R006, R007, R008, R009)
 - Unmapped active requirements: 0

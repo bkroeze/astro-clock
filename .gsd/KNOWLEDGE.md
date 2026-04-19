@@ -57,3 +57,16 @@
 - **build_page_url preserves all active filters.** The next/prev URL construction includes all non-None filter parameters (status, job_type, created_after, created_before) alongside count and cursor. This ensures paginating through a filtered result set stays filtered without client-side state.
 
 - **CLI uses count (not cursor) for first-page listing.** The CLI's `job list` command passes `count` with no cursor, only supporting first-page display. Cursor-based navigation is API-only since cursors are opaque URLs unsuitable for CLI flags.
+
+## DELETE Endpoint Patterns
+
+- **Two-step fetch-then-delete for status-gated deletion.** The DELETE handler calls `get_job()` first to check existence and status, then `delete_job()` to perform the deletion. This keeps business logic in the handler layer and reuses existing repository methods. Race condition: if a job disappears between get and delete, returns 404 (idempotent and safe).
+- **Creating in_process jobs for integration tests.** Use raw SQL INSERT to create a pending job, then call `repo.claim_next_job("test-worker")` to transition it to in_process. The async job executor completes sync jobs too fast for tests to intercept them, so direct SQL + claim is the reliable approach.
+
+## Milestone Execution Lessons
+
+- **Response shape changes break downstream tests across slices.** S02's change from `{total, limit, offset}` to `{next, prev}` broke 3 pre-existing integration tests. When a slice changes a shared response shape, plan to fix all consumers in the same slice or explicitly list the broken tests as a follow-up for the integration test slice.
+
+- **Pre-existing test failures can mask regressions.** The `test_seed_data_loaded` test fails because seed data has only 39 days instead of 61+. This pre-dates M003 but should be fixed to avoid confusing future milestone verification where "1 test failed" could be either old or new.
+
+- **Cursor pagination walking pattern for integration tests.** The `cursor_pagination_last_page` test walks all pages following `next` URLs with a 50-page safety limit. This pattern is more robust than assuming exact job counts and handles edge cases like empty result sets naturally.

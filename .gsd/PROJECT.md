@@ -12,14 +12,12 @@ Accurate ephemeris data, computed via Swiss Ephemeris, served through queryable 
 
 - Swiss Ephemeris integration computes positions, aspects, lunar conditions for 10 bodies
 - TimescaleDB storage with hypertables, continuous aggregates, multi-resolution data
-- REST API: chart rendering, data loading, named queries (wedding/project/travel), job management with enhanced list filters and cursor-based pagination
+- REST API: chart rendering, data loading, named queries (wedding/project/travel), job management with multi-value filters, cursor-based pagination, and DELETE endpoint
 - CLI: load, query, job status/list commands
-- Integration test suite: 35 tests (21 API + 14 CLI) against seeded test database
+- Integration test suite: 36 tests (35 API passing + 1 pre-existing seed data validation) against seeded test database
 - 206 unit tests covering all modules including enhanced job list filters and cursor pagination
 - SVG glyph system for zodiac/planet rendering
 - Memory-monitored chunk cache with LRU eviction
-- **M003/S01 complete:** Multi-value comma-separated filters for status and job_type, date range filters (created_after/created_before) on GET /api/v1/jobs
-- **M003/S02 complete:** Cursor-based pagination with (created_at, id) stable anchors, opaque base64 cursors, next/prev URLs preserving filter state, count parameter (default 20, max 100)
 
 ## Architecture / Key Patterns
 
@@ -33,6 +31,7 @@ Accurate ephemeris data, computed via Swiss Ephemeris, served through queryable 
 - **Query construction:** sqlx QueryBuilder for dynamic WHERE clauses
 - **Filter parsing:** Generic `parse_comma_separated<T: FromStr>()` for CSV query params, RFC3339-first date parsing with YYYY-MM-DD fallback
 - **Pagination:** Cursor-based with (created_at, id) tuple comparison, count+1 page detection, backward pagination via ASC+reverse, opaque base64url-no-pad cursors
+- **Delete:** Two-step fetch-then-delete for status-gated deletion, 409 guard for in_process jobs
 
 ## Capability Contract
 
@@ -42,7 +41,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 - [x] M001: Migration — Database schema migration to TimescaleDB with hypertables, indexes, and continuous aggregates
 - [x] M002: Build Fix & Integration Test Suite — Fix db-gated compilation errors, create seeded test database, write integration tests for all API routes and CLI commands
-- [ ] M003: Job Maintenance & Enhanced List API — Enhanced list filters (multi-value status/job_type, date ranges), cursor-based pagination with stable anchors, DELETE endpoint with in_process guard
+- [x] M003: Job Maintenance & Enhanced List API — Enhanced list filters (multi-value status/job_type, date ranges), cursor-based pagination with stable anchors, DELETE endpoint with in_process guard
   - [x] S01: Enhanced list filters — multi-value CSV parsing for status/job_type, date range filters, backward compatible
   - [x] S02: Cursor-based pagination — (created_at, id) tuple cursors, next/prev URLs with filter preservation, count parameter
-  - [ ] S03: DELETE endpoint + integration tests
+  - [x] S03: DELETE endpoint + integration tests — 204/404/409 responses, 36 integration tests covering all M003 functionality

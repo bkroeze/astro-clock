@@ -1016,7 +1016,7 @@ mod api_tests {
 
         loop {
             let (_, page) = get_uri(&mut app, &url).await;
-            let jobs = page["jobs"].as_array().unwrap();
+            let _jobs = page["jobs"].as_array().unwrap();
             pages_visited += 1;
 
             match page["next"].as_str() {
