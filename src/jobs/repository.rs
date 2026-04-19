@@ -106,6 +106,17 @@ impl JobRepository {
         .map_err(JobError::from)
     }
 
+    /// Delete a job by ID.
+    /// Returns true if a row was deleted, false if the job was not found.
+    pub async fn delete_job(&self, id: Uuid) -> JobResult<bool> {
+        let result = sqlx::query("DELETE FROM jobs WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(JobError::from)?;
+        Ok(result.rows_affected() > 0)
+    }
+
     /// Claim next pending job using FOR UPDATE SKIP LOCKED (race-free)
     /// Returns the claimed job or None if no jobs available
     pub async fn claim_next_job(

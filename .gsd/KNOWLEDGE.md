@@ -43,3 +43,17 @@
 - **sqlx QueryBuilder with separated `push_bind()` for IN clauses.** Use `separated.push_bind(value.as_ref())` to generate parameterized `$1, $2, ...` for `IN (...)` clauses. Requires `AsRefStr` derive on enums. Track `has_where` boolean to correctly chain `WHERE`/`AND` keywords across multiple optional conditions.
 
 - **Date parsing: RFC3339 first, YYYY-MM-DD fallback.** `parse_date_param` tries `DateTime::parse_from_rfc3339()` first, then falls back to `NaiveDate::parse_from_str()` + midnight UTC. Gives API consumers maximum flexibility without ambiguity.
+
+## Cursor Pagination Patterns
+
+- **Cursor-based pagination uses (created_at, id) tuple comparison in SQL.** PostgreSQL supports row-wise tuple comparison: `WHERE (created_at, id) < ($1, $2)` leverages the composite index on `(created_at DESC, id DESC)` for efficient page boundary detection. This is more stable than offset/limit when rows are inserted between page fetches.
+
+- **Fetch count+1 rows to detect next page existence.** The list_jobs query fetches one extra row beyond the requested count. If results.len() > count, a next page exists. This avoids a separate COUNT query and is the standard cursor pagination pattern.
+
+- **Backward pagination fetches ASC then reverses.** For `prev` (backward) pagination, the query uses `WHERE (created_at, id) > cursor ORDER BY created_at ASC, id ASC LIMIT count+1` then reverses the results to maintain DESC order in the response. This ensures the client always sees jobs in newest-first order.
+
+- **base64url-no-pad for cursor encoding.** Using `URL_SAFE_NO_PAD` produces cursors without `=` padding, keeping URLs clean. Cursors encode (created_at, id) as JSON then base64 — clients treat them as opaque strings.
+
+- **build_page_url preserves all active filters.** The next/prev URL construction includes all non-None filter parameters (status, job_type, created_after, created_before) alongside count and cursor. This ensures paginating through a filtered result set stays filtered without client-side state.
+
+- **CLI uses count (not cursor) for first-page listing.** The CLI's `job list` command passes `count` with no cursor, only supporting first-page display. Cursor-based navigation is API-only since cursors are opaque URLs unsuitable for CLI flags.

@@ -111,7 +111,7 @@ impl Server {
             .route("/api/v1/chart/data", get(chart_data_handler))
             // Job routes (from 06-03)
             .route("/api/v1/load", post(routes::load_handler))
-            .route("/api/v1/jobs/:id", get(routes::get_job_handler))
+            .route("/api/v1/jobs/:id", get(routes::get_job_handler).delete(routes::delete_job_handler))
             .route("/api/v1/jobs", get(routes::list_jobs_handler))
             // Query routes (dedicated endpoints)
             .route("/api/v1/query/wedding", post(routes::wedding_query_handler))

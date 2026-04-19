@@ -271,6 +271,67 @@ pub async fn get_job_handler(
     }
 }
 
+/// DELETE /api/v1/jobs/:id - Delete a completed or failed job
+///
+/// Returns:
+/// - 204 No Content if the job was deleted
+/// - 404 Not Found if the job does not exist
+/// - 409 Conflict if the job is in_process (cannot delete active jobs)
+pub async fn delete_job_handler(
+    State(state): State<AppState>,
+    Path(job_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let repository = JobRepository::new(state.get_pool());
+
+    // Step 1: Check existence and status
+    match repository.get_job(job_id).await {
+        Ok(None) => {
+            let error = ErrorResponse {
+                error: "not_found".to_string(),
+                message: format!("Job {} not found", job_id),
+            };
+            return (StatusCode::NOT_FOUND, Json(serde_json::json!(error))).into_response();
+        }
+        Ok(Some(job)) if job.status == "in_process" => {
+            let error = ErrorResponse {
+                error: "conflict".to_string(),
+                message: format!("Cannot delete job {} in in_process status", job_id),
+            };
+            return (StatusCode::CONFLICT, Json(serde_json::json!(error))).into_response();
+        }
+        Err(e) => {
+            tracing::error!("Failed to get job {} for deletion: {}", job_id, e);
+            let error = ErrorResponse {
+                error: "query_failed".to_string(),
+                message: format!("{}", e),
+            };
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response();
+        }
+        Ok(Some(_)) => { /* Job exists and is not in_process — proceed to delete */ }
+    }
+
+    // Step 2: Perform deletion
+    match repository.delete_job(job_id).await {
+        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(false) => {
+            // Raced: job disappeared between get and delete
+            let error = ErrorResponse {
+                error: "not_found".to_string(),
+                message: format!("Job {} not found", job_id),
+            };
+            (StatusCode::NOT_FOUND, Json(serde_json::json!(error))).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to delete job {}: {}", job_id, e);
+            let error = ErrorResponse {
+                error: "delete_failed".to_string(),
+                message: format!("{}", e),
+            };
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
+        }
+    }
+}
+
 /// GET /api/v1/jobs - List recent jobs with cursor-based pagination and filtering
 ///
 /// Query parameters:
