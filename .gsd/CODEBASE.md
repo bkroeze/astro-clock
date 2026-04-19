@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-04-19T18:55:12Z | Files: 126 | Described: 0/126
-<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T18:55:12Z","fingerprint":"1c0afda4847510c8caa1a86d9f4ea0a62c038ab7","fileCount":126,"truncated":false} -->
+Generated: 2026-04-19T18:56:33Z | Files: 127 | Described: 0/127
+<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T18:56:33Z","fingerprint":"c357d022690b153edeadf1812a15a4123d6b9c88","fileCount":127,"truncated":false} -->
 
 ### (root)/
 - `.emdash.json`
@@ -16,6 +16,7 @@ Generated: 2026-04-19T18:55:12Z | Files: 126 | Described: 0/126
 - `opencode.json`
 - `pyproject.toml`
 - `README.md`
+- `tmp.json`
 
 ### .iteratr/data/
 - `.iteratr/data/server.port`

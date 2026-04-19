@@ -235,7 +235,7 @@ pub async fn list_jobs_handler(
     let offset = params.offset.max(0);
 
     // Parse status filter if provided
-    let status_filter = params.status.clone().and_then(|s| match s.as_str() {
+    let status_filter: Option<crate::jobs::types::JobStatus> = params.status.clone().and_then(|s| match s.as_str() {
         "pending" => Some(crate::jobs::types::JobStatus::Pending),
         "in_process" => Some(crate::jobs::types::JobStatus::InProcess),
         "complete" => Some(crate::jobs::types::JobStatus::Complete),
@@ -255,12 +255,18 @@ pub async fn list_jobs_handler(
         return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
     }
 
+    // Build filters from single status (backward-compatible; T03 adds multi-value support)
+    let filters = crate::jobs::repository::JobListFilters {
+        status: status_filter.into_iter().collect(),
+        ..Default::default()
+    };
+
     // Get total count for pagination
-    let total_result = repository.count_jobs(status_filter).await;
+    let total_result = repository.count_jobs(filters.clone()).await;
 
     match total_result {
         Ok(total) => {
-            match repository.list_jobs(status_filter, limit, offset).await {
+            match repository.list_jobs(filters, limit, offset).await {
                 Ok(jobs) => {
                     let responses: Vec<JobResponse> = jobs
                         .into_iter()

@@ -36,7 +36,7 @@
   - Files: `src/jobs/types.rs`, `src/jobs/repository.rs`
   - Verify: cargo check --features db && cargo test --features db --lib -- jobs::types
 
-- [ ] **T02: Rewrite list_jobs and count_jobs to use JobListFilters with dynamic WHERE** `est:30m`
+- [x] **T02: Rewrite list_jobs and count_jobs to use JobListFilters with dynamic WHERE** `est:30m`
   Update `JobRepository::list_jobs` and `count_jobs` to accept `JobListFilters` instead of `Option<JobStatus>`. Use QueryBuilder to dynamically push WHERE conditions: `status IN (...)` for multi-value status, `job_type IN (...)` for multi-value job_type, `created_at >= $N` and `created_at <= $N` for date range. Update the CLI app's call site in `src/cli/app.rs` to construct a JobListFilters with a single status value (backward-compatible).
   - Files: `src/jobs/repository.rs`, `src/cli/app.rs`
   - Verify: cargo check --features db

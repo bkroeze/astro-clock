@@ -873,7 +873,7 @@ impl App {
         config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
         use crate::jobs::types::JobStatus;
-        use crate::jobs::repository::JobRepository;
+        use crate::jobs::repository::{JobRepository, JobListFilters};
 
         // Parse status filter
         let status = match status_filter {
@@ -891,6 +891,12 @@ impl App {
                 }
             }
             None => None,
+        };
+
+        // Build filters from single status (backward-compatible)
+        let filters = JobListFilters {
+            status: status.into_iter().collect(),
+            ..Default::default()
         };
 
         // Set defaults and cap limit
@@ -916,8 +922,8 @@ impl App {
         // Query jobs
         let result: Result<(Vec<_>, i64), crate::jobs::error::JobError> = rt.block_on(async {
             let repo = JobRepository::new(pool);
-            let jobs = repo.list_jobs(status, limit, offset).await?;
-            let total = repo.count_jobs(status).await?;
+            let jobs = repo.list_jobs(filters.clone(), limit, offset).await?;
+            let total = repo.count_jobs(filters).await?;
             Ok::<_, crate::jobs::error::JobError>((jobs, total))
         });
 

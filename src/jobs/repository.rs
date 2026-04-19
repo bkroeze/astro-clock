@@ -147,45 +147,127 @@ impl JobRepository {
         .map_err(JobError::from)
     }
 
-    /// List recent jobs with pagination
+    /// List jobs with dynamic filtering and pagination
+    #[allow(unused_assignments)]
     pub async fn list_jobs(
         &self,
-        status: Option<JobStatus>,
+        filters: JobListFilters,
         limit: i64,
         offset: i64,
     ) -> JobResult<Vec<Job>> {
         let mut query = QueryBuilder::new("SELECT * FROM jobs");
-        
-        if let Some(s) = status {
-            query.push(" WHERE status = ");
-            query.push_bind(s.to_string());
+        let mut has_where = false;
+
+        if !filters.status.is_empty() {
+            query.push(" WHERE status IN (");
+            let mut separated = query.separated(", ");
+            for s in &filters.status {
+                separated.push_bind(s.as_ref());
+            }
+            query.push(")");
+            has_where = true;
         }
-        
+
+        if !filters.job_type.is_empty() {
+            if has_where {
+                query.push(" AND job_type IN (");
+            } else {
+                query.push(" WHERE job_type IN (");
+                has_where = true;
+            }
+            let mut separated = query.separated(", ");
+            for jt in &filters.job_type {
+                separated.push_bind(jt.as_ref());
+            }
+            query.push(")");
+        }
+
+        if let Some(after) = filters.created_after {
+            if has_where {
+                query.push(" AND created_at >= ");
+            } else {
+                query.push(" WHERE created_at >= ");
+                has_where = true;
+            }
+            query.push_bind(after);
+        }
+
+        if let Some(before) = filters.created_before {
+            if has_where {
+                query.push(" AND created_at <= ");
+            } else {
+                query.push(" WHERE created_at <= ");
+                has_where = true;
+            }
+            query.push_bind(before);
+        }
+
         query.push(" ORDER BY created_at DESC LIMIT ");
         query.push_bind(limit);
         query.push(" OFFSET ");
         query.push_bind(offset);
-        
+
         query.build_query_as::<Job>()
             .fetch_all(&self.pool)
             .await
             .map_err(JobError::from)
     }
 
-    /// Count jobs by status
-    pub async fn count_jobs(&self, status: Option<JobStatus>
-    ) -> JobResult<i64> {
-        let count: (i64,) = if let Some(s) = status {
-            sqlx::query_as("SELECT COUNT(*) FROM jobs WHERE status = $1")
-                .bind(s.as_ref())
-                .fetch_one(&self.pool)
-                .await?
-        } else {
-            sqlx::query_as("SELECT COUNT(*) FROM jobs")
-                .fetch_one(&self.pool)
-                .await?
-        };
-        
+    /// Count jobs with dynamic filtering
+    #[allow(unused_assignments)]
+    pub async fn count_jobs(&self, filters: JobListFilters) -> JobResult<i64> {
+        let mut query = QueryBuilder::new("SELECT COUNT(*) FROM jobs");
+        let mut has_where = false;
+
+        if !filters.status.is_empty() {
+            query.push(" WHERE status IN (");
+            let mut separated = query.separated(", ");
+            for s in &filters.status {
+                separated.push_bind(s.as_ref());
+            }
+            query.push(")");
+            has_where = true;
+        }
+
+        if !filters.job_type.is_empty() {
+            if has_where {
+                query.push(" AND job_type IN (");
+            } else {
+                query.push(" WHERE job_type IN (");
+                has_where = true;
+            }
+            let mut separated = query.separated(", ");
+            for jt in &filters.job_type {
+                separated.push_bind(jt.as_ref());
+            }
+            query.push(")");
+        }
+
+        if let Some(after) = filters.created_after {
+            if has_where {
+                query.push(" AND created_at >= ");
+            } else {
+                query.push(" WHERE created_at >= ");
+                has_where = true;
+            }
+            query.push_bind(after);
+        }
+
+        if let Some(before) = filters.created_before {
+            if has_where {
+                query.push(" AND created_at <= ");
+            } else {
+                query.push(" WHERE created_at <= ");
+                has_where = true;
+            }
+            query.push_bind(before);
+        }
+
+        let count: (i64,) = query.build_query_as()
+            .fetch_one(&self.pool)
+            .await
+            .map_err(JobError::from)?;
+
         Ok(count.0)
     }
 }
