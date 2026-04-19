@@ -6,7 +6,7 @@
 
 #![cfg(feature = "db")]
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{OriginalUri, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use std::str::FromStr;
 
-use crate::jobs::repository::{JobListFilters, JobRepository, CursorDirection};
+use crate::jobs::repository::{CursorDirection, JobCursor, JobListFilters, JobRepository};
 use crate::jobs::types::{Job, JobStatus, JobType};
 use crate::server::state::AppState;
 
@@ -91,15 +91,14 @@ pub struct ListJobsRequest {
     /// Filter jobs created on or before this timestamp (RFC3339 or YYYY-MM-DD)
     pub created_before: Option<String>,
     /// Maximum number of jobs to return (default: 20, max: 100)
-    #[serde(default = "default_limit")]
-    pub limit: i64,
-    /// Offset for pagination (default: 0)
-    #[serde(default = "default_offset")]
-    pub offset: i64,
+    #[serde(default = "default_count")]
+    pub count: i64,
+    /// Opaque pagination cursor from a previous response's next/prev URL
+    #[serde(default)]
+    pub cursor: Option<String>,
 }
 
-fn default_limit() -> i64 { 20 }
-fn default_offset() -> i64 { 0 }
+fn default_count() -> i64 { 20 }
 
 /// Parse a date string as a UTC DateTime.
 /// Tries RFC3339 first, then falls back to YYYY-MM-DD (interpreted as start-of-day UTC).
@@ -150,9 +149,10 @@ fn parse_comma_separated<T: FromStr>(input: &str, label: &str) -> Result<Vec<T>,
 #[derive(Debug, Serialize)]
 pub struct ListJobsResponse {
     pub jobs: Vec<JobResponse>,
-    pub total: i64,
-    pub limit: i64,
-    pub offset: i64,
+    /// Full URL for the next page of results, or None if this is the last page
+    pub next: Option<String>,
+    /// Full URL for the previous page of results, or None if this is the first page
+    pub prev: Option<String>,
 }
 
 /// POST /api/v1/load - Create and execute a load job
@@ -271,24 +271,27 @@ pub async fn get_job_handler(
     }
 }
 
-/// GET /api/v1/jobs - List recent jobs with pagination and filtering
+/// GET /api/v1/jobs - List recent jobs with cursor-based pagination and filtering
 ///
 /// Query parameters:
 /// - status: Comma-separated status filter (e.g. "complete,failed")
 /// - job_type: Comma-separated job type filter (e.g. "load,query")
 /// - created_after: Filter by created_at >= timestamp (RFC3339 or YYYY-MM-DD)
 /// - created_before: Filter by created_at <= timestamp (RFC3339 or YYYY-MM-DD)
-/// - limit: Max jobs to return (default: 20, max: 100)
-/// - offset: Pagination offset (default: 0)
+/// - count: Max jobs to return (default: 20, max: 100)
+/// - cursor: Opaque pagination cursor from a previous response's next/prev URL
 pub async fn list_jobs_handler(
     State(state): State<AppState>,
+    OriginalUri(original_uri): OriginalUri,
     Query(params): Query<ListJobsRequest>,
 ) -> impl IntoResponse {
     let repository = JobRepository::new(state.get_pool());
 
-    // Validate and cap limit
-    let limit = params.limit.max(1).min(100);
-    let offset = params.offset.max(0);
+    // Validate and cap count
+    let count = params.count.max(1).min(100);
+
+    // Determine base path from OriginalUri (strip query string)
+    let base_path = original_uri.path().to_string();
 
     // Parse comma-separated status filter
     let statuses: Vec<JobStatus> = match params.status.as_deref() {
@@ -370,6 +373,24 @@ pub async fn list_jobs_handler(
         None => None,
     };
 
+    // Decode cursor if present
+    let (cursor, direction) = match params.cursor.as_deref() {
+        Some(cursor_str) => {
+            match JobCursor::decode(cursor_str) {
+                Ok(cur) => (Some(cur), CursorDirection::Forward),
+                Err(msg) => {
+                    let error = ErrorResponse {
+                        error: "invalid_cursor".to_string(),
+                        message: format!("Invalid cursor: {}", msg),
+                    };
+                    return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error)))
+                        .into_response();
+                }
+            }
+        }
+        None => (None, CursorDirection::Forward),
+    };
+
     let filters = JobListFilters {
         status: statuses,
         job_type: job_types,
@@ -377,46 +398,114 @@ pub async fn list_jobs_handler(
         created_before,
     };
 
-    // Get total count for pagination
-    let total_result = repository.count_jobs(filters.clone()).await;
-
-    match total_result {
-        Ok(total) => {
-            match repository.list_jobs(filters, limit, None, CursorDirection::Forward).await {
-                Ok(jobs) => {
-                    let responses: Vec<JobResponse> = jobs
-                        .into_iter()
-                        .map(build_job_response)
-                        .collect();
-
-                    let response = ListJobsResponse {
-                        jobs: responses,
-                        total,
-                        limit,
-                        offset,
-                    };
-
-                    (StatusCode::OK, Json(serde_json::json!(response))).into_response()
-                }
-                Err(e) => {
-                    tracing::error!("Failed to list jobs: {}", e);
-                    let error = ErrorResponse {
-                        error: "query_failed".to_string(),
-                        message: format!("Failed to retrieve jobs: {}", e),
-                    };
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
-                }
+    // Fetch count+1 rows to detect next page
+    match repository.list_jobs(filters.clone(), count, cursor.clone(), direction).await {
+        Ok(mut jobs) => {
+            // Determine has_next: we fetched count+1 rows
+            let has_next = jobs.len() > count as usize;
+            if has_next {
+                jobs.truncate(count as usize);
             }
+
+            // Determine has_prev: if we had a cursor and got results, there's a previous page
+            let has_prev = cursor.is_some() && !jobs.is_empty();
+
+            // First page (no cursor): prev is always None
+            let prev = if cursor.is_none() {
+                None
+            } else if has_prev {
+                // Use first job for prev cursor
+                let first = &jobs[0];
+                let prev_cursor = JobCursor {
+                    created_at: first.created_at,
+                    id: first.id,
+                };
+                Some(build_page_url(
+                    &base_path,
+                    count,
+                    &prev_cursor,
+                    params.status.as_deref(),
+                    params.job_type.as_deref(),
+                    params.created_after.as_deref(),
+                    params.created_before.as_deref(),
+                ))
+            } else {
+                None
+            };
+
+            // Build next URL from last job's cursor
+            let next = if has_next {
+                let last = &jobs[jobs.len() - 1];
+                let next_cursor = JobCursor {
+                    created_at: last.created_at,
+                    id: last.id,
+                };
+                Some(build_page_url(
+                    &base_path,
+                    count,
+                    &next_cursor,
+                    params.status.as_deref(),
+                    params.job_type.as_deref(),
+                    params.created_after.as_deref(),
+                    params.created_before.as_deref(),
+                ))
+            } else {
+                None
+            };
+
+            let responses: Vec<JobResponse> = jobs
+                .into_iter()
+                .map(build_job_response)
+                .collect();
+
+            let response = ListJobsResponse {
+                jobs: responses,
+                next,
+                prev,
+            };
+
+            (StatusCode::OK, Json(serde_json::json!(response))).into_response()
         }
         Err(e) => {
-            tracing::error!("Failed to count jobs: {}", e);
+            tracing::error!("Failed to list jobs: {}", e);
             let error = ErrorResponse {
                 error: "query_failed".to_string(),
-                message: format!("Failed to count jobs: {}", e),
+                message: format!("Failed to retrieve jobs: {}", e),
             };
             (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error))).into_response()
         }
     }
+}
+
+/// Build a pagination URL that preserves all active filter parameters.
+///
+/// The URL includes `count`, the encoded `cursor`, and any non-empty filter
+/// values so that paginating through a filtered result set stays filtered.
+fn build_page_url(
+    base_path: &str,
+    count: i64,
+    cursor: &JobCursor,
+    status: Option<&str>,
+    job_type: Option<&str>,
+    created_after: Option<&str>,
+    created_before: Option<&str>,
+) -> String {
+    let mut params: Vec<String> = Vec::new();
+    params.push(format!("count={}", count));
+    params.push(format!("cursor={}", cursor.encode()));
+    if let Some(s) = status {
+        params.push(format!("status={}", s));
+    }
+    if let Some(jt) = job_type {
+        params.push(format!("job_type={}", jt));
+    }
+    if let Some(ca) = created_after {
+        params.push(format!("created_after={}", ca));
+    }
+    if let Some(cb) = created_before {
+        params.push(format!("created_before={}", cb));
+    }
+    format!("{}?{}", base_path, params.join("&"))
 }
 
 /// Build a JobResponse from a Job entity
@@ -454,6 +543,7 @@ fn build_job_response(job: Job) -> JobResponse {
 mod tests {
     use super::*;
     use crate::jobs::types::{Job, JobType};
+    use base64::Engine;
     use chrono::{Datelike, Timelike};
 
     #[test]
@@ -540,14 +630,14 @@ mod tests {
     #[test]
     fn test_list_jobs_request_deserialization() {
         // Test with all parameters
-        let json = r#"{"status":"complete","limit":10,"offset":5}"#;
+        let json = r#"{"status":"complete","count":10,"cursor":"abc123"}"#;
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, Some("complete".to_string()));
         assert_eq!(req.job_type, None);
         assert_eq!(req.created_after, None);
         assert_eq!(req.created_before, None);
-        assert_eq!(req.limit, 10);
-        assert_eq!(req.offset, 5);
+        assert_eq!(req.count, 10);
+        assert_eq!(req.cursor, Some("abc123".to_string()));
     }
 
     #[test]
@@ -559,8 +649,8 @@ mod tests {
         assert_eq!(req.job_type, None);
         assert_eq!(req.created_after, None);
         assert_eq!(req.created_before, None);
-        assert_eq!(req.limit, 20);  // default_limit
-        assert_eq!(req.offset, 0);   // default_offset
+        assert_eq!(req.count, 20);   // default_count
+        assert_eq!(req.cursor, None);
     }
 
     #[test]
@@ -570,20 +660,20 @@ mod tests {
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, Some("pending".to_string()));
         assert_eq!(req.job_type, None);
-        assert_eq!(req.limit, 20);  // default
-        assert_eq!(req.offset, 0);   // default
+        assert_eq!(req.count, 20);   // default
+        assert_eq!(req.cursor, None);
     }
 
     #[test]
     fn test_list_jobs_request_all_new_fields() {
-        let json = r#"{"status":"complete,failed","job_type":"load,query","created_after":"2025-01-01","created_before":"2025-03-01T23:59:59Z","limit":50,"offset":10}"#;
+        let json = r#"{"status":"complete,failed","job_type":"load,query","created_after":"2025-01-01","created_before":"2025-03-01T23:59:59Z","count":50,"cursor":"eyJjcmVhdGVkX2F0IjoiMjAyNS0wMS0wMVQwMDowMDowMFoiLCJpZCI6IjU1MGU4NDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAwIn0"}"#;
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, Some("complete,failed".to_string()));
         assert_eq!(req.job_type, Some("load,query".to_string()));
         assert_eq!(req.created_after, Some("2025-01-01".to_string()));
         assert_eq!(req.created_before, Some("2025-03-01T23:59:59Z".to_string()));
-        assert_eq!(req.limit, 50);
-        assert_eq!(req.offset, 10);
+        assert_eq!(req.count, 50);
+        assert!(req.cursor.is_some());
     }
 
     // ── Multi-value comma-separated parsing tests ──
@@ -707,7 +797,7 @@ mod tests {
     #[test]
     fn test_backward_compat_request_with_single_status() {
         // Existing clients sending ?status=complete should still work
-        let json = r#"{"status":"complete","limit":20,"offset":0}"#;
+        let json = r#"{"status":"complete","count":20}"#;
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, Some("complete".to_string()));
         // The handler will parse "complete" -> vec![JobStatus::Complete]
@@ -779,16 +869,18 @@ mod tests {
 
         let response = ListJobsResponse {
             jobs: vec![job_response],
-            total: 1,
-            limit: 20,
-            offset: 0,
+            next: None,
+            prev: None,
         };
 
         let json = serde_json::to_string(&response).unwrap();
-        assert!(json.contains("\"total\":1"));
-        assert!(json.contains("\"limit\":20"));
-        assert!(json.contains("\"offset\":0"));
+        assert!(json.contains("\"next\":null"));
+        assert!(json.contains("\"prev\":null"));
         assert!(json.contains("\"jobs\""));
+        // Ensure old fields are NOT present
+        assert!(!json.contains("\"total\""));
+        assert!(!json.contains("\"limit\""));
+        assert!(!json.contains("\"offset\""));
     }
 
     #[test]
@@ -828,21 +920,37 @@ mod tests {
         let job1 = Job::new(JobType::Load, serde_json::json!({"test": 1}));
         let job2 = Job::new(JobType::Query, serde_json::json!({"test": 2}));
 
+        let cursor = JobCursor {
+            created_at: chrono::Utc::now(),
+            id: Uuid::new_v4(),
+        };
+
         let response = ListJobsResponse {
             jobs: vec![build_job_response(job1), build_job_response(job2)],
-            total: 2,
-            limit: 20,
-            offset: 0,
+            next: Some(build_page_url(
+                "/api/v1/jobs",
+                20,
+                &cursor,
+                None,
+                None,
+                None,
+                None,
+            )),
+            prev: None,
         };
 
         let json = serde_json::to_value(&response).unwrap();
         assert!(json.get("jobs").is_some());
-        assert!(json.get("total").is_some());
-        assert!(json.get("limit").is_some());
-        assert!(json.get("offset").is_some());
+        assert!(json.get("next").is_some());
+        assert!(json.get("prev").is_some());
 
         let jobs = json.get("jobs").unwrap().as_array().unwrap();
         assert_eq!(jobs.len(), 2);
+
+        // next should be a URL with count and cursor
+        let next_url = json.get("next").unwrap().as_str().unwrap();
+        assert!(next_url.contains("count=20"));
+        assert!(next_url.contains("cursor="));
     }
 
     #[test]
@@ -882,5 +990,158 @@ mod tests {
         let error = response.error.unwrap();
         assert_eq!(error.code, "validation_failed");
         assert_eq!(error.message, "Invalid query parameters");
+    }
+
+    // ── Cursor handler-layer tests ──
+
+    #[test]
+    fn test_list_jobs_request_with_count_and_cursor() {
+        let json = r#"{"count":5,"cursor":"eyJjcmVhdGVkX2F0IjoiMjAyNS0wNi0xNVQxMDozMDowMFoiLCJpZCI6IjU1MGU4NDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAwIn0"}"#;
+        let req: ListJobsRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.count, 5);
+        assert!(req.cursor.is_some());
+        assert_eq!(req.status, None);
+    }
+
+    #[test]
+    fn test_cursor_decode_in_handler() {
+        // Invalid base64 should fail with descriptive error
+        let bad_cursor = "!!!invalid!!!";
+        let result = JobCursor::decode(bad_cursor);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("Invalid cursor encoding"),
+            "Error should mention encoding, got: {}",
+            err
+        );
+
+        // Valid base64 of non-JSON should fail with data error
+        let bad_json_cursor = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode("not json at all");
+        let result = JobCursor::decode(&bad_json_cursor);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("Invalid cursor data"),
+            "Error should mention data, got: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn test_build_page_url_with_filters() {
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            10,
+            &cursor,
+            Some("complete,failed"),
+            Some("load"),
+            Some("2025-01-01"),
+            Some("2025-06-30"),
+        );
+
+        assert!(url.starts_with("/api/v1/jobs?"));
+        assert!(url.contains("count=10"));
+        assert!(url.contains("cursor="));
+        assert!(url.contains("status=complete,failed"));
+        assert!(url.contains("job_type=load"));
+        assert!(url.contains("created_after=2025-01-01"));
+        assert!(url.contains("created_before=2025-06-30"));
+    }
+
+    #[test]
+    fn test_build_page_url_without_filters() {
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            20,
+            &cursor,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        assert!(url.starts_with("/api/v1/jobs?"));
+        assert!(url.contains("count=20"));
+        assert!(url.contains("cursor="));
+        // Should NOT contain filter params
+        assert!(!url.contains("status="));
+        assert!(!url.contains("job_type="));
+        assert!(!url.contains("created_after="));
+        assert!(!url.contains("created_before="));
+    }
+
+    #[test]
+    fn test_first_page_no_prev() {
+        // When no cursor is provided (first page), prev should always be None.
+        // This is a structural test — we verify the response shape directly.
+        let response = ListJobsResponse {
+            jobs: vec![],
+            next: None,
+            prev: None,  // No cursor → no prev
+        };
+
+        let json = serde_json::to_value(&response).unwrap();
+        assert!(json.get("prev").unwrap().is_null());
+        assert!(json.get("next").unwrap().is_null());
+    }
+
+    #[test]
+    fn test_build_page_url_preserves_partial_filters() {
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 1, 1, 0, 0, 0).unwrap(),
+            id: Uuid::nil(),
+        };
+
+        // Only status filter, no others
+        let url = build_page_url(
+            "/api/v1/jobs",
+            5,
+            &cursor,
+            Some("pending"),
+            None,
+            None,
+            None,
+        );
+
+        assert!(url.contains("status=pending"));
+        assert!(!url.contains("job_type="));
+        assert!(!url.contains("created_after="));
+    }
+
+    #[test]
+    fn test_cursor_url_is_valid() {
+        // Verify the cursor in the URL doesn't contain characters that need escaping
+        let cursor = JobCursor {
+            created_at: chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+
+        let url = build_page_url(
+            "/api/v1/jobs",
+            20,
+            &cursor,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        // Extract cursor value from URL
+        let cursor_part = url.split("cursor=").nth(1).unwrap();
+        // Cursor should not contain URL-unsafe characters (no = padding, no +, no /)
+        assert!(!cursor_part.contains('='));
+        assert!(!cursor_part.contains('+'));
     }
 }

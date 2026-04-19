@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-04-19T19:13:35Z | Files: 127 | Described: 0/127
-<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T19:13:35Z","fingerprint":"c357d022690b153edeadf1812a15a4123d6b9c88","fileCount":127,"truncated":false} -->
+Generated: 2026-04-19T19:18:33Z | Files: 128 | Described: 0/128
+<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T19:18:33Z","fingerprint":"8be64c64ded046d81064392ffb8625b634cd0e96","fileCount":128,"truncated":false} -->
 
 ### (root)/
 - `.emdash.json`
@@ -61,6 +61,7 @@ Generated: 2026-04-19T19:13:35Z | Files: 127 | Described: 0/127
 - `migrations/007_create_benchmark_results.sql`
 - `migrations/008_create_jobs.sql`
 - `migrations/009_create_loaded_days.sql`
+- `migrations/010_create_jobs_cursor_index.sql`
 - `migrations/README.md`
 
 ### notebooks/

@@ -121,7 +121,7 @@ All cursor encode/decode tests pass. `cargo check --features db` compiles withou
   - Files: `Cargo.toml`, `src/jobs/repository.rs`, `migrations/010_create_jobs_cursor_index.sql`
   - Verify: cargo test --features db --lib -- jobs::repository::tests::cursor
 
-- [ ] **T02: Change handler request/response shape and build next/prev URLs** `est:1.5h`
+- [x] **T02: Change handler request/response shape and build next/prev URLs** `est:1.5h`
   ## Steps
 
 1. **Update `ListJobsRequest`** in `src/server/routes/jobs.rs`:
