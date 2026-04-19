@@ -12,11 +12,13 @@ Accurate ephemeris data, computed via Swiss Ephemeris, served through queryable 
 
 - Swiss Ephemeris integration computes positions, aspects, lunar conditions for 10 bodies
 - TimescaleDB storage with hypertables, continuous aggregates, multi-resolution data
-- REST API: chart rendering, data loading, named queries (wedding/project/travel), job management
+- REST API: chart rendering, data loading, named queries (wedding/project/travel), job management with enhanced list filters
 - CLI: load, query, job status/list commands
 - Integration test suite: 35 tests (21 API + 14 CLI) against seeded test database
+- 188 unit tests covering all modules including enhanced job list filters
 - SVG glyph system for zodiac/planet rendering
 - Memory-monitored chunk cache with LRU eviction
+- **M003/S01 complete:** Multi-value comma-separated filters for status and job_type, date range filters (created_after/created_before) on GET /api/v1/jobs
 
 ## Architecture / Key Patterns
 
@@ -28,6 +30,7 @@ Accurate ephemeris data, computed via Swiss Ephemeris, served through queryable 
 - **Testing:** Tower::ServiceExt for API tests, assert_cmd for CLI tests, `--ignored` flag for DB-gated integration tests
 - **Error handling:** thiserror for domain errors, `(StatusCode, Json).into_response()` pattern for API errors
 - **Query construction:** sqlx QueryBuilder for dynamic WHERE clauses
+- **Filter parsing:** Generic `parse_comma_separated<T: FromStr>()` for CSV query params, RFC3339-first date parsing with YYYY-MM-DD fallback
 
 ## Capability Contract
 
@@ -38,3 +41,6 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M001: Migration — Database schema migration to TimescaleDB with hypertables, indexes, and continuous aggregates
 - [x] M002: Build Fix & Integration Test Suite — Fix db-gated compilation errors, create seeded test database, write integration tests for all API routes and CLI commands
 - [ ] M003: Job Maintenance & Enhanced List API — Enhanced list filters (multi-value status/job_type, date ranges), cursor-based pagination with stable anchors, DELETE endpoint with in_process guard
+  - [x] S01: Enhanced list filters — multi-value CSV parsing for status/job_type, date range filters, backward compatible
+  - [ ] S02: Cursor-based pagination with next/prev URLs
+  - [ ] S03: DELETE endpoint + integration tests

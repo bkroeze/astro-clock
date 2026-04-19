@@ -33,3 +33,13 @@
 - **CLI pool-timed-out bug affects job/query commands.** `handle_job_status`, `handle_job_list`, and `handle_query_command` in `src/cli/app.rs` each created a PgPool inside one Runtime then used it in another. Fixed by using a single shared Runtime for both pool creation and all async operations (same pattern as the load command).
 
 - **Integration tests use `--ignored` flag.** All database-gated integration tests are marked `#[ignore]` with a note "requires TEST_PG_URL and TimescaleDB with seed data". Run with `cargo test --features db -- --ignored --test-threads=1` via `just test-integration`. Non-ignored tests (constant validation, unit tests) run in normal `cargo test`.
+
+## API Filter Patterns
+
+- **strum EnumString for FromStr on snake_case enums.** Adding `#[derive(strum_macros::EnumString)]` alongside `#[strum(serialize_all = "snake_case")]` gives a `FromStr` impl that matches the serialization format. Used for `JobStatus` and `JobType` comma-separated parsing in query parameters.
+
+- **Generic `parse_comma_separated<T: FromStr>()` for CSV query params.** A single generic function handles parsing any comma-separated query parameter into a `Vec<T>`, collecting invalid values for error reporting. Eliminates duplication when multiple enum types need CSV parsing (see `src/server/routes/jobs.rs`).
+
+- **sqlx QueryBuilder with separated `push_bind()` for IN clauses.** Use `separated.push_bind(value.as_ref())` to generate parameterized `$1, $2, ...` for `IN (...)` clauses. Requires `AsRefStr` derive on enums. Track `has_where` boolean to correctly chain `WHERE`/`AND` keywords across multiple optional conditions.
+
+- **Date parsing: RFC3339 first, YYYY-MM-DD fallback.** `parse_date_param` tries `DateTime::parse_from_rfc3339()` first, then falls back to `NaiveDate::parse_from_str()` + midnight UTC. Gives API consumers maximum flexibility without ambiguity.

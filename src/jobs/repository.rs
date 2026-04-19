@@ -1,9 +1,46 @@
 use crate::jobs::error::{JobError, JobResult};
 use crate::jobs::types::{Job, JobStatus, JobType};
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use base64::Engine;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use sqlx::{Pool, Postgres, QueryBuilder};
 use uuid::Uuid;
+
+/// Opaque cursor encoding a (created_at, id) boundary row.
+/// Clients treat this as an opaque string — the encoding may change.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobCursor {
+    pub created_at: DateTime<Utc>,
+    pub id: Uuid,
+}
+
+impl JobCursor {
+    /// Encode cursor as base64url-no-pad JSON string
+    pub fn encode(&self) -> String {
+        let json = serde_json::to_string(self).expect("cursor serialization infallible");
+        URL_SAFE_NO_PAD.encode(json)
+    }
+
+    /// Decode cursor from base64url-no-pad string
+    pub fn decode(s: &str) -> Result<Self, String> {
+        let json = URL_SAFE_NO_PAD
+            .decode(s)
+            .map_err(|e| format!("Invalid cursor encoding: {}", e))?;
+        serde_json::from_slice(&json)
+            .map_err(|e| format!("Invalid cursor data: {}", e))
+    }
+}
+
+/// Direction of cursor pagination
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CursorDirection {
+    /// Forward = older jobs (default direction, DESC order)
+    Forward,
+    /// Backward = newer jobs (reversed within page to maintain DESC order)
+    Backward,
+}
 
 /// Parsed filter parameters for listing jobs.
 /// Shared contract between the handler (which parses query strings) and the repository.
@@ -147,16 +184,26 @@ impl JobRepository {
         .map_err(JobError::from)
     }
 
-    /// List jobs with dynamic filtering and pagination
+    /// List jobs with dynamic filtering and cursor-based pagination.
+    ///
+    /// Returns up to `count` jobs plus one extra row to detect whether another page exists.
+    /// The caller should check if `result.len() > count` and, if so, truncate to `count`
+    /// and use the last returned row's `(created_at, id)` as the next cursor.
+    ///
+    /// For backward pagination, rows are fetched in ASC order and then reversed
+    /// so the caller always receives DESC order.
     #[allow(unused_assignments)]
     pub async fn list_jobs(
         &self,
         filters: JobListFilters,
-        limit: i64,
-        offset: i64,
+        count: i64,
+        cursor: Option<JobCursor>,
+        direction: CursorDirection,
     ) -> JobResult<Vec<Job>> {
         let mut query = QueryBuilder::new("SELECT * FROM jobs");
         let mut has_where = false;
+
+        // --- Filter clauses (shared across all cursor modes) ---
 
         if !filters.status.is_empty() {
             query.push(" WHERE status IN (");
@@ -202,15 +249,61 @@ impl JobRepository {
             query.push_bind(before);
         }
 
-        query.push(" ORDER BY created_at DESC LIMIT ");
-        query.push_bind(limit);
-        query.push(" OFFSET ");
-        query.push_bind(offset);
+        // --- Cursor clause ---
 
-        query.build_query_as::<Job>()
+        match (&cursor, direction) {
+            (Some(cur), CursorDirection::Forward) => {
+                // Forward: rows strictly before the cursor (older)
+                if has_where {
+                    query.push(" AND (created_at, id) < (");
+                } else {
+                    query.push(" WHERE (created_at, id) < (");
+                }
+                query.push_bind(cur.created_at);
+                query.push(", ");
+                query.push_bind(cur.id);
+                query.push(")");
+            }
+            (Some(cur), CursorDirection::Backward) => {
+                // Backward: rows strictly after the cursor (newer)
+                if has_where {
+                    query.push(" AND (created_at, id) > (");
+                } else {
+                    query.push(" WHERE (created_at, id) > (");
+                }
+                query.push_bind(cur.created_at);
+                query.push(", ");
+                query.push_bind(cur.id);
+                query.push(")");
+            }
+            (None, _) => { /* First page — no cursor condition */ }
+        }
+
+        // --- ORDER BY + LIMIT ---
+        //
+        // Forward / no cursor: DESC (newest first)
+        // Backward: ASC so we pick the N rows immediately newer than the cursor,
+        //           then we reverse below to maintain DESC order for the caller.
+
+        if direction == CursorDirection::Backward && cursor.is_some() {
+            query.push(" ORDER BY created_at ASC, id ASC LIMIT ");
+        } else {
+            query.push(" ORDER BY created_at DESC, id DESC LIMIT ");
+        }
+        query.push_bind(count + 1); // +1 to detect next-page existence
+
+        let mut jobs = query
+            .build_query_as::<Job>()
             .fetch_all(&self.pool)
             .await
-            .map_err(JobError::from)
+            .map_err(JobError::from)?;
+
+        // Reverse backward pages so caller always sees DESC order
+        if direction == CursorDirection::Backward && cursor.is_some() {
+            jobs.reverse();
+        }
+
+        Ok(jobs)
     }
 
     /// Count jobs with dynamic filtering
@@ -365,5 +458,65 @@ impl LoadedDaysRepository {
         .map_err(JobError::from)?;
         
         Ok(row)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{TimeZone, Utc};
+
+    #[test]
+    fn test_cursor_encode_decode_roundtrip() {
+        let cursor = JobCursor {
+            created_at: Utc.with_ymd_and_hms(2025, 6, 15, 10, 30, 0).unwrap(),
+            id: Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap(),
+        };
+        let encoded = cursor.encode();
+        let decoded = JobCursor::decode(&encoded).expect("decode should succeed");
+        assert_eq!(decoded.created_at, cursor.created_at);
+        assert_eq!(decoded.id, cursor.id);
+    }
+
+    #[test]
+    fn test_cursor_decode_invalid_base64() {
+        let result = JobCursor::decode("!!!not-base64!!!");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("Invalid cursor encoding"),
+            "Error should mention encoding failure, got: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn test_cursor_decode_invalid_json() {
+        // Valid base64 of non-JSON payload
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine;
+        let encoded = URL_SAFE_NO_PAD.encode("this is not json");
+        let result = JobCursor::decode(&encoded);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("Invalid cursor data"),
+            "Error should mention data failure, got: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn test_cursor_encode_no_padding() {
+        let cursor = JobCursor {
+            created_at: Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap(),
+            id: Uuid::nil(),
+        };
+        let encoded = cursor.encode();
+        assert!(
+            !encoded.contains('='),
+            "Encoded cursor should not contain padding characters, got: {}",
+            encoded
+        );
     }
 }

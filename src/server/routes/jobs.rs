@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use std::str::FromStr;
 
-use crate::jobs::repository::{JobListFilters, JobRepository};
+use crate::jobs::repository::{JobListFilters, JobRepository, CursorDirection};
 use crate::jobs::types::{Job, JobStatus, JobType};
 use crate::server::state::AppState;
 
@@ -382,7 +382,7 @@ pub async fn list_jobs_handler(
 
     match total_result {
         Ok(total) => {
-            match repository.list_jobs(filters, limit, offset).await {
+            match repository.list_jobs(filters, limit, None, CursorDirection::Forward).await {
                 Ok(jobs) => {
                     let responses: Vec<JobResponse> = jobs
                         .into_iter()

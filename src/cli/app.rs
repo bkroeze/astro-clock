@@ -873,7 +873,7 @@ impl App {
         config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
         use crate::jobs::types::JobStatus;
-        use crate::jobs::repository::{JobRepository, JobListFilters};
+        use crate::jobs::repository::{JobRepository, JobListFilters, CursorDirection};
 
         // Parse status filter
         let status = match status_filter {
@@ -901,7 +901,7 @@ impl App {
 
         // Set defaults and cap limit
         let limit = limit.unwrap_or(20).min(100);
-        let offset = offset.unwrap_or(0);
+        let _offset = offset.unwrap_or(0); // kept for CLI arg compat; cursor-based pagination used internally
 
         // Get database URL from environment or config
         let db_url = std::env::var("DATABASE_URL")
@@ -922,25 +922,28 @@ impl App {
         // Query jobs
         let result: Result<(Vec<_>, i64), crate::jobs::error::JobError> = rt.block_on(async {
             let repo = JobRepository::new(pool);
-            let jobs = repo.list_jobs(filters.clone(), limit, offset).await?;
+            let jobs = repo.list_jobs(filters.clone(), limit, None, CursorDirection::Forward).await?;
             let total = repo.count_jobs(filters).await?;
             Ok::<_, crate::jobs::error::JobError>((jobs, total))
         });
 
         match result {
             Ok((jobs, total)) => {
-                if jobs.is_empty() {
+                let has_next = jobs.len() > limit as usize;
+                let display_jobs: Vec<_> = jobs.into_iter().take(limit as usize).collect();
+
+                if display_jobs.is_empty() {
                     if let Some(s) = status_filter {
                         println!("No {} jobs found", s);
                     } else {
                         println!("No jobs found");
                     }
                 } else {
-                    println!("Jobs (showing {} of {}):\n", jobs.len(), total);
+                    println!("Jobs (showing {} of {}):\n", display_jobs.len(), total);
                     println!("{:<40} {:<10} {:<12} {:<20}", "ID", "Type", "Status", "Created");
                     println!("{}", "-".repeat(82));
 
-                    for job in jobs {
+                    for job in display_jobs {
                         let id_short = format!("{}...", &job.id.to_string()[..8]);
                         let created = job.created_at.format("%Y-%m-%d %H:%M");
                         let status_str = format!("{:>10}", job.status);
@@ -948,8 +951,8 @@ impl App {
                         println!("{:<40} {:<10} {:<12} {:<20}", id_short, type_str, status_str, created);
                     }
 
-                    if total > (offset + limit) {
-                        println!("\nUse --offset {} to see more results", offset + limit);
+                    if has_next {
+                        println!("\nMore results available — use cursor-based pagination via the API");
                     }
                 }
             }

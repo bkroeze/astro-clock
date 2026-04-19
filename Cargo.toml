@@ -39,6 +39,7 @@ svg = "0.18"
 async-trait = "0.1"
 ttf-parser = "0.25"
 uuid = { version = "1", features = ["v4", "serde"] }
+base64 = "0.22"
 
 [features]
 default = []
