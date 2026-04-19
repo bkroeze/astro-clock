@@ -1,9 +1,19 @@
 use crate::jobs::error::{JobError, JobResult};
 use crate::jobs::types::{Job, JobStatus, JobType};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde_json::Value as JsonValue;
 use sqlx::{Pool, Postgres, QueryBuilder};
 use uuid::Uuid;
+
+/// Parsed filter parameters for listing jobs.
+/// Shared contract between the handler (which parses query strings) and the repository.
+#[derive(Debug, Clone, Default)]
+pub struct JobListFilters {
+    pub status: Vec<JobStatus>,
+    pub job_type: Vec<JobType>,
+    pub created_after: Option<DateTime<Utc>>,
+    pub created_before: Option<DateTime<Utc>>,
+}
 
 /// Repository for job CRUD operations and job queue claiming
 #[derive(Debug, Clone)]

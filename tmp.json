@@ -1,0 +1,1119 @@
+{
+  "jobs": [
+    {
+      "completed_at": "2026-04-18T17:04:36.488044+00:00",
+      "created_at": "2026-04-18T17:04:36.413286+00:00",
+      "error": null,
+      "job_id": "ac3f4460-d4f5-449b-99f2-af262ab6a77e",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "travel",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 44,
+        "query_name": "travel",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            }
+          ],
+          "execution_time_ms": 35,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:04:36.426960+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.488044+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.467552+00:00",
+      "created_at": "2026-04-18T17:04:36.400070+00:00",
+      "error": null,
+      "job_id": "57f3de22-371a-44c2-be41-abaae7c84074",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "project",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 36,
+        "query_name": "project",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            }
+          ],
+          "execution_time_ms": 30,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:04:36.410898+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.467552+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.490793+00:00",
+      "created_at": "2026-04-18T17:04:36.389396+00:00",
+      "error": null,
+      "job_id": "0d817f2f-af8e-40bd-ba67-d8678fd023af",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "wedding",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 75,
+        "query_name": "wedding",
+        "results": {
+          "cache_hit": false,
+          "data": [],
+          "execution_time_ms": 70,
+          "rows_examined": 0
+        },
+        "start_date": "2026-04-11",
+        "total_results": 0
+      },
+      "started_at": "2026-04-18T17:04:36.398020+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.490793+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.296287+00:00",
+      "created_at": "2026-04-18T17:04:36.213585+00:00",
+      "error": null,
+      "job_id": "22e46c9f-8cdd-4bb7-a1ec-81ba0c268a7b",
+      "job_type": "load",
+      "payload": {
+        "days": 7,
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "dates_failed": 0,
+        "dates_loaded": 0,
+        "dates_skipped": 7,
+        "days_requested": 7,
+        "failed": [],
+        "loaded": [],
+        "skipped": [
+          "2026-04-11",
+          "2026-04-12",
+          "2026-04-13",
+          "2026-04-14",
+          "2026-04-15",
+          "2026-04-16",
+          "2026-04-17"
+        ],
+        "start_date": "2026-04-11",
+        "total_aspects": 0,
+        "total_lunar_conditions": 0,
+        "total_positions": 0
+      },
+      "started_at": "2026-04-18T17:04:36.242911+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.296287+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.252434+00:00",
+      "created_at": "2026-04-18T17:04:36.161270+00:00",
+      "error": null,
+      "job_id": "8bd4601b-3aef-44da-becf-c2a2f1a33c60",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "travel",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 55,
+        "query_name": "travel",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            }
+          ],
+          "execution_time_ms": 41,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:04:36.168747+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.252434+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.229900+00:00",
+      "created_at": "2026-04-18T17:04:36.150596+00:00",
+      "error": null,
+      "job_id": "ecc09a3a-0c3e-4c63-bf43-3f6ae6cc44dc",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "project",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 45,
+        "query_name": "project",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            }
+          ],
+          "execution_time_ms": 34,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:04:36.159728+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.229900+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.260554+00:00",
+      "created_at": "2026-04-18T17:04:36.141577+00:00",
+      "error": null,
+      "job_id": "003c3e33-593b-43c4-b7e4-fc12b326fba0",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "wedding",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 83,
+        "query_name": "wedding",
+        "results": {
+          "cache_hit": false,
+          "data": [],
+          "execution_time_ms": 70,
+          "rows_examined": 0
+        },
+        "start_date": "2026-04-11",
+        "total_results": 0
+      },
+      "started_at": "2026-04-18T17:04:36.149101+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.260554+00:00"
+    },
+    {
+      "completed_at": null,
+      "created_at": "2026-04-18T17:04:36.007595+00:00",
+      "error": null,
+      "job_id": "28ea0971-65c2-419b-a7b0-3900c30e9f27",
+      "job_type": "load",
+      "payload": {
+        "days": 365,
+        "start_date": "2026-04-11"
+      },
+      "result": null,
+      "started_at": "2026-04-18T17:04:36.015512+00:00",
+      "status": "in_process",
+      "updated_at": "2026-04-18T17:04:36.015512+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.148115+00:00",
+      "created_at": "2026-04-18T17:04:35.980497+00:00",
+      "error": null,
+      "job_id": "f3ae5361-0a88-4a68-8da2-5234d62a08c4",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "travel",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 94,
+        "query_name": "travel",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            }
+          ],
+          "execution_time_ms": 88,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:04:35.989840+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.148115+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.165144+00:00",
+      "created_at": "2026-04-18T17:04:35.966620+00:00",
+      "error": null,
+      "job_id": "96e2a3b0-c580-483d-aebd-4dc71369db5c",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "project",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 99,
+        "query_name": "project",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            }
+          ],
+          "execution_time_ms": 94,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:04:35.977343+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.165144+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:36.156652+00:00",
+      "created_at": "2026-04-18T17:04:35.951634+00:00",
+      "error": null,
+      "job_id": "4e8862e8-e6fd-4b53-a2fd-ee47abc8db7f",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "wedding",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 114,
+        "query_name": "wedding",
+        "results": {
+          "cache_hit": false,
+          "data": [],
+          "execution_time_ms": 107,
+          "rows_examined": 0
+        },
+        "start_date": "2026-04-11",
+        "total_results": 0
+      },
+      "started_at": "2026-04-18T17:04:35.964381+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:36.156652+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:04:35.881786+00:00",
+      "created_at": "2026-04-18T17:04:20.393186+00:00",
+      "error": null,
+      "job_id": "4abdaadc-1902-46a8-a362-192ff6e92bfb",
+      "job_type": "load",
+      "payload": {
+        "days": 27,
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "dates_failed": 0,
+        "dates_loaded": 13,
+        "dates_skipped": 15,
+        "days_requested": 27,
+        "failed": [],
+        "loaded": [
+          {
+            "aspects": 25542,
+            "date": "2026-04-26",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 22593,
+            "date": "2026-04-27",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 26546,
+            "date": "2026-04-28",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 25506,
+            "date": "2026-04-29",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 21926,
+            "date": "2026-04-30",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 22386,
+            "date": "2026-05-01",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 21756,
+            "date": "2026-05-02",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 23735,
+            "date": "2026-05-03",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 20451,
+            "date": "2026-05-04",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 17464,
+            "date": "2026-05-05",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 19621,
+            "date": "2026-05-06",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 20180,
+            "date": "2026-05-07",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 22062,
+            "date": "2026-05-08",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          }
+        ],
+        "skipped": [
+          "2026-04-11",
+          "2026-04-12",
+          "2026-04-13",
+          "2026-04-14",
+          "2026-04-15",
+          "2026-04-16",
+          "2026-04-17",
+          "2026-04-18",
+          "2026-04-19",
+          "2026-04-20",
+          "2026-04-21",
+          "2026-04-22",
+          "2026-04-23",
+          "2026-04-24",
+          "2026-04-25"
+        ],
+        "start_date": "2026-04-11",
+        "total_aspects": 289768,
+        "total_lunar_conditions": 18720,
+        "total_positions": 187200
+      },
+      "started_at": "2026-04-18T17:04:20.411486+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:04:35.881786+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:02:13.167010+00:00",
+      "created_at": "2026-04-18T17:02:02.964999+00:00",
+      "error": null,
+      "job_id": "4a7af8c7-466f-468d-8d64-4a06543ec786",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "travel",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 10125,
+        "query_name": "travel",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius",
+              "moon_void_of_course": false
+            }
+          ],
+          "execution_time_ms": 49,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:02:03.026027+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:02:13.167010+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:02:13.108117+00:00",
+      "created_at": "2026-04-18T17:02:02.954974+00:00",
+      "error": null,
+      "job_id": "e93410e5-2291-4cf4-aa92-9dbc8bb8d93c",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "project",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 10075,
+        "query_name": "project",
+        "results": {
+          "cache_hit": false,
+          "data": [
+            {
+              "datetime": "2026-04-11T00:00:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:01:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:02:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:03:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:04:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:05:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:06:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:07:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:08:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            },
+            {
+              "datetime": "2026-04-11T00:09:00Z",
+              "favorable_aspects": 0,
+              "mercury_direct": true,
+              "moon_sign": "Aquarius"
+            }
+          ],
+          "execution_time_ms": 56,
+          "rows_examined": 10
+        },
+        "start_date": "2026-04-11",
+        "total_results": 10
+      },
+      "started_at": "2026-04-18T17:02:02.962840+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:02:13.108117+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:02:12.312861+00:00",
+      "created_at": "2026-04-18T17:02:02.939570+00:00",
+      "error": null,
+      "job_id": "83a9ee5d-a739-44d9-9b42-406b9ab338f9",
+      "job_type": "query",
+      "payload": {
+        "days": 14,
+        "query_name": "wedding",
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "days": 14,
+        "execution_time_ms": 9331,
+        "query_name": "wedding",
+        "results": {
+          "cache_hit": false,
+          "data": [],
+          "execution_time_ms": 35,
+          "rows_examined": 0
+        },
+        "start_date": "2026-04-11",
+        "total_results": 0
+      },
+      "started_at": "2026-04-18T17:02:02.953148+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:02:12.312861+00:00"
+    },
+    {
+      "completed_at": "2026-04-18T17:02:02.860026+00:00",
+      "created_at": "2026-04-18T17:01:52.136755+00:00",
+      "error": null,
+      "job_id": "0bf36766-57c5-4bcf-84fe-2db83de94217",
+      "job_type": "load",
+      "payload": {
+        "days": 7,
+        "start_date": "2026-04-11"
+      },
+      "result": {
+        "dates_failed": 0,
+        "dates_loaded": 8,
+        "dates_skipped": 0,
+        "days_requested": 7,
+        "failed": [],
+        "loaded": [
+          {
+            "aspects": 28658,
+            "date": "2026-04-11",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 25002,
+            "date": "2026-04-12",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 24746,
+            "date": "2026-04-13",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 26225,
+            "date": "2026-04-14",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 30458,
+            "date": "2026-04-15",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 27799,
+            "date": "2026-04-16",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 26425,
+            "date": "2026-04-17",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          },
+          {
+            "aspects": 26861,
+            "date": "2026-04-18",
+            "lunar_conditions": 1440,
+            "positions": 14400
+          }
+        ],
+        "skipped": [],
+        "start_date": "2026-04-11",
+        "total_aspects": 216174,
+        "total_lunar_conditions": 11520,
+        "total_positions": 115200
+      },
+      "started_at": "2026-04-18T17:01:52.175168+00:00",
+      "status": "complete",
+      "updated_at": "2026-04-18T17:02:02.860026+00:00"
+    }
+  ],
+  "limit": 20,
+  "offset": 0,
+  "total": 16
+}

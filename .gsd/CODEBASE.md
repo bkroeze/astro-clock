@@ -1,17 +1,20 @@
 # Codebase Map
 
-Generated: 2026-04-16T01:52:04Z | Files: 120 | Described: 0/120
-<!-- gsd:codebase-meta {"generatedAt":"2026-04-16T01:52:04Z","fingerprint":"98044883d13a21a7921a4d55e77b8bfdeec687cc","fileCount":120,"truncated":false} -->
+Generated: 2026-04-19T18:55:12Z | Files: 126 | Described: 0/126
+<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T18:55:12Z","fingerprint":"1c0afda4847510c8caa1a86d9f4ea0a62c038ab7","fileCount":126,"truncated":false} -->
 
 ### (root)/
 - `.emdash.json`
 - `.env.example`
 - `.gitignore`
+- `.python-version`
 - `AGENTS.md`
 - `api.yaml`
 - `Cargo.toml`
 - `config.ron`
 - `Justfile`
+- `opencode.json`
+- `pyproject.toml`
 - `README.md`
 
 ### .iteratr/data/
@@ -59,7 +62,14 @@ Generated: 2026-04-16T01:52:04Z | Files: 120 | Described: 0/120
 - `migrations/009_create_loaded_days.sql`
 - `migrations/README.md`
 
+### notebooks/
+- `notebooks/explore.py`
+
+### notebooks/__marimo__/session/
+- `notebooks/__marimo__/session/explore.py.json`
+
 ### scripts/
+- `scripts/reset-db.sh`
 - `scripts/verify_schema.sql`
 
 ### src/

@@ -7,6 +7,7 @@ use uuid::Uuid;
 /// Job types supported by the system
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, strum_macros::Display,
+    strum_macros::EnumString,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
@@ -27,6 +28,7 @@ pub enum JobType {
     Deserialize,
     strum_macros::Display,
     strum_macros::AsRefStr,
+    strum_macros::EnumString,
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
