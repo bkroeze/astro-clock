@@ -10,13 +10,15 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use uuid::Uuid;
 
-use crate::jobs::repository::JobRepository;
-use crate::jobs::types::{Job, JobType};
+use std::str::FromStr;
+
+use crate::jobs::repository::{JobListFilters, JobRepository};
+use crate::jobs::types::{Job, JobStatus, JobType};
 use crate::server::state::AppState;
 
 /// Request to create a load job
@@ -80,8 +82,14 @@ pub struct ErrorResponse {
 /// Request parameters for listing jobs
 #[derive(Debug, Deserialize)]
 pub struct ListJobsRequest {
-    /// Filter by status (pending, in_process, complete, failed)
+    /// Filter by status — comma-separated for multi-value (e.g. "complete,failed")
     pub status: Option<String>,
+    /// Filter by job type — comma-separated for multi-value (e.g. "load,query")
+    pub job_type: Option<String>,
+    /// Filter jobs created on or after this timestamp (RFC3339 or YYYY-MM-DD)
+    pub created_after: Option<String>,
+    /// Filter jobs created on or before this timestamp (RFC3339 or YYYY-MM-DD)
+    pub created_before: Option<String>,
     /// Maximum number of jobs to return (default: 20, max: 100)
     #[serde(default = "default_limit")]
     pub limit: i64,
@@ -92,6 +100,51 @@ pub struct ListJobsRequest {
 
 fn default_limit() -> i64 { 20 }
 fn default_offset() -> i64 { 0 }
+
+/// Parse a date string as a UTC DateTime.
+/// Tries RFC3339 first, then falls back to YYYY-MM-DD (interpreted as start-of-day UTC).
+fn parse_date_param(s: &str) -> Result<DateTime<Utc>, String> {
+    // Try RFC3339 first (e.g. "2025-01-15T10:30:00Z")
+    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+        return Ok(dt.to_utc());
+    }
+    // Fall back to YYYY-MM-DD (start of day UTC)
+    if let Ok(date) = NaiveDate::parse_from_str(s, "%Y-%m-%d") {
+        return date
+            .and_hms_opt(0, 0, 0)
+            .map(|nd| DateTime::<Utc>::from_naive_utc_and_offset(nd, Utc))
+            .ok_or_else(|| format!("Invalid date: '{}'", s));
+    }
+    Err(format!(
+        "Invalid date format: '{}'. Expected RFC3339 (2025-01-15T10:30:00Z) or YYYY-MM-DD",
+        s
+    ))
+}
+
+/// Parse a comma-separated string into a Vec<T> using FromStr.
+/// Returns the first error encountered, if any.
+fn parse_comma_separated<T: FromStr>(input: &str, label: &str) -> Result<Vec<T>, String> {
+    let mut results = Vec::new();
+    for part in input.split(',') {
+        let trimmed = part.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        match trimmed.parse::<T>() {
+            Ok(v) => results.push(v),
+            Err(_) => {
+                return Err(format!(
+                    "Invalid {} value: '{}'. Example valid values: {}",
+                    label,
+                    trimmed,
+                    // Show the label contextually — callers provide meaningful labels
+                    input
+                ));
+            }
+        }
+    }
+    Ok(results)
+}
 
 /// Response for job listing
 #[derive(Debug, Serialize)]
@@ -218,10 +271,13 @@ pub async fn get_job_handler(
     }
 }
 
-/// GET /api/v1/jobs - List recent jobs with pagination
+/// GET /api/v1/jobs - List recent jobs with pagination and filtering
 ///
 /// Query parameters:
-/// - status: Filter by status (optional)
+/// - status: Comma-separated status filter (e.g. "complete,failed")
+/// - job_type: Comma-separated job type filter (e.g. "load,query")
+/// - created_after: Filter by created_at >= timestamp (RFC3339 or YYYY-MM-DD)
+/// - created_before: Filter by created_at <= timestamp (RFC3339 or YYYY-MM-DD)
 /// - limit: Max jobs to return (default: 20, max: 100)
 /// - offset: Pagination offset (default: 0)
 pub async fn list_jobs_handler(
@@ -234,31 +290,91 @@ pub async fn list_jobs_handler(
     let limit = params.limit.max(1).min(100);
     let offset = params.offset.max(0);
 
-    // Parse status filter if provided
-    let status_filter: Option<crate::jobs::types::JobStatus> = params.status.clone().and_then(|s| match s.as_str() {
-        "pending" => Some(crate::jobs::types::JobStatus::Pending),
-        "in_process" => Some(crate::jobs::types::JobStatus::InProcess),
-        "complete" => Some(crate::jobs::types::JobStatus::Complete),
-        "failed" => Some(crate::jobs::types::JobStatus::Failed),
-        _ => None,
-    });
+    // Parse comma-separated status filter
+    let statuses: Vec<JobStatus> = match params.status.as_deref() {
+        Some(s) => {
+            let parsed = parse_comma_separated::<JobStatus>(s, "status");
+            match parsed {
+                Ok(v) => v,
+                Err(msg) => {
+                    let error = ErrorResponse {
+                        error: "invalid_status".to_string(),
+                        message: format!(
+                            "{}. Valid values: pending, in_process, complete, failed",
+                            msg
+                        ),
+                    };
+                    return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error)))
+                        .into_response();
+                }
+            }
+        }
+        None => Vec::new(),
+    };
 
-    // If invalid status was provided, return error
-    if params.status.is_some() && status_filter.is_none() {
-        let error = ErrorResponse {
-            error: "invalid_status".to_string(),
-            message: format!(
-                "Invalid status filter: '{}'. Valid values: pending, in_process, complete, failed",
-                params.status.unwrap()
-            ),
-        };
-        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
-    }
+    // Parse comma-separated job_type filter
+    let job_types: Vec<JobType> = match params.job_type.as_deref() {
+        Some(s) => {
+            let parsed = parse_comma_separated::<JobType>(s, "job_type");
+            match parsed {
+                Ok(v) => v,
+                Err(msg) => {
+                    let error = ErrorResponse {
+                        error: "invalid_job_type".to_string(),
+                        message: format!(
+                            "{}. Valid values: load, query",
+                            msg
+                        ),
+                    };
+                    return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error)))
+                        .into_response();
+                }
+            }
+        }
+        None => Vec::new(),
+    };
 
-    // Build filters from single status (backward-compatible; T03 adds multi-value support)
-    let filters = crate::jobs::repository::JobListFilters {
-        status: status_filter.into_iter().collect(),
-        ..Default::default()
+    // Parse created_after date
+    let created_after = match params.created_after.as_deref() {
+        Some(s) => {
+            match parse_date_param(s) {
+                Ok(dt) => Some(dt),
+                Err(msg) => {
+                    let error = ErrorResponse {
+                        error: "invalid_date".to_string(),
+                        message: format!("Invalid created_after: {}", msg),
+                    };
+                    return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error)))
+                        .into_response();
+                }
+            }
+        }
+        None => None,
+    };
+
+    // Parse created_before date
+    let created_before = match params.created_before.as_deref() {
+        Some(s) => {
+            match parse_date_param(s) {
+                Ok(dt) => Some(dt),
+                Err(msg) => {
+                    let error = ErrorResponse {
+                        error: "invalid_date".to_string(),
+                        message: format!("Invalid created_before: {}", msg),
+                    };
+                    return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error)))
+                        .into_response();
+                }
+            }
+        }
+        None => None,
+    };
+
+    let filters = JobListFilters {
+        status: statuses,
+        job_type: job_types,
+        created_after,
+        created_before,
     };
 
     // Get total count for pagination
@@ -338,6 +454,7 @@ fn build_job_response(job: Job) -> JobResponse {
 mod tests {
     use super::*;
     use crate::jobs::types::{Job, JobType};
+    use chrono::{Datelike, Timelike};
 
     #[test]
     fn test_load_request_deserialization() {
@@ -426,6 +543,9 @@ mod tests {
         let json = r#"{"status":"complete","limit":10,"offset":5}"#;
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, Some("complete".to_string()));
+        assert_eq!(req.job_type, None);
+        assert_eq!(req.created_after, None);
+        assert_eq!(req.created_before, None);
         assert_eq!(req.limit, 10);
         assert_eq!(req.offset, 5);
     }
@@ -436,6 +556,9 @@ mod tests {
         let json = r#"{}"#;
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, None);
+        assert_eq!(req.job_type, None);
+        assert_eq!(req.created_after, None);
+        assert_eq!(req.created_before, None);
         assert_eq!(req.limit, 20);  // default_limit
         assert_eq!(req.offset, 0);   // default_offset
     }
@@ -446,8 +569,207 @@ mod tests {
         let json = r#"{"status":"pending"}"#;
         let req: ListJobsRequest = serde_json::from_str(json).unwrap();
         assert_eq!(req.status, Some("pending".to_string()));
+        assert_eq!(req.job_type, None);
         assert_eq!(req.limit, 20);  // default
         assert_eq!(req.offset, 0);   // default
+    }
+
+    #[test]
+    fn test_list_jobs_request_all_new_fields() {
+        let json = r#"{"status":"complete,failed","job_type":"load,query","created_after":"2025-01-01","created_before":"2025-03-01T23:59:59Z","limit":50,"offset":10}"#;
+        let req: ListJobsRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.status, Some("complete,failed".to_string()));
+        assert_eq!(req.job_type, Some("load,query".to_string()));
+        assert_eq!(req.created_after, Some("2025-01-01".to_string()));
+        assert_eq!(req.created_before, Some("2025-03-01T23:59:59Z".to_string()));
+        assert_eq!(req.limit, 50);
+        assert_eq!(req.offset, 10);
+    }
+
+    // ── Multi-value comma-separated parsing tests ──
+
+    #[test]
+    fn test_parse_comma_separated_single_value() {
+        let result = parse_comma_separated::<JobStatus>("complete", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Complete]);
+    }
+
+    #[test]
+    fn test_parse_comma_separated_multiple_values() {
+        let result = parse_comma_separated::<JobStatus>("complete,failed", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Complete, JobStatus::Failed]);
+    }
+
+    #[test]
+    fn test_parse_comma_separated_all_statuses() {
+        let result = parse_comma_separated::<JobStatus>("pending,in_process,complete,failed", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Pending, JobStatus::InProcess, JobStatus::Complete, JobStatus::Failed]);
+    }
+
+    #[test]
+    fn test_parse_comma_separated_job_types() {
+        let result = parse_comma_separated::<JobType>("load,query", "job_type").unwrap();
+        assert_eq!(result, vec![JobType::Load, JobType::Query]);
+    }
+
+    #[test]
+    fn test_parse_comma_separated_invalid_status() {
+        let result = parse_comma_separated::<JobStatus>("complete,bogus", "status");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("bogus"));
+        assert!(err.contains("status"));
+    }
+
+    #[test]
+    fn test_parse_comma_separated_invalid_job_type() {
+        let result = parse_comma_separated::<JobType>("load,invalid", "job_type");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("invalid"));
+        assert!(err.contains("job_type"));
+    }
+
+    #[test]
+    fn test_parse_comma_separated_empty_string() {
+        let result = parse_comma_separated::<JobStatus>("", "status").unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_parse_comma_separated_whitespace_handling() {
+        let result = parse_comma_separated::<JobStatus>(" complete , failed ", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Complete, JobStatus::Failed]);
+    }
+
+    // ── Date parsing tests ──
+
+    #[test]
+    fn test_parse_date_param_yyyy_mm_dd() {
+        let dt = parse_date_param("2025-01-15").unwrap();
+        assert_eq!(dt.year(), 2025);
+        assert_eq!(dt.month(), 1);
+        assert_eq!(dt.day(), 15);
+        assert_eq!(dt.hour(), 0);
+        assert_eq!(dt.minute(), 0);
+        assert_eq!(dt.second(), 0);
+    }
+
+    #[test]
+    fn test_parse_date_param_rfc3339() {
+        let dt = parse_date_param("2025-01-15T10:30:00Z").unwrap();
+        assert_eq!(dt.year(), 2025);
+        assert_eq!(dt.month(), 1);
+        assert_eq!(dt.day(), 15);
+        assert_eq!(dt.hour(), 10);
+        assert_eq!(dt.minute(), 30);
+    }
+
+    #[test]
+    fn test_parse_date_param_rfc3339_with_offset() {
+        let dt = parse_date_param("2025-01-15T10:30:00+05:00").unwrap();
+        // Should convert to UTC: 10:30 +05:00 = 05:30 UTC
+        assert_eq!(dt.hour(), 5);
+        assert_eq!(dt.minute(), 30);
+    }
+
+    #[test]
+    fn test_parse_date_param_invalid() {
+        let result = parse_date_param("not-a-date");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not-a-date"));
+    }
+
+    #[test]
+    fn test_parse_date_param_partial_date() {
+        let result = parse_date_param("2025-13-01");
+        assert!(result.is_err());
+    }
+
+    // ── Backward compatibility tests ──
+
+    #[test]
+    fn test_single_status_still_works() {
+        // Single status values should parse to a Vec with one element
+        let result = parse_comma_separated::<JobStatus>("pending", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Pending]);
+
+        let result = parse_comma_separated::<JobStatus>("in_process", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::InProcess]);
+
+        let result = parse_comma_separated::<JobStatus>("complete", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Complete]);
+
+        let result = parse_comma_separated::<JobStatus>("failed", "status").unwrap();
+        assert_eq!(result, vec![JobStatus::Failed]);
+    }
+
+    #[test]
+    fn test_backward_compat_request_with_single_status() {
+        // Existing clients sending ?status=complete should still work
+        let json = r#"{"status":"complete","limit":20,"offset":0}"#;
+        let req: ListJobsRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.status, Some("complete".to_string()));
+        // The handler will parse "complete" -> vec![JobStatus::Complete]
+        let parsed = parse_comma_separated::<JobStatus>("complete", "status").unwrap();
+        assert_eq!(parsed, vec![JobStatus::Complete]);
+    }
+
+    // ── Combined filter tests ──
+
+    #[test]
+    fn test_combined_status_and_job_type() {
+        let statuses = parse_comma_separated::<JobStatus>("complete,failed", "status").unwrap();
+        let job_types = parse_comma_separated::<JobType>("load", "job_type").unwrap();
+        let after = parse_date_param("2025-01-01").unwrap();
+        let before = parse_date_param("2025-03-01").unwrap();
+
+        let filters = JobListFilters {
+            status: statuses,
+            job_type: job_types,
+            created_after: Some(after),
+            created_before: Some(before),
+        };
+
+        assert_eq!(filters.status.len(), 2);
+        assert_eq!(filters.job_type.len(), 1);
+        assert!(filters.created_after.is_some());
+        assert!(filters.created_before.is_some());
+    }
+
+    #[test]
+    fn test_filters_all_empty() {
+        let filters = JobListFilters::default();
+        assert!(filters.status.is_empty());
+        assert!(filters.job_type.is_empty());
+        assert!(filters.created_after.is_none());
+        assert!(filters.created_before.is_none());
+    }
+
+    #[test]
+    fn test_filters_status_only() {
+        let statuses = parse_comma_separated::<JobStatus>("pending", "status").unwrap();
+        let filters = JobListFilters {
+            status: statuses,
+            ..Default::default()
+        };
+        assert_eq!(filters.status.len(), 1);
+        assert!(filters.job_type.is_empty());
+    }
+
+    #[test]
+    fn test_filters_date_range_only() {
+        let after = parse_date_param("2025-01-01").unwrap();
+        let before = parse_date_param("2025-12-31").unwrap();
+        let filters = JobListFilters {
+            created_after: Some(after),
+            created_before: Some(before),
+            ..Default::default()
+        };
+        assert!(filters.status.is_empty());
+        assert!(filters.job_type.is_empty());
+        assert!(filters.created_after.is_some());
+        assert!(filters.created_before.is_some());
     }
 
     #[test]

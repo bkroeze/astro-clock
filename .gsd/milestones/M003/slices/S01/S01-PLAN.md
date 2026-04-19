@@ -41,7 +41,7 @@
   - Files: `src/jobs/repository.rs`, `src/cli/app.rs`
   - Verify: cargo check --features db
 
-- [ ] **T03: Update handler with multi-value filter parsing, date support, and unit tests** `est:45m`
+- [x] **T03: Update handler with multi-value filter parsing, date support, and unit tests** `est:45m`
   Update `ListJobsRequest` to add `job_type: Option<String>`, `created_after: Option<String>`, `created_before: Option<String>`. Rewrite `list_jobs_handler` to parse comma-separated status/job_type values using FromStr, parse dates (RFC3339 first, fall back to YYYY-MM-DD), build JobListFilters, and pass to repository. Return 400 for any invalid values. Add comprehensive unit tests covering: multi-value parsing, invalid values, date format flexibility, combined filters, backward compat with single status.
   - Files: `src/server/routes/jobs.rs`
   - Verify: cargo test --features db --lib -- server::routes::jobs
