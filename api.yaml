@@ -24,6 +24,10 @@ paths:
                   status:
                     type: string
                     example: healthy
+                  db_enabled:
+                    type: boolean
+                    description: Whether database feature is enabled
+                    example: true
 
   /chart:
     get:
@@ -434,16 +438,21 @@ components:
       type: object
       required:
         - start_date
-        - days
       properties:
         start_date:
           type: string
           description: Start date in YYYY-MM-DD format
+          example: "2024-01-01"
         days:
           type: integer
-          description: Number of days to query (1-366)
+          description: Number of days to query (1-366). Mutually exclusive with end_date.
           minimum: 1
           maximum: 366
+          example: 30
+        end_date:
+          type: string
+          description: End date in YYYY-MM-DD format. Mutually exclusive with days.
+          example: "2024-01-30"
         sync:
           type: boolean
           description: Execute synchronously
@@ -460,6 +469,35 @@ components:
         result:
           type: object
           description: Query result data (present when complete)
+          properties:
+            query_name:
+              type: string
+              description: Name of the query that was executed
+            start_date:
+              type: string
+              description: Start date of the query range
+            end_date:
+              type: string
+              description: End date of the query range
+            days:
+              type: integer
+              description: Number of days queried
+            total_results:
+              type: integer
+              description: Total number of results found
+            execution_time_ms:
+              type: integer
+              description: Execution time in milliseconds
+            results:
+              type: array
+              description: The actual query results
+              items:
+                type: object
+            warnings:
+              type: array
+              description: Any warnings about data loading
+              items:
+                type: string
 
     QueryAsyncResponse:
       type: object

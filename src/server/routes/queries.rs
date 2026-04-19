@@ -21,8 +21,13 @@ use crate::server::state::AppState;
 pub struct QueryRequest {
     /// Start date in YYYY-MM-DD format
     pub start_date: String,
-    /// Number of days to query (1-366)
-    pub days: i64,
+    /// Number of days to query (1-366). Mutually exclusive with end_date.
+    #[serde(default)]
+    pub days: Option<i64>,
+    /// End date in YYYY-MM-DD format. Mutually exclusive with days.
+    /// If provided, days will be calculated from start_date to end_date.
+    #[serde(default)]
+    pub end_date: Option<String>,
     /// If true, execute synchronously and wait for completion
     /// If false or omitted, execute asynchronously and return job-id immediately
     #[serde(default)]
@@ -85,20 +90,75 @@ pub async fn query_handler(
         return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
     }
 
-    // Validate days range (1-366)
-    if request.days <= 0 || request.days > 366 {
-        let error = ErrorResponse {
-            error: "invalid_days".to_string(),
-            message: "days must be between 1 and 366".to_string(),
-        };
-        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
-    }
+    // Determine days from either days field or end_date
+    let (days, end_date_str) = match (&request.days, &request.end_date) {
+        (Some(days), None) => {
+            // Validate days range (1-366)
+            if *days <= 0 || *days > 366 {
+                let error = ErrorResponse {
+                    error: "invalid_days".to_string(),
+                    message: "days must be between 1 and 366".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            // Calculate end_date from start_date + days - 1
+            let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
+            let end = start + chrono::Duration::days(*days - 1);
+            (*days, end.format("%Y-%m-%d").to_string())
+        }
+        (None, Some(end_date)) => {
+            // Validate end_date format
+            if !is_valid_date(end_date) {
+                let error = ErrorResponse {
+                    error: "invalid_date".to_string(),
+                    message: "end_date must be in YYYY-MM-DD format".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            // Calculate days from start_date to end_date
+            let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
+            let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d").unwrap();
+            
+            if end < start {
+                let error = ErrorResponse {
+                    error: "invalid_date_range".to_string(),
+                    message: "end_date must be on or after start_date".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            
+            let days = end.signed_duration_since(start).num_days() + 1;
+            if days <= 0 || days > 366 {
+                let error = ErrorResponse {
+                    error: "invalid_days".to_string(),
+                    message: "date range must be between 1 and 366 days".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            (days, end_date.clone())
+        }
+        (Some(_), Some(_)) => {
+            let error = ErrorResponse {
+                error: "invalid_request".to_string(),
+                message: "Provide either days or end_date, not both".to_string(),
+            };
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+        }
+        (None, None) => {
+            let error = ErrorResponse {
+                error: "missing_parameter".to_string(),
+                message: "Either days or end_date is required".to_string(),
+            };
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+        }
+    };
 
     // Build payload for job
     let payload = serde_json::json!({
         "query_name": query_name,
         "start_date": request.start_date,
-        "days": request.days,
+        "end_date": end_date_str,
+        "days": days,
     });
 
     let is_sync = request.sync.unwrap_or(false);
@@ -190,20 +250,75 @@ async fn execute_named_query(
         return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
     }
 
-    // Validate days range (1-366)
-    if request.days <= 0 || request.days > 366 {
-        let error = ErrorResponse {
-            error: "invalid_days".to_string(),
-            message: "days must be between 1 and 366".to_string(),
-        };
-        return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
-    }
+    // Determine days from either days field or end_date
+    let (days, end_date_str) = match (&request.days, &request.end_date) {
+        (Some(days), None) => {
+            // Validate days range (1-366)
+            if *days <= 0 || *days > 366 {
+                let error = ErrorResponse {
+                    error: "invalid_days".to_string(),
+                    message: "days must be between 1 and 366".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            // Calculate end_date from start_date + days - 1
+            let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
+            let end = start + chrono::Duration::days(*days - 1);
+            (*days, end.format("%Y-%m-%d").to_string())
+        }
+        (None, Some(end_date)) => {
+            // Validate end_date format
+            if !is_valid_date(end_date) {
+                let error = ErrorResponse {
+                    error: "invalid_date".to_string(),
+                    message: "end_date must be in YYYY-MM-DD format".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            // Calculate days from start_date to end_date
+            let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
+            let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d").unwrap();
+            
+            if end < start {
+                let error = ErrorResponse {
+                    error: "invalid_date_range".to_string(),
+                    message: "end_date must be on or after start_date".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            
+            let days = end.signed_duration_since(start).num_days() + 1;
+            if days <= 0 || days > 366 {
+                let error = ErrorResponse {
+                    error: "invalid_days".to_string(),
+                    message: "date range must be between 1 and 366 days".to_string(),
+                };
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+            }
+            (days, end_date.clone())
+        }
+        (Some(_), Some(_)) => {
+            let error = ErrorResponse {
+                error: "invalid_request".to_string(),
+                message: "Provide either days or end_date, not both".to_string(),
+            };
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+        }
+        (None, None) => {
+            let error = ErrorResponse {
+                error: "missing_parameter".to_string(),
+                message: "Either days or end_date is required".to_string(),
+            };
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
+        }
+    };
 
     // Build payload for job
     let payload = serde_json::json!({
         "query_name": query_name,
         "start_date": request.start_date,
-        "days": request.days,
+        "end_date": end_date_str,
+        "days": days,
     });
 
     let is_sync = request.sync.unwrap_or(false);
@@ -266,11 +381,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_query_request_deserialization() {
+    fn test_query_request_deserialization_with_days() {
         let json = r#"{"start_date":"2024-06-01","days":30,"sync":true}"#;
         let request: QueryRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.start_date, "2024-06-01");
-        assert_eq!(request.days, 30);
+        assert_eq!(request.days, Some(30));
+        assert_eq!(request.end_date, None);
+        assert_eq!(request.sync, Some(true));
+    }
+
+    #[test]
+    fn test_query_request_deserialization_with_end_date() {
+        let json = r#"{"start_date":"2024-06-01","end_date":"2024-06-30","sync":true}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.start_date, "2024-06-01");
+        assert_eq!(request.days, None);
+        assert_eq!(request.end_date, Some("2024-06-30".to_string()));
         assert_eq!(request.sync, Some(true));
     }
 
@@ -279,7 +405,7 @@ mod tests {
         let json = r#"{"start_date":"2024-06-01","days":30}"#;
         let request: QueryRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.start_date, "2024-06-01");
-        assert_eq!(request.days, 30);
+        assert_eq!(request.days, Some(30));
         assert_eq!(request.sync, None);
     }
 
@@ -339,17 +465,17 @@ mod tests {
         let json = r#"{"start_date":"2024-06-01","days":30,"sync":true}"#;
         let request: QueryRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.start_date, "2024-06-01");
-        assert_eq!(request.days, 30);
+        assert_eq!(request.days, Some(30));
         assert_eq!(request.sync, Some(true));
     }
 
     #[test]
     fn test_project_query_request_deserialization() {
         // Same structure as wedding, just verifying the type works
-        let json = r#"{"start_date":"2024-07-15","days":60,"sync":false}"#;
+        let json = r#"{"start_date":"2024-07-15","end_date":"2024-09-13","sync":false}"#;
         let request: QueryRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.start_date, "2024-07-15");
-        assert_eq!(request.days, 60);
+        assert_eq!(request.end_date, Some("2024-09-13".to_string()));
         assert_eq!(request.sync, Some(false));
     }
 
@@ -358,7 +484,126 @@ mod tests {
         let json = r#"{"start_date":"2024-08-01","days":14}"#;
         let request: QueryRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.start_date, "2024-08-01");
-        assert_eq!(request.days, 14);
+        assert_eq!(request.days, Some(14));
         assert_eq!(request.sync, None); // Should default to async
+    }
+
+    // ========================================================================
+    // DATE BOUNDS CALCULATION TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_days_to_end_date_calculation() {
+        // When days is provided, end_date = start_date + days - 1
+        let start = chrono::NaiveDate::parse_from_str("2024-06-01", "%Y-%m-%d").unwrap();
+        let days: i64 = 30;
+        let expected_end = start + chrono::Duration::days(days - 1);
+        assert_eq!(expected_end.format("%Y-%m-%d").to_string(), "2024-06-30");
+    }
+
+    #[test]
+    fn test_end_date_to_days_calculation() {
+        // When end_date is provided, days = (end - start).days() + 1
+        let start = chrono::NaiveDate::parse_from_str("2024-06-01", "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str("2024-06-30", "%Y-%m-%d").unwrap();
+        let days = end.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days, 30);
+    }
+
+    #[test]
+    fn test_single_day_range() {
+        // start_date == end_date means 1 day
+        let start = chrono::NaiveDate::parse_from_str("2024-06-01", "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str("2024-06-01", "%Y-%m-%d").unwrap();
+        let days = end.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days, 1);
+    }
+
+    #[test]
+    fn test_date_range_boundaries() {
+        // Test boundary conditions for 366-day max
+        let start = chrono::NaiveDate::parse_from_str("2024-01-01", "%Y-%m-%d").unwrap();
+        
+        // 365 days - valid
+        let end_365 = start + chrono::Duration::days(364);
+        let days_365 = end_365.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days_365, 365);
+        assert!(days_365 <= 366);
+        
+        // 366 days - valid (max)
+        let end_366 = start + chrono::Duration::days(365);
+        let days_366 = end_366.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days_366, 366);
+        assert!(days_366 <= 366);
+        
+        // 367 days - invalid (exceeds max)
+        let end_367 = start + chrono::Duration::days(366);
+        let days_367 = end_367.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days_367, 367);
+        assert!(days_367 > 366);
+    }
+
+    #[test]
+    fn test_leap_year_date_range() {
+        // 2024 is a leap year
+        let start = chrono::NaiveDate::parse_from_str("2024-01-01", "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str("2024-12-31", "%Y-%m-%d").unwrap();
+        let days = end.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days, 366); // Leap year has 366 days
+    }
+
+    #[test]
+    fn test_non_leap_year_date_range() {
+        // 2023 is not a leap year
+        let start = chrono::NaiveDate::parse_from_str("2023-01-01", "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str("2023-12-31", "%Y-%m-%d").unwrap();
+        let days = end.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days, 365);
+    }
+
+    #[test]
+    fn test_request_with_only_start_date_fails_validation() {
+        let json = r#"{"start_date":"2024-06-01"}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        // Neither days nor end_date provided - should be caught by handler validation
+        assert!(request.days.is_none());
+        assert!(request.end_date.is_none());
+    }
+
+    #[test]
+    fn test_request_with_both_days_and_end_date() {
+        let json = r#"{"start_date":"2024-06-01","days":30,"end_date":"2024-06-30"}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        // Both provided - should be caught by handler validation
+        assert!(request.days.is_some());
+        assert!(request.end_date.is_some());
+    }
+
+    #[test]
+    fn test_request_with_end_date_before_start_date() {
+        let json = r#"{"start_date":"2024-06-30","end_date":"2024-06-01"}"#;
+        let request: QueryRequest = serde_json::from_str(json).unwrap();
+        // end_date before start_date - should be caught by handler validation
+        let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str(request.end_date.as_ref().unwrap(), "%Y-%m-%d").unwrap();
+        assert!(end < start);
+    }
+
+    #[test]
+    fn test_date_consistency_across_month_boundary() {
+        // Test crossing month boundaries
+        let start = chrono::NaiveDate::parse_from_str("2024-06-25", "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str("2024-07-05", "%Y-%m-%d").unwrap();
+        let days = end.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days, 11); // 25, 26, 27, 28, 29, 30 (June) + 1, 2, 3, 4, 5 (July) = 11 days
+    }
+
+    #[test]
+    fn test_date_consistency_across_year_boundary() {
+        // Test crossing year boundaries
+        let start = chrono::NaiveDate::parse_from_str("2024-12-25", "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str("2025-01-05", "%Y-%m-%d").unwrap();
+        let days = end.signed_duration_since(start).num_days() + 1;
+        assert_eq!(days, 12); // Dec 25-31 (7 days) + Jan 1-5 (5 days) = 12 days
     }
 }

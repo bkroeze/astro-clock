@@ -21,6 +21,8 @@ pub struct QueryJobPayload {
     pub query_name: String,
     /// Start date in YYYY-MM-DD format
     pub start_date: String,
+    /// End date in YYYY-MM-DD format
+    pub end_date: String,
     /// Number of days to query
     pub days: i64,
 }
@@ -32,6 +34,8 @@ pub struct QueryJobResult {
     pub query_name: String,
     /// Start date of the query range
     pub start_date: String,
+    /// End date of the query range
+    pub end_date: String,
     /// Number of days queried
     pub days: i64,
     /// Total number of results found
@@ -101,6 +105,11 @@ impl QueryJobHandler {
             .and_then(|v| v.as_str())
             .ok_or_else(|| JobError::Other("Missing start_date in payload".to_string()))?;
 
+        let end_date = payload
+            .get("end_date")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| JobError::Other("Missing end_date in payload".to_string()))?;
+
         let days = payload
             .get("days")
             .and_then(|v| v.as_i64())
@@ -133,9 +142,17 @@ impl QueryJobHandler {
             )));
         }
 
+        if NaiveDate::parse_from_str(end_date, "%Y-%m-%d").is_err() {
+            return Err(JobError::Other(format!(
+                "Invalid end_date format: {}. Expected YYYY-MM-DD",
+                end_date
+            )));
+        }
+
         Ok(QueryJobPayload {
             query_name: query_name.to_string(),
             start_date: start_date.to_string(),
+            end_date: end_date.to_string(),
             days,
         })
     }
@@ -258,6 +275,7 @@ impl JobHandler for QueryJobHandler {
             job_id = %job.id,
             query_name = %payload.query_name,
             start_date = %payload.start_date,
+            end_date = %payload.end_date,
             days = payload.days,
             "Starting query job"
         );
@@ -282,6 +300,7 @@ impl JobHandler for QueryJobHandler {
         let job_result = QueryJobResult {
             query_name: payload.query_name.clone(),
             start_date: payload.start_date.clone(),
+            end_date: payload.end_date.clone(),
             days: payload.days,
             total_results,
             execution_time_ms,
@@ -311,17 +330,20 @@ mod tests {
         let payload = QueryJobPayload {
             query_name: "wedding".to_string(),
             start_date: "2024-01-01".to_string(),
+            end_date: "2024-01-30".to_string(),
             days: 30,
         };
 
         let json = serde_json::to_string(&payload).unwrap();
         assert!(json.contains("wedding"));
         assert!(json.contains("2024-01-01"));
+        assert!(json.contains("2024-01-30"));
         assert!(json.contains("30"));
 
         let deserialized: QueryJobPayload = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized.query_name, "wedding");
         assert_eq!(deserialized.start_date, "2024-01-01");
+        assert_eq!(deserialized.end_date, "2024-01-30");
         assert_eq!(deserialized.days, 30);
     }
 
@@ -330,6 +352,7 @@ mod tests {
         let result = QueryJobResult {
             query_name: "wedding".to_string(),
             start_date: "2024-01-01".to_string(),
+            end_date: "2024-01-30".to_string(),
             days: 30,
             total_results: 5,
             execution_time_ms: 42,
@@ -341,6 +364,8 @@ mod tests {
         let deserialized: QueryJobResult = serde_json::from_str(&json).unwrap();
 
         assert_eq!(deserialized.query_name, "wedding");
+        assert_eq!(deserialized.start_date, "2024-01-01");
+        assert_eq!(deserialized.end_date, "2024-01-30");
         assert_eq!(deserialized.total_results, 5);
         assert_eq!(deserialized.execution_time_ms, 42);
         assert!(deserialized.warnings.is_some());
@@ -351,6 +376,7 @@ mod tests {
         let result = QueryJobResult {
             query_name: "project".to_string(),
             start_date: "2024-06-01".to_string(),
+            end_date: "2024-06-07".to_string(),
             days: 7,
             total_results: 3,
             execution_time_ms: 15,
@@ -391,6 +417,7 @@ mod tests {
             let payload = QueryJobPayload {
                 query_name: "wedding".to_string(),
                 start_date: "2024-06-01".to_string(),
+                end_date: "2024-06-30".to_string(),
                 days: 30,
             };
 
@@ -399,6 +426,7 @@ mod tests {
                 serde_json::to_value(&payload).expect("payload should serialize");
             assert_eq!(payload_json["query_name"], "wedding");
             assert_eq!(payload_json["start_date"], "2024-06-01");
+            assert_eq!(payload_json["end_date"], "2024-06-30");
             assert_eq!(payload_json["days"], 30);
 
             // Note: Full execution requires database, tested in integration tests
@@ -447,6 +475,7 @@ mod tests {
             let result = QueryJobResult {
                 query_name: "wedding".to_string(),
                 start_date: "2024-06-01".to_string(),
+                end_date: "2024-06-30".to_string(),
                 days: 30,
                 total_results: 1,
                 execution_time_ms: 150,
@@ -458,12 +487,15 @@ mod tests {
 
             assert!(json_str.contains("wedding"));
             assert!(json_str.contains("2024-06-01"));
+            assert!(json_str.contains("2024-06-30"));
             assert!(json_str.contains("total_results"));
 
             // Verify deserialization
             let deserialized: QueryJobResult =
                 serde_json::from_str(&json_str).expect("result should deserialize");
             assert_eq!(deserialized.query_name, "wedding");
+            assert_eq!(deserialized.start_date, "2024-06-01");
+            assert_eq!(deserialized.end_date, "2024-06-30");
             assert_eq!(deserialized.total_results, 1);
         }
 
@@ -490,28 +522,35 @@ mod tests {
             let wedding_payload = QueryJobPayload {
                 query_name: "wedding".to_string(),
                 start_date: "2024-06-15".to_string(),
+                end_date: "2024-08-13".to_string(),
                 days: 60,
             };
             let wedding_json = serde_json::to_value(&wedding_payload).unwrap();
             assert_eq!(wedding_json["query_name"], "wedding");
+            assert_eq!(wedding_json["start_date"], "2024-06-15");
+            assert_eq!(wedding_json["end_date"], "2024-08-13");
 
             // Project payload
             let project_payload = QueryJobPayload {
                 query_name: "project".to_string(),
                 start_date: "2024-07-01".to_string(),
+                end_date: "2024-07-14".to_string(),
                 days: 14,
             };
             let project_json = serde_json::to_value(&project_payload).unwrap();
             assert_eq!(project_json["query_name"], "project");
+            assert_eq!(project_json["end_date"], "2024-07-14");
 
             // Travel payload
             let travel_payload = QueryJobPayload {
                 query_name: "travel".to_string(),
                 start_date: "2024-08-01".to_string(),
+                end_date: "2024-08-30".to_string(),
                 days: 30,
             };
             let travel_json = serde_json::to_value(&travel_payload).unwrap();
             assert_eq!(travel_json["query_name"], "travel");
+            assert_eq!(travel_json["end_date"], "2024-08-30");
         }
     }
 }
