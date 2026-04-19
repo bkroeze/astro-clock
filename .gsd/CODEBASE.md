@@ -1,7 +1,7 @@
 # Codebase Map
 
-Generated: 2026-04-19T19:18:33Z | Files: 128 | Described: 0/128
-<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T19:18:33Z","fingerprint":"8be64c64ded046d81064392ffb8625b634cd0e96","fileCount":128,"truncated":false} -->
+Generated: 2026-04-19T19:34:36Z | Files: 128 | Described: 0/128
+<!-- gsd:codebase-meta {"generatedAt":"2026-04-19T19:34:36Z","fingerprint":"8be64c64ded046d81064392ffb8625b634cd0e96","fileCount":128,"truncated":false} -->
 
 ### (root)/
 - `.emdash.json`

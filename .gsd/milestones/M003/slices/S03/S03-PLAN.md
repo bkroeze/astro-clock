@@ -52,7 +52,7 @@ Check if `src/server/routes/mod.rs` exists — if routes are in `src/server/rout
   - Files: `src/jobs/repository.rs`, `src/server/routes/jobs.rs`, `src/server/mod.rs`, `tests/api_integration.rs`
   - Verify: cargo check --features db && cargo test --features db --lib
 
-- [ ] **T02: Fix broken integration tests and add comprehensive test suite** `est:1h30m`
+- [x] **T02: Fix broken integration tests and add comprehensive test suite** `est:1h30m`
   Fix 3 existing integration tests broken by S02's response shape change, then add ~15 new integration tests covering multi-value filters, cursor pagination, DELETE behavior, and edge cases.
 
 ## Broken Tests to Fix
