@@ -37,3 +37,6 @@ vendor/
 coverage/
 .cache/
 tmp/
+
+# Compound Engineering local config
+.compound-engineering/*.local.yaml
