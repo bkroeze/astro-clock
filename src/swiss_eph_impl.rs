@@ -55,7 +55,7 @@ impl SwissEphChartCalculator {
         let planet = Self::get_planet(planet_name)?;
         let flags = swiss_eph::safe::CalcFlags::new().with_speed();
 
-        let result = swiss_eph::safe::calc(self.config.julian_day, planet, flags)
+        let result = swiss_eph::safe::calc_ut(self.config.julian_day, planet.to_int(), flags.raw())
             .map_err(|e| Error::SwissEph(e.to_string()))?;
 
         Ok(Position::new(
