@@ -98,17 +98,16 @@ Generates standalone SVG documents using the glyph registry:
 
 ## Extraction Process
 
-One-time step to extract glyph paths from Astronomicon.ttf:
+The checked-in `export_astronomicon_svg` binary regenerates standalone glyph
+assets from the Astronomicon font:
 
-1. Add `ttf-parser` crate as a dev-dependency
-2. Create extraction script that:
-   - Opens the TTF file
-   - Iterates through needed codepoints
-   - Extracts outline data (move_to, line_to, quad_to, curve_to)
-   - Converts to SVG path format
-   - Generates Rust code with static constants
-3. Run once, commit generated code
-4. Remove extraction script and ttf-parser dependency
+1. Reads `fonts/astronomicon.csv` for codepoint-to-name mappings
+2. Opens `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
+3. Extracts outline data (move_to, line_to, quad_to, curve_to)
+4. Converts each outline to an individual SVG path
+5. Writes the generated files under `assets/astronomicon/`
+
+Run `just make-svg` after changing the mapping or bundled font.
 
 ## Integration Points
 
