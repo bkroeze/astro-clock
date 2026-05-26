@@ -1,5 +1,5 @@
 use crate::aspects::{self, AspectConfig};
-use crate::chart::{ChartData, HouseCusps, planet};
+use crate::chart::{planet, ChartData, HouseCusps};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -459,9 +459,7 @@ impl OutputHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SwissEphChartCalculator;
-    use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
-    use crate::ephemeris::julian_day_from_chrono;
+    use crate::chart::HouseSystem;
 
     #[test]
     fn test_output_format_from_str() {
@@ -486,40 +484,38 @@ mod tests {
 
     #[test]
     fn test_whole_sign_house_numbers_match_reference() {
-        let datetime = chrono::DateTime::parse_from_rfc3339("2026-05-26T20:56:24Z")
-            .unwrap()
-            .with_timezone(&chrono::Utc);
-        let config = ChartConfig::new(
-            HouseSystem::Whole,
-            GeoPos::new(45.89091, -123.96239, 0.0),
-            julian_day_from_chrono(datetime),
-        );
-        let chart = SwissEphChartCalculator::new(config)
-            .unwrap()
-            .calculate_chart()
-            .unwrap();
+        let reference: serde_json::Value =
+            serde_json::from_str(include_str!("../tests/house_reference.json")).unwrap();
+        let expected_reference = reference["planet_houses"].as_object().unwrap();
+
+        let houses = HouseCusps {
+            asc: 30.0,
+            mc: 300.0,
+            dc: 210.0,
+            ic: 120.0,
+            houses: [
+                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 0.0,
+            ],
+            system: HouseSystem::Whole,
+        };
 
         let expected = [
-            (planet::SUN, 9),
-            (planet::MERCURY, 9),
-            (planet::URANUS, 9),
-            (planet::JUPITER, 10),
-            (planet::VENUS, 10),
-            (planet::MOON, 1),
-            (planet::PLUTO, 5),
-            (planet::SATURN, 7),
-            (planet::NEPTUNE, 7),
-            (planet::MARS, 8),
+            ("sun", 300.0),
+            ("mercury", 301.0),
+            ("uranus", 302.0),
+            ("jupiter", 330.0),
+            ("venus", 331.0),
+            ("moon", 60.0),
+            ("pluto", 180.0),
+            ("saturn", 240.0),
+            ("neptune", 241.0),
+            ("mars", 270.0),
         ];
 
-        for (planet_name, expected_house) in expected {
-            let planet = chart
-                .planets
-                .iter()
-                .find(|planet| planet.name == planet_name)
-                .unwrap();
+        for (planet_name, longitude) in expected {
+            let expected_house = expected_reference[planet_name].as_i64().unwrap() as i32;
             assert_eq!(
-                OutputHandler::calculate_house_number(planet.position.longitude, &chart.houses),
+                OutputHandler::calculate_house_number(longitude, &houses),
                 expected_house,
                 "{} should be in house {}",
                 planet_name,

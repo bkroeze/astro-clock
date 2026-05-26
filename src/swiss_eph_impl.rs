@@ -1,6 +1,6 @@
 use crate::chart::{
-    ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem, PlanetPosition,
-    Position, planet,
+    planet, ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem,
+    PlanetPosition, Position,
 };
 use crate::ephemeris::Ephemeris;
 
@@ -15,7 +15,7 @@ impl SwissEphChartCalculator {
     }
 
     fn whole_sign_cusps(ascendant: f64) -> [f64; 12] {
-        let first_house = ((ascendant / 30.0).floor() * 30.0 + 30.0) % 360.0;
+        let first_house = (ascendant / 30.0).floor() * 30.0;
         std::array::from_fn(|i| (first_house + (i as f64 * 30.0)) % 360.0)
     }
 
@@ -202,5 +202,14 @@ mod tests {
         assert!(houses.asc > 0.0 && houses.asc < 360.0);
         assert!(houses.mc > 0.0 && houses.mc < 360.0);
         assert_eq!(houses.houses.len(), 12);
+    }
+
+    #[test]
+    fn test_whole_sign_first_cusp_contains_ascendant_sign() {
+        let cusps = SwissEphChartCalculator::whole_sign_cusps(121.5);
+
+        assert_eq!(cusps[0], 120.0);
+        assert_eq!(cusps[1], 150.0);
+        assert_eq!(cusps[11], 90.0);
     }
 }
