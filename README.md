@@ -186,6 +186,10 @@ just make-svg
 
 The recipe reads `fonts/astronomicon.csv` and `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`, then writes the generated files to `assets/astronomicon/`. Each SVG uses `currentColor`, so callers can color the glyphs with CSS or SVG attributes.
 
+`fonts/astronomicon.csv` is strict, unquoted CSV with one glyph per line:
+`single-character glyph key,output basename`. Output basenames must be unique,
+non-empty, and must not contain `/` or `\`; extra commas are rejected.
+
 ## Example Usage
 
 ### Current Chart (San Francisco)
