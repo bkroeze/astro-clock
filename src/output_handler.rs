@@ -1,5 +1,5 @@
 use crate::aspects::{self, AspectConfig};
-use crate::chart::{planet, ChartData, HouseCusps};
+use crate::chart::{ChartData, HouseCusps, planet};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -344,6 +344,8 @@ impl OutputHandler {
             radius = radius
         );
 
+        let house_anchor = chart_data.houses.houses[0];
+
         // Draw degree ticks
         for degree in 0..360 {
             let length = if degree % 30 == 0 {
@@ -356,7 +358,7 @@ impl OutputHandler {
                 continue;
             };
 
-            let angle = (degree as f64).to_radians();
+            let angle = Self::zodiac_angle(degree as f64, house_anchor);
             let x1 = radius * angle.cos();
             let y1 = radius * angle.sin();
             let x2 = length * angle.cos();
@@ -372,7 +374,7 @@ impl OutputHandler {
 
         // Draw zodiac sign labels
         for (i, sign) in zodiac_symbols.iter().enumerate() {
-            let sign_mid = ((i * 30 + 15) as f64 + 180.0).to_radians();
+            let sign_mid = Self::zodiac_angle((i * 30 + 15) as f64, house_anchor);
             let label_radius = radius * 1.15;
             let x = label_radius * sign_mid.cos();
             let y = label_radius * sign_mid.sin();
@@ -386,8 +388,7 @@ impl OutputHandler {
 
         // Draw house cusps
         for &cusp in &chart_data.houses.houses {
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle = rotated_cusp.to_radians();
+            let angle = Self::zodiac_angle(cusp, house_anchor);
             let x1 = radius * angle.cos();
             let y1 = radius * angle.sin();
             let x2 = radius * 0.7 * angle.cos();
@@ -420,8 +421,7 @@ impl OutputHandler {
         // Draw planets
         let planet_radius = radius * 0.75;
         for planet in &chart_data.planets {
-            let position = (planet.position.longitude + 180.0) % 360.0;
-            let angle = position.to_radians();
+            let angle = Self::zodiac_angle(planet.position.longitude, house_anchor);
             let x = planet_radius * angle.cos();
             let y = planet_radius * angle.sin();
 
@@ -448,11 +448,20 @@ impl OutputHandler {
         svg.push_str("  </g>\n</svg>\n");
         svg
     }
+
+    fn zodiac_angle(longitude: f64, house_anchor: f64) -> f64 {
+        (180.0 - (longitude - house_anchor))
+            .rem_euclid(360.0)
+            .to_radians()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SwissEphChartCalculator;
+    use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
+    use crate::ephemeris::julian_day_from_chrono;
 
     #[test]
     fn test_output_format_from_str() {
@@ -473,5 +482,49 @@ mod tests {
         assert_eq!(OutputFormat::Webp.extension(), "webp");
         assert_eq!(OutputFormat::Svg.extension(), "svg");
         assert_eq!(OutputFormat::Markdown.extension(), "md");
+    }
+
+    #[test]
+    fn test_whole_sign_house_numbers_match_reference() {
+        let datetime = chrono::DateTime::parse_from_rfc3339("2026-05-26T20:56:24Z")
+            .unwrap()
+            .with_timezone(&chrono::Utc);
+        let config = ChartConfig::new(
+            HouseSystem::Whole,
+            GeoPos::new(45.89091, -123.96239, 0.0),
+            julian_day_from_chrono(datetime),
+        );
+        let chart = SwissEphChartCalculator::new(config)
+            .unwrap()
+            .calculate_chart()
+            .unwrap();
+
+        let expected = [
+            (planet::SUN, 9),
+            (planet::MERCURY, 9),
+            (planet::URANUS, 9),
+            (planet::JUPITER, 10),
+            (planet::VENUS, 10),
+            (planet::MOON, 1),
+            (planet::PLUTO, 5),
+            (planet::SATURN, 7),
+            (planet::NEPTUNE, 7),
+            (planet::MARS, 8),
+        ];
+
+        for (planet_name, expected_house) in expected {
+            let planet = chart
+                .planets
+                .iter()
+                .find(|planet| planet.name == planet_name)
+                .unwrap();
+            assert_eq!(
+                OutputHandler::calculate_house_number(planet.position.longitude, &chart.houses),
+                expected_house,
+                "{} should be in house {}",
+                planet_name,
+                expected_house
+            );
+        }
     }
 }

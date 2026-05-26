@@ -6,5 +6,6 @@
             latitude: Some(45.89091),
             longitude: Some(-123.96239),
         ),
+        house_system: "Whole",
     ),
 )

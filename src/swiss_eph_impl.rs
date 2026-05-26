@@ -1,6 +1,6 @@
 use crate::chart::{
-    planet, ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem,
-    PlanetPosition, Position,
+    ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem, PlanetPosition,
+    Position, planet,
 };
 use crate::ephemeris::Ephemeris;
 
@@ -12,6 +12,11 @@ impl SwissEphChartCalculator {
     pub fn new(config: ChartConfig) -> Result<Self, Error> {
         Ephemeris::ensure_initialized()?;
         Ok(Self { config })
+    }
+
+    fn whole_sign_cusps(ascendant: f64) -> [f64; 12] {
+        let first_house = ((ascendant / 30.0).floor() * 30.0 + 30.0) % 360.0;
+        std::array::from_fn(|i| (first_house + (i as f64 * 30.0)) % 360.0)
     }
 
     fn get_planet(planet_name: &str) -> Result<swiss_eph::safe::Planet, Error> {
@@ -121,7 +126,11 @@ impl ChartCalculator for SwissEphChartCalculator {
             mc: result.mc,
             dc,
             ic,
-            houses: result.cusps,
+            houses: if self.config.house_system == HouseSystem::Whole {
+                Self::whole_sign_cusps(result.ascendant)
+            } else {
+                result.cusps
+            },
             system: self.config.house_system.clone(),
         })
     }

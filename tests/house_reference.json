@@ -1,0 +1,16 @@
+{
+  date: "2026-05-26T20:56:24Z",
+  planet_houses: {
+    sun: 9,
+    mercury: 9,
+    uranus: 9,
+    jupiter: 10,
+    venus: 10,
+    moon: 1,
+    pluto: 5,
+    saturn: 7,
+    neptune: 7,
+    mars: 8
+  }
+}
+
