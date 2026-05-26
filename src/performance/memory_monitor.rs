@@ -1,6 +1,6 @@
 //! Memory monitoring and pressure detection for cache management
 
-use sysinfo::{get_current_pid, Pid, ProcessRefreshKind, System};
+use sysinfo::{Pid, ProcessRefreshKind, System, get_current_pid};
 use tracing::{error, info, warn};
 
 /// Default soft memory limit in MB (30MB)
@@ -105,7 +105,7 @@ impl MemoryMonitor {
         let hard_threshold =
             (self.hard_limit_mb as f64 * (self.eviction_threshold_pct / 100.0)) as usize;
 
-        let pressure = if current_mb >= self.hard_limit_mb {
+        if current_mb >= self.hard_limit_mb {
             error!(
                 "CRITICAL memory pressure: {}MB >= {}MB hard limit",
                 current_mb, self.hard_limit_mb
@@ -125,9 +125,7 @@ impl MemoryMonitor {
             MemoryPressure::Elevated
         } else {
             MemoryPressure::Normal
-        };
-
-        pressure
+        }
     }
 
     /// Check if eviction should be performed and return pressure level

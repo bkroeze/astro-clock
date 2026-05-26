@@ -1,6 +1,6 @@
-use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
+use sqlx::postgres::PgPoolOptions;
 
 #[derive(Debug, Clone)]
 pub struct DatabasePool {
@@ -14,10 +14,7 @@ impl DatabasePool {
     }
 
     pub async fn connect(url: &str) -> Result<Self, sqlx::Error> {
-        let pool = PgPoolOptions::new()
-            .max_connections(5)
-            .connect(url)
-            .await?;
+        let pool = PgPoolOptions::new().max_connections(5).connect(url).await?;
         Ok(Self { pool })
     }
 

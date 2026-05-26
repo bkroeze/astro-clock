@@ -1,5 +1,5 @@
 use crate::aspects::{self, AspectConfig};
-use crate::chart::{planet, ChartData, HouseCusps};
+use crate::chart::{ChartData, HouseCusps, planet};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -12,7 +12,7 @@ pub enum OutputFormat {
 }
 
 impl OutputFormat {
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse_lossy(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "webp" => OutputFormat::Webp,
             "svg" => OutputFormat::Svg,
@@ -79,7 +79,7 @@ impl OutputHandler {
         let svg_content = renderer
             .render_chart(chart_data)
             .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
-        std::fs::write(output_path, svg_content).map_err(|e| crate::errors::Error::Io(e))?;
+        std::fs::write(output_path, svg_content).map_err(crate::errors::Error::Io)?;
         Ok(())
     }
 
@@ -88,7 +88,7 @@ impl OutputHandler {
         output_path: &Path,
     ) -> Result<(), crate::errors::Error> {
         let content = Self::format_markdown_table(chart_data, None);
-        std::fs::write(output_path, content).map_err(|e| crate::errors::Error::Io(e))?;
+        std::fs::write(output_path, content).map_err(crate::errors::Error::Io)?;
         Ok(())
     }
 
@@ -98,7 +98,7 @@ impl OutputHandler {
         orb: f64,
     ) -> Result<(), crate::errors::Error> {
         let content = Self::format_markdown_table(chart_data, Some(orb));
-        std::fs::write(output_path, content).map_err(|e| crate::errors::Error::Io(e))?;
+        std::fs::write(output_path, content).map_err(crate::errors::Error::Io)?;
         Ok(())
     }
 
@@ -302,169 +302,27 @@ impl OutputHandler {
         // Ensure we return 1-28 (wrap around if needed)
         ((mansion - 1) % 28) + 1
     }
-
-    fn format_svg(chart_data: &ChartData) -> String {
-        let size = 800.0;
-        let center = size / 2.0;
-        let radius = size * 0.35;
-
-        let zodiac_symbols = [
-            "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓",
-        ];
-
-        let planet_symbols: HashMap<&str, &str> = [
-            ("Sun", "☉"),
-            ("Moon", "☽"),
-            ("Mercury", "☿"),
-            ("Venus", "♀"),
-            ("Mars", "♂"),
-            ("Jupiter", "♃"),
-            ("Saturn", "♄"),
-            ("Uranus", "♅"),
-            ("Neptune", "♆"),
-            ("Pluto", "♇"),
-            ("True Node", "☊"),
-            ("Mean Node", "☊"),
-            ("Chiron", "⚷"),
-        ]
-        .iter()
-        .cloned()
-        .collect();
-
-        let mut svg = format!(
-            r#"<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">
-  <rect width="{size}" height="{size}" fill="white"/>
-  <g transform="translate({center}, {center})">
-    <!-- Outer circle -->
-    <circle cx="0" cy="0" r="{radius}" fill="none" stroke="black" stroke-width="2"/>
-"#,
-            size = size,
-            center = center,
-            radius = radius
-        );
-
-        // Draw degree ticks
-        for degree in 0..360 {
-            let length = if degree % 30 == 0 {
-                radius * 0.88
-            } else if degree % 10 == 0 {
-                radius * 0.92
-            } else if degree % 5 == 0 {
-                radius * 0.95
-            } else {
-                continue;
-            };
-
-            let angle = (degree as f64).to_radians();
-            let x1 = radius * angle.cos();
-            let y1 = radius * angle.sin();
-            let x2 = length * angle.cos();
-            let y2 = length * angle.sin();
-            let stroke_width = if degree % 30 == 0 { 2.0 } else { 1.0 };
-
-            svg.push_str(&format!(
-                r#"    <line x1="{x1:.1}" y1="{y1:.1}" x2="{x2:.1}" y2="{y2:.1}" stroke="black" stroke-width="{stroke_width}"/>
-"#,
-                x1 = x1, y1 = y1, x2 = x2, y2 = y2, stroke_width = stroke_width
-            ));
-        }
-
-        // Draw zodiac sign labels
-        for (i, sign) in zodiac_symbols.iter().enumerate() {
-            let sign_mid = ((i * 30 + 15) as f64 + 180.0).to_radians();
-            let label_radius = radius * 1.15;
-            let x = label_radius * sign_mid.cos();
-            let y = label_radius * sign_mid.sin();
-
-            svg.push_str(&format!(
-                r#"    <text x="{x:.1}" y="{y:.1}" text-anchor="middle" dominant-baseline="central" font-size="24" font-family="serif">{sign}</text>
-"#,
-                x = x, y = y, sign = sign
-            ));
-        }
-
-        // Draw house cusps
-        for &cusp in &chart_data.houses.houses {
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle = rotated_cusp.to_radians();
-            let x1 = radius * angle.cos();
-            let y1 = radius * angle.sin();
-            let x2 = radius * 0.7 * angle.cos();
-            let y2 = radius * 0.7 * angle.sin();
-
-            svg.push_str(&format!(
-                r#"    <line x1="{x1:.1}" y1="{y1:.1}" x2="{x2:.1}" y2="{y2:.1}" stroke="black" stroke-width="1.5"/>
-"#,
-                x1 = x1, y1 = y1, x2 = x2, y2 = y2
-            ));
-
-            // Draw house degree labels
-            let label_radius = radius * 0.55;
-            let label_x = label_radius * angle.cos();
-            let label_y = label_radius * angle.sin();
-            let degree_in_sign = cusp % 30.0;
-            let sign_index = (cusp / 30.0) as usize % 12;
-            let sign_symbol = zodiac_symbols[sign_index];
-            let deg = degree_in_sign as i32;
-            let min = ((degree_in_sign - deg as f64) * 60.0) as i32;
-            let label = format!("{}{:02}°{:02}'", sign_symbol, deg, min);
-
-            svg.push_str(&format!(
-                r#"    <text x="{label_x:.1}" y="{label_y:.1}" text-anchor="middle" dominant-baseline="central" font-size="10" font-family="sans-serif">{label}</text>
-"#,
-                label_x = label_x, label_y = label_y, label = label
-            ));
-        }
-
-        // Draw planets
-        let planet_radius = radius * 0.75;
-        for planet in &chart_data.planets {
-            let position = (planet.position.longitude + 180.0) % 360.0;
-            let angle = position.to_radians();
-            let x = planet_radius * angle.cos();
-            let y = planet_radius * angle.sin();
-
-            let symbol = planet_symbols
-                .get(planet.name.as_str())
-                .copied()
-                .unwrap_or_else(|| &planet.name.as_str());
-
-            svg.push_str(&format!(
-                r#"    <text x="{x:.1}" y="{y:.1}" text-anchor="middle" dominant-baseline="central" font-size="18" font-family="serif">{symbol}</text>
-"#,
-                x = x, y = y, symbol = symbol
-            ));
-
-            if planet.retrograde {
-                svg.push_str(&format!(
-                    r#"    <text x="{x:.1}" y="{y:.1}" dx="12" dy="-8" text-anchor="middle" dominant-baseline="central" font-size="10" font-family="sans-serif">r</text>
-"#,
-                    x = x, y = y
-                ));
-            }
-        }
-
-        svg.push_str("  </g>\n</svg>\n");
-        svg
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::chart::HouseSystem;
 
     #[test]
     fn test_output_format_from_str() {
-        assert_eq!(OutputFormat::from_str("png"), OutputFormat::Png);
-        assert_eq!(OutputFormat::from_str("PNG"), OutputFormat::Png);
-        assert_eq!(OutputFormat::from_str("webp"), OutputFormat::Webp);
-        assert_eq!(OutputFormat::from_str("WEBP"), OutputFormat::Webp);
-        assert_eq!(OutputFormat::from_str("svg"), OutputFormat::Svg);
-        assert_eq!(OutputFormat::from_str("SVG"), OutputFormat::Svg);
-        assert_eq!(OutputFormat::from_str("md"), OutputFormat::Markdown);
-        assert_eq!(OutputFormat::from_str("markdown"), OutputFormat::Markdown);
-        assert_eq!(OutputFormat::from_str("unknown"), OutputFormat::Png);
+        assert_eq!(OutputFormat::parse_lossy("png"), OutputFormat::Png);
+        assert_eq!(OutputFormat::parse_lossy("PNG"), OutputFormat::Png);
+        assert_eq!(OutputFormat::parse_lossy("webp"), OutputFormat::Webp);
+        assert_eq!(OutputFormat::parse_lossy("WEBP"), OutputFormat::Webp);
+        assert_eq!(OutputFormat::parse_lossy("svg"), OutputFormat::Svg);
+        assert_eq!(OutputFormat::parse_lossy("SVG"), OutputFormat::Svg);
+        assert_eq!(OutputFormat::parse_lossy("md"), OutputFormat::Markdown);
+        assert_eq!(
+            OutputFormat::parse_lossy("markdown"),
+            OutputFormat::Markdown
+        );
+        assert_eq!(OutputFormat::parse_lossy("unknown"), OutputFormat::Png);
     }
 
     #[test]
@@ -473,5 +331,47 @@ mod tests {
         assert_eq!(OutputFormat::Webp.extension(), "webp");
         assert_eq!(OutputFormat::Svg.extension(), "svg");
         assert_eq!(OutputFormat::Markdown.extension(), "md");
+    }
+
+    #[test]
+    fn test_whole_sign_house_numbers_match_reference() {
+        let reference: serde_json::Value =
+            serde_json::from_str(include_str!("../tests/house_reference.json")).unwrap();
+        let expected_reference = reference["planet_houses"].as_object().unwrap();
+
+        let houses = HouseCusps {
+            asc: 30.0,
+            mc: 300.0,
+            dc: 210.0,
+            ic: 120.0,
+            houses: [
+                30.0, 60.0, 90.0, 120.0, 150.0, 180.0, 210.0, 240.0, 270.0, 300.0, 330.0, 0.0,
+            ],
+            system: HouseSystem::Whole,
+        };
+
+        let expected = [
+            ("sun", 300.0),
+            ("mercury", 301.0),
+            ("uranus", 302.0),
+            ("jupiter", 330.0),
+            ("venus", 331.0),
+            ("moon", 60.0),
+            ("pluto", 180.0),
+            ("saturn", 240.0),
+            ("neptune", 241.0),
+            ("mars", 270.0),
+        ];
+
+        for (planet_name, longitude) in expected {
+            let expected_house = expected_reference[planet_name].as_i64().unwrap() as i32;
+            assert_eq!(
+                OutputHandler::calculate_house_number(longitude, &houses),
+                expected_house,
+                "{} should be in house {}",
+                planet_name,
+                expected_house
+            );
+        }
     }
 }

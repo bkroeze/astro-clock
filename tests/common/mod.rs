@@ -10,9 +10,9 @@
 #![allow(dead_code)] // Public API for future integration tests
 
 use chrono::{DateTime, NaiveDate, Utc};
-use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
+use sqlx::postgres::PgPoolOptions;
 
 // ============================================================================
 // SEED DATA CONSTANTS
@@ -48,18 +48,12 @@ pub fn seed_end_date() -> NaiveDate {
 
 /// Seed data start as DateTime<Utc> (midnight UTC)
 pub fn seed_start_utc() -> DateTime<Utc> {
-    seed_start_date()
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc()
+    seed_start_date().and_hms_opt(0, 0, 0).unwrap().and_utc()
 }
 
 /// Seed data end as DateTime<Utc> (end of day)
 pub fn seed_end_utc() -> DateTime<Utc> {
-    seed_end_date()
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc()
+    seed_end_date().and_hms_opt(23, 59, 59).unwrap().and_utc()
 }
 
 /// Body ID constants (matching database schema)
@@ -135,10 +129,10 @@ pub const TOTAL_LUNAR_CONDITIONS: i64 = 87_840;
 pub mod known_retrogrades {
     /// Bodies that are retrograde during the seed range, with their total retrograde minutes
     pub const RETROGRADE_BODIES: &[(i16, i64)] = &[
-        (3, 1_402),   // Venus — brief retrograde at start of range
-        (4, 77_881),  // Mars — retrograde majority of range
-        (5, 49_542),  // Jupiter — retrograde most of range
-        (7, 42_744),  // Uranus — retrograde much of range
+        (3, 1_402),  // Venus — brief retrograde at start of range
+        (4, 77_881), // Mars — retrograde majority of range
+        (5, 49_542), // Jupiter — retrograde most of range
+        (7, 42_744), // Uranus — retrograde much of range
     ];
 
     /// Bodies that are NOT retrograde during the seed range
@@ -153,19 +147,19 @@ pub mod known_retrogrades {
 
     /// Retrograde days per body
     pub const RETROGRADE_DAYS: &[(i16, i64)] = &[
-        (3, 1),   // Venus
-        (4, 55),  // Mars
-        (5, 35),  // Jupiter
-        (7, 30),  // Uranus
+        (3, 1),  // Venus
+        (4, 55), // Mars
+        (5, 35), // Jupiter
+        (7, 30), // Uranus
     ];
 
     /// Zodiac signs occupied by retrograde bodies
     pub const RETROGRADE_ZODIAC_SIGNS: &[(i16, i16)] = &[
-        (3, 0),   // Venus in Aries
-        (4, 3),   // Mars in Cancer
-        (4, 4),   // Mars in Leo
-        (5, 2),   // Jupiter in Gemini
-        (7, 1),   // Uranus in Taurus
+        (3, 0), // Venus in Aries
+        (4, 3), // Mars in Cancer
+        (4, 4), // Mars in Leo
+        (5, 2), // Jupiter in Gemini
+        (7, 1), // Uranus in Taurus
     ];
 }
 
@@ -281,14 +275,13 @@ pub async fn count_positions_for_body(pool: &Pool<Postgres>, body_id: i16) -> i6
 
 /// Get the count of aspects in the seed range.
 pub async fn count_aspects(pool: &Pool<Postgres>) -> i64 {
-    let count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM aspects WHERE time >= $1 AND time <= $2",
-    )
-    .bind(seed_start_utc())
-    .bind(seed_end_utc())
-    .fetch_one(pool)
-    .await
-    .expect("Failed to count aspects");
+    let count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM aspects WHERE time >= $1 AND time <= $2")
+            .bind(seed_start_utc())
+            .bind(seed_end_utc())
+            .fetch_one(pool)
+            .await
+            .expect("Failed to count aspects");
 
     count.0
 }
@@ -309,14 +302,13 @@ pub async fn count_retrograde_periods(pool: &Pool<Postgres>) -> i64 {
 
 /// Get the count of lunar conditions records in the seed range.
 pub async fn count_lunar_conditions(pool: &Pool<Postgres>) -> i64 {
-    let count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM lunar_conditions WHERE time >= $1 AND time <= $2",
-    )
-    .bind(seed_start_utc())
-    .bind(seed_end_utc())
-    .fetch_one(pool)
-    .await
-    .expect("Failed to count lunar conditions");
+    let count: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM lunar_conditions WHERE time >= $1 AND time <= $2")
+            .bind(seed_start_utc())
+            .bind(seed_end_utc())
+            .fetch_one(pool)
+            .await
+            .expect("Failed to count lunar conditions");
 
     count.0
 }

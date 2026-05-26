@@ -141,12 +141,12 @@ impl VoCCriteria {
             ));
         }
 
-        if let Some(duration) = self.min_duration {
-            if duration < Duration::zero() {
-                return Err(QueryError::InvalidCriteria(
-                    "Minimum duration cannot be negative".to_string(),
-                ));
-            }
+        if let Some(duration) = self.min_duration
+            && duration < Duration::zero()
+        {
+            return Err(QueryError::InvalidCriteria(
+                "Minimum duration cannot be negative".to_string(),
+            ));
         }
 
         Ok(())

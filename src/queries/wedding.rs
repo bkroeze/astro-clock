@@ -38,16 +38,8 @@ pub async fn find_wedding_dates(
         11,   // Pisces
     ];
 
-    let start_datetime = criteria
-        .start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let end_datetime = criteria
-        .end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc();
+    let start_datetime = criteria.start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_datetime = criteria.end_date.and_hms_opt(23, 59, 59).unwrap().and_utc();
 
     // Optimized query using aspect_summaries JOIN (51× faster than correlated subquery)
     let rows = sqlx::query(
@@ -94,7 +86,8 @@ pub async fn find_wedding_dates(
 
             WeddingCandidate {
                 datetime: time,
-                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(crate::queries::types::ZodiacSign::Aries),
+                moon_sign: ZodiacSign::from_id(moon_sign_id)
+                    .unwrap_or(crate::queries::types::ZodiacSign::Aries),
                 venus_favorable_aspects: favorable_aspects,
             }
         })
@@ -126,16 +119,8 @@ pub async fn find_wedding_dates_with_signs(
 
     let start_time = Instant::now();
 
-    let start_datetime = criteria
-        .start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let end_datetime = criteria
-        .end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc();
+    let start_datetime = criteria.start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_datetime = criteria.end_date.and_hms_opt(23, 59, 59).unwrap().and_utc();
 
     let rows = sqlx::query(
         r#"
@@ -181,7 +166,8 @@ pub async fn find_wedding_dates_with_signs(
 
             WeddingCandidate {
                 datetime: time,
-                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(crate::queries::types::ZodiacSign::Aries),
+                moon_sign: ZodiacSign::from_id(moon_sign_id)
+                    .unwrap_or(crate::queries::types::ZodiacSign::Aries),
                 venus_favorable_aspects: favorable_aspects,
             }
         })

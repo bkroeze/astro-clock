@@ -1,7 +1,7 @@
 use crate::database::schema::PlanetPosition;
 use chrono::{DateTime, Utc};
-use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
 
 /// Errors that can occur during interpolation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -268,13 +268,15 @@ mod tests {
     #[test]
     fn test_error_display() {
         let err1 = InterpolationError::InvalidTimeRange;
-        assert!(err1
-            .to_string()
-            .contains("End time must be after start time"));
+        assert!(
+            err1.to_string()
+                .contains("End time must be after start time")
+        );
 
         let err2 = InterpolationError::TimeOutOfRange;
-        assert!(err2
-            .to_string()
-            .contains("Query time outside interpolation range"));
+        assert!(
+            err2.to_string()
+                .contains("Query time outside interpolation range")
+        );
     }
 }

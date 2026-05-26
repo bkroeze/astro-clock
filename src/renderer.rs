@@ -1,7 +1,7 @@
 use std::path::Path;
 use tiny_skia::{FillRule, Paint, Pixmap, Transform};
 
-use crate::aspects::{find_aspects, AspectConfig, AspectType};
+use crate::aspects::{AspectConfig, AspectType, find_aspects};
 
 pub struct FontState {
     pub font: fontdue::Font,
@@ -29,11 +29,10 @@ impl FontState {
         ];
 
         for path in &paths {
-            if let Ok(bytes) = std::fs::read(path) {
-                if let Ok(font) = fontdue::Font::from_bytes(bytes, fontdue::FontSettings::default())
-                {
-                    return Some(font);
-                }
+            if let Ok(bytes) = std::fs::read(path)
+                && let Ok(font) = fontdue::Font::from_bytes(bytes, fontdue::FontSettings::default())
+            {
+                return Some(font);
             }
         }
 
@@ -129,7 +128,7 @@ impl Color {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    fn to_skia(&self) -> tiny_skia::Color {
+    fn to_skia(self) -> tiny_skia::Color {
         tiny_skia::Color::from_rgba8(
             (self.r * 255.0) as u8,
             (self.g * 255.0) as u8,
@@ -165,11 +164,13 @@ impl Renderer {
         let center = self.size.center();
         let radius = f32::min(self.size.width, self.size.height) * 0.35;
 
-        self.draw_zodiac_wheel(center, radius)?;
-        self.draw_zodiac_sign_labels(center, radius)?;
+        let house_anchor = chart_data.houses.houses[0] as f32;
+
+        self.draw_zodiac_wheel(center, radius, house_anchor)?;
+        self.draw_zodiac_sign_labels(center, radius, house_anchor)?;
         self.draw_house_cusps(center, radius, &chart_data.houses)?;
-        self.draw_aspects(center, radius, &chart_data.planets)?;
-        self.draw_planets(center, radius, &chart_data.planets)?;
+        self.draw_aspects(center, radius, house_anchor, &chart_data.planets)?;
+        self.draw_planets(center, radius, house_anchor, &chart_data.planets)?;
         self.draw_house_degree_labels(center, radius, &chart_data.houses)?;
 
         Ok(())
@@ -179,12 +180,13 @@ impl Renderer {
         &mut self,
         center: Point,
         radius: f32,
+        house_anchor: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Draw the outer circle outline (not filled)
         self.draw_circle_outline(center, radius, Color::black(), 2.0);
 
         for degree in 0..360 {
-            let angle = (degree as f32).to_radians();
+            let angle = Self::zodiac_angle(degree as f32, house_anchor);
             let length = if degree % 30 == 0 {
                 radius * 0.88
             } else if degree % 10 == 0 {
@@ -215,6 +217,7 @@ impl Renderer {
         &mut self,
         center: Point,
         radius: f32,
+        house_anchor: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Zodiac symbols
         let signs = [
@@ -222,7 +225,7 @@ impl Renderer {
         ];
 
         for (i, sign) in signs.iter().enumerate() {
-            let sign_mid = ((i * 30 + 15) as f32 + 180.0).to_radians();
+            let sign_mid = Self::zodiac_angle((i * 30 + 15) as f32, house_anchor);
             let label_radius = radius * 1.08;
             let label_x = center.x + label_radius * sign_mid.cos();
             let label_y = center.y + label_radius * sign_mid.sin();
@@ -245,10 +248,9 @@ impl Renderer {
         houses: &crate::chart::HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let house_cusps = houses.houses;
-        for (_i, &cusp) in house_cusps.iter().enumerate() {
-            // Add 180° to rotate so 0° Aries is at the left (9 o'clock)
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle = (rotated_cusp as f32).to_radians();
+        let house_anchor = houses.houses[0] as f32;
+        for &cusp in house_cusps.iter() {
+            let angle = Self::zodiac_angle(cusp as f32, house_anchor);
             let start = Point::new(
                 center.x + radius * angle.cos(),
                 center.y + radius * angle.sin(),
@@ -269,6 +271,7 @@ impl Renderer {
         &mut self,
         center: Point,
         radius: f32,
+        house_anchor: f32,
         planets: &[crate::chart::PlanetPosition],
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Find aspects with default 3° orb
@@ -285,11 +288,8 @@ impl Renderer {
 
             if let (Some(p1), Some(p2)) = (planet1, planet2) {
                 // Calculate positions on the aspect circle
-                let pos1 = (p1.position.longitude + 180.0) % 360.0;
-                let pos2 = (p2.position.longitude + 180.0) % 360.0;
-
-                let angle1 = (pos1 as f32).to_radians();
-                let angle2 = (pos2 as f32).to_radians();
+                let angle1 = Self::zodiac_angle(p1.position.longitude as f32, house_anchor);
+                let angle2 = Self::zodiac_angle(p2.position.longitude as f32, house_anchor);
 
                 let start = Point::new(
                     center.x + aspect_radius * angle1.cos(),
@@ -330,6 +330,7 @@ impl Renderer {
         &mut self,
         center: Point,
         radius: f32,
+        house_anchor: f32,
         planets: &[crate::chart::PlanetPosition],
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Planet symbols mapping
@@ -353,9 +354,7 @@ impl Renderer {
         .collect();
 
         for planet in planets {
-            // Add 180° to rotate so 0° Aries is at the left (9 o'clock)
-            let position = (planet.position.longitude + 180.0) % 360.0;
-            let angle = (position as f32).to_radians();
+            let angle = Self::zodiac_angle(planet.position.longitude as f32, house_anchor);
             let planet_radius = radius * 0.75;
 
             let planet_pos = Point::new(
@@ -395,15 +394,14 @@ impl Renderer {
         houses: &crate::chart::HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let house_cusps = houses.houses;
+        let house_anchor = houses.houses[0] as f32;
         // Zodiac symbols
         let zodiac_symbols = [
             "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓",
         ];
 
-        for (_i, &cusp) in house_cusps.iter().enumerate() {
-            // Add 180° to rotate so 0° Aries is at the left (9 o'clock)
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle = (rotated_cusp as f32).to_radians();
+        for &cusp in house_cusps.iter() {
+            let angle = Self::zodiac_angle(cusp as f32, house_anchor);
             let label_radius = radius * 0.6;
             let label_x = center.x + label_radius * angle.cos();
             let label_y = center.y + label_radius * angle.sin();
@@ -424,6 +422,12 @@ impl Renderer {
         }
 
         Ok(())
+    }
+
+    fn zodiac_angle(longitude: f32, house_anchor: f32) -> f32 {
+        (180.0 - (longitude - house_anchor))
+            .rem_euclid(360.0)
+            .to_radians()
     }
 
     pub fn clear(&mut self, color: Color) {
@@ -520,8 +524,11 @@ impl Renderer {
         for c in text.chars() {
             // Use symbol font for astrological symbols (U+2600 to U+26FF range)
             let is_symbol = c as u32 >= 0x2600 && c as u32 <= 0x26FF;
-            let font = if is_symbol && self.font_state.symbol_font.is_some() {
-                self.font_state.symbol_font.as_ref().unwrap()
+            let font = if is_symbol {
+                self.font_state
+                    .symbol_font
+                    .as_ref()
+                    .unwrap_or(&self.font_state.font)
             } else {
                 &self.font_state.font
             };

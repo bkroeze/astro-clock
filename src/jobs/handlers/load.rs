@@ -95,9 +95,7 @@ impl LoadJobHandler {
 
         // Validate days is positive and reasonable
         if days <= 0 {
-            return Err(JobError::Other(
-                "days must be positive".to_string(),
-            ));
+            return Err(JobError::Other("days must be positive".to_string()));
         }
 
         if days > 366 {
@@ -128,7 +126,7 @@ impl LoadJobHandler {
 
         while current <= end {
             dates.push(current);
-            current = current + chrono::Duration::days(1);
+            current += chrono::Duration::days(1);
         }
 
         dates
@@ -144,10 +142,8 @@ impl JobHandler for LoadJobHandler {
     async fn execute(&self, job: &Job) -> JobResult<JsonValue> {
         let payload = self.parse_payload(job)?;
 
-        let start_date =
-            NaiveDate::parse_from_str(&payload.start_date, "%Y-%m-%d").map_err(|e| {
-                JobError::Other(format!("Failed to parse start_date: {}", e))
-            })?;
+        let start_date = NaiveDate::parse_from_str(&payload.start_date, "%Y-%m-%d")
+            .map_err(|e| JobError::Other(format!("Failed to parse start_date: {}", e)))?;
 
         info!(
             job_id = %job.id,
@@ -170,8 +166,7 @@ impl JobHandler for LoadJobHandler {
 
         // Generate all dates in range to determine which are already loaded
         let all_dates = self.generate_date_range(start_date, payload.days);
-        let missing_set: std::collections::HashSet<_> =
-            missing_dates.iter().cloned().collect();
+        let missing_set: std::collections::HashSet<_> = missing_dates.iter().cloned().collect();
 
         let skipped_dates: Vec<String> = all_dates
             .iter()
@@ -190,7 +185,7 @@ impl JobHandler for LoadJobHandler {
         // Create chunk generator using the existing pool
         // DatabasePool is a wrapper around Pool<Postgres>, so we create it directly
         let db_pool = DatabasePool::from_pool(self.pool.clone());
-        
+
         let chunk_generator = ChunkGenerator::new(db_pool);
 
         // Track results

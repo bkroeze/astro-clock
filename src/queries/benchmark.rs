@@ -94,9 +94,8 @@ pub async fn run_query_benchmarks(pool: &DatabasePool) -> BenchmarkResults {
     };
 
     let target_ms = 100;
-    let all_passed = wedding_result < target_ms
-        && voc_result < target_ms
-        && aspect_result < target_ms;
+    let all_passed =
+        wedding_result < target_ms && voc_result < target_ms && aspect_result < target_ms;
 
     let results = BenchmarkResults {
         wedding_query_60day_ms: wedding_result,

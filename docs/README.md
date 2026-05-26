@@ -19,16 +19,16 @@ Text-based tables showing planetary positions and aspects.
 
 ```bash
 # Generate PNG chart
-cargo run -- chart --lat 37.7749 --lon -122.4194 --output docs/example_sf.png
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --output docs/example_sf.png
 
 # Generate WebP chart
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format webp --output docs/example_sf.webp
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format webp --output docs/example_sf.webp
 
 # Generate markdown table
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format md --output docs/example_sf.md
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format md --output docs/example_sf.md
 
 # Generate with specific date
-cargo run -- chart \\
+cargo run --bin astro-clock -- chart \\
   --lat 40.7128 \\
   --lon -74.0060 \\
   --time "2026-03-15T14:30:00-04:00" \\
@@ -40,36 +40,36 @@ cargo run -- chart \\
 ### Natal Charts
 Current planetary positions for a location:
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194
 ```
 
 ### Different House Systems
 
 **Placidus (default):**
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --house Placidus
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --house Placidus
 ```
 
 **Whole Sign:**
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --house Whole
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --house Whole
 ```
 
 **Koch:**
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --house Koch
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --house Koch
 ```
 
 **Equal:**
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --house Equal
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --house Equal
 ```
 
 ### Aspect Analysis
 
 Generate markdown with aspect analysis:
 ```bash
-cargo run -- chart \\
+cargo run --bin astro-clock -- chart \\
   --lat 37.7749 \\
   --lon -122.4194 \\
   --format md \\
@@ -99,14 +99,14 @@ cat > config.ron << 'EOF'
 EOF
 
 # Use config
-cargo run -- --config config.ron chart --output docs/configured.png
+cargo run --bin astro-clock -- --config config.ron chart --output docs/configured.png
 ```
 
 ## HTTP Server Examples
 
 Start the server:
 ```bash
-cargo run -- serve --port 3000
+cargo run --bin astro-clock -- serve --port 3000
 ```
 
 Get a chart:

@@ -3,7 +3,10 @@ use std::time::Instant;
 use thiserror::Error;
 use tracing::debug;
 
-use super::chunk::{ChunkData, CompactAspect, CompactLunarCondition, CompactPlanetPosition, BODIES_COUNT, MINUTES_PER_DAY};
+use super::chunk::{
+    BODIES_COUNT, ChunkData, CompactAspect, CompactLunarCondition, CompactPlanetPosition,
+    MINUTES_PER_DAY,
+};
 use super::pool::DatabasePool;
 
 /// Orb for considering an aspect valid (in degrees)
@@ -54,10 +57,7 @@ impl ChunkGenerator {
     ///
     /// Only major aspects (conjunction, sextile, square, trine, opposition) are stored.
     /// Minor aspects are calculated on-demand when needed, reducing storage by ~80%.
-    pub async fn generate_chunk(
-        &self,
-        date: NaiveDate,
-    ) -> Result<ChunkData, ChunkGeneratorError> {
+    pub async fn generate_chunk(&self, date: NaiveDate) -> Result<ChunkData, ChunkGeneratorError> {
         // Ensure ephemeris is initialized
         crate::ephemeris::Ephemeris::ensure_initialized()
             .map_err(|e| ChunkGeneratorError::SwissEph(e.to_string()))?;
@@ -314,10 +314,7 @@ impl ChunkGenerator {
     }
 
     /// Save a generated chunk to the database using batch inserts
-    pub async fn save_chunk_to_db(
-        &self,
-        chunk: &ChunkData,
-    ) -> Result<(), ChunkGeneratorError> {
+    pub async fn save_chunk_to_db(&self, chunk: &ChunkData) -> Result<(), ChunkGeneratorError> {
         let mut tx = self.db_pool.pool().begin().await?;
 
         // Insert planet positions in batches
@@ -544,41 +541,101 @@ mod tests {
     #[test]
     fn test_is_major_aspect_filtering() {
         // Test major aspects (should be recognized)
-        assert!(is_major_aspect(0.0), "Conjunction (0°) should be a major aspect");
-        assert!(is_major_aspect(2.0), "Conjunction within orb (2°) should be a major aspect");
-        assert!(is_major_aspect(60.0), "Sextile (60°) should be a major aspect");
-        assert!(is_major_aspect(58.0), "Sextile within orb (58°) should be a major aspect");
-        assert!(is_major_aspect(90.0), "Square (90°) should be a major aspect");
-        assert!(is_major_aspect(92.0), "Square within orb (92°) should be a major aspect");
-        assert!(is_major_aspect(120.0), "Trine (120°) should be a major aspect");
-        assert!(is_major_aspect(118.0), "Trine within orb (118°) should be a major aspect");
-        assert!(is_major_aspect(180.0), "Opposition (180°) should be a major aspect");
-        assert!(is_major_aspect(178.0), "Opposition within orb (178°) should be a major aspect");
+        assert!(
+            is_major_aspect(0.0),
+            "Conjunction (0°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(2.0),
+            "Conjunction within orb (2°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(60.0),
+            "Sextile (60°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(58.0),
+            "Sextile within orb (58°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(90.0),
+            "Square (90°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(92.0),
+            "Square within orb (92°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(120.0),
+            "Trine (120°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(118.0),
+            "Trine within orb (118°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(180.0),
+            "Opposition (180°) should be a major aspect"
+        );
+        assert!(
+            is_major_aspect(178.0),
+            "Opposition within orb (178°) should be a major aspect"
+        );
 
         // Test minor aspects (should be filtered out)
-        assert!(!is_major_aspect(30.0), "Semi-sextile (30°) should NOT be a major aspect");
-        assert!(!is_major_aspect(45.0), "Semi-square (45°) should NOT be a major aspect");
-        assert!(!is_major_aspect(72.0), "Quintile (72°) should NOT be a major aspect");
-        assert!(!is_major_aspect(135.0), "Sesquiquadrate (135°) should NOT be a major aspect");
-        assert!(!is_major_aspect(150.0), "Quincunx (150°) should NOT be a major aspect");
-        assert!(!is_major_aspect(10.0), "10° separation should NOT be a major aspect (outside orb)");
-        assert!(!is_major_aspect(200.0), "200° separation should NOT be a major aspect");
+        assert!(
+            !is_major_aspect(30.0),
+            "Semi-sextile (30°) should NOT be a major aspect"
+        );
+        assert!(
+            !is_major_aspect(45.0),
+            "Semi-square (45°) should NOT be a major aspect"
+        );
+        assert!(
+            !is_major_aspect(72.0),
+            "Quintile (72°) should NOT be a major aspect"
+        );
+        assert!(
+            !is_major_aspect(135.0),
+            "Sesquiquadrate (135°) should NOT be a major aspect"
+        );
+        assert!(
+            !is_major_aspect(150.0),
+            "Quincunx (150°) should NOT be a major aspect"
+        );
+        assert!(
+            !is_major_aspect(10.0),
+            "10° separation should NOT be a major aspect (outside orb)"
+        );
+        assert!(
+            !is_major_aspect(200.0),
+            "200° separation should NOT be a major aspect"
+        );
 
         // Test wraparound cases
-        assert!(is_major_aspect(360.0), "360° should be equivalent to 0° (conjunction)");
-        assert!(is_major_aspect(420.0), "420° should be equivalent to 60° (sextile)");
-        assert!(!is_major_aspect(-30.0), "Negative angle (-30°) should normalize correctly and NOT be major");
+        assert!(
+            is_major_aspect(360.0),
+            "360° should be equivalent to 0° (conjunction)"
+        );
+        assert!(
+            is_major_aspect(420.0),
+            "420° should be equivalent to 60° (sextile)"
+        );
+        assert!(
+            !is_major_aspect(-30.0),
+            "Negative angle (-30°) should normalize correctly and NOT be major"
+        );
     }
 
     #[test]
     fn test_calculate_aspects_filters_minor_aspects() {
         // Create a ChunkGenerator with a mock database pool
         // We'll test the aspect calculation directly using a test helper
-        
+
         // Test case: Two bodies at specific positions
         // Body 1 at 0°, Body 2 at 30° (semi-sextile - minor aspect, should be filtered)
         // Body 3 at 60° (sextile - major aspect, should be included)
-        
+
         let _positions = vec![
             CompactPlanetPosition {
                 timestamp_minutes: 0,
@@ -614,12 +671,18 @@ mod tests {
 
         // Create a minimal test - we can't easily create ChunkGenerator without DB,
         // but we can verify the is_major_aspect logic is correct
-        
+
         // Verify the angular differences
         let diff_sun_moon = 30.0; // 30° - should be filtered
         let diff_sun_mercury = 60.0; // 60° - should be included
-        
-        assert!(!is_major_aspect(diff_sun_moon), "30° (Sun-Moon) should be filtered as minor aspect");
-        assert!(is_major_aspect(diff_sun_mercury), "60° (Sun-Mercury) should be included as major aspect");
+
+        assert!(
+            !is_major_aspect(diff_sun_moon),
+            "30° (Sun-Moon) should be filtered as minor aspect"
+        );
+        assert!(
+            is_major_aspect(diff_sun_mercury),
+            "60° (Sun-Mercury) should be included as major aspect"
+        );
     }
 }

@@ -1,6 +1,6 @@
 use crate::chart::{
-    planet, ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem,
-    PlanetPosition, Position,
+    ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem, PlanetPosition,
+    Position, planet,
 };
 use crate::ephemeris::Ephemeris;
 
@@ -12,6 +12,11 @@ impl SwissEphChartCalculator {
     pub fn new(config: ChartConfig) -> Result<Self, Error> {
         Ephemeris::ensure_initialized()?;
         Ok(Self { config })
+    }
+
+    fn whole_sign_cusps(ascendant: f64) -> [f64; 12] {
+        let first_house = (ascendant / 30.0).floor() * 30.0;
+        std::array::from_fn(|i| (first_house + (i as f64 * 30.0)) % 360.0)
     }
 
     fn get_planet(planet_name: &str) -> Result<swiss_eph::safe::Planet, Error> {
@@ -55,7 +60,7 @@ impl SwissEphChartCalculator {
         let planet = Self::get_planet(planet_name)?;
         let flags = swiss_eph::safe::CalcFlags::new().with_speed();
 
-        let result = swiss_eph::safe::calc(self.config.julian_day, planet, flags)
+        let result = swiss_eph::safe::calc_ut(self.config.julian_day, planet.to_int(), flags.raw())
             .map_err(|e| Error::SwissEph(e.to_string()))?;
 
         Ok(Position::new(
@@ -121,7 +126,11 @@ impl ChartCalculator for SwissEphChartCalculator {
             mc: result.mc,
             dc,
             ic,
-            houses: result.cusps,
+            houses: if self.config.house_system == HouseSystem::Whole {
+                Self::whole_sign_cusps(result.ascendant)
+            } else {
+                result.cusps
+            },
             system: self.config.house_system.clone(),
         })
     }
@@ -193,5 +202,14 @@ mod tests {
         assert!(houses.asc > 0.0 && houses.asc < 360.0);
         assert!(houses.mc > 0.0 && houses.mc < 360.0);
         assert_eq!(houses.houses.len(), 12);
+    }
+
+    #[test]
+    fn test_whole_sign_first_cusp_contains_ascendant_sign() {
+        let cusps = SwissEphChartCalculator::whole_sign_cusps(121.5);
+
+        assert_eq!(cusps[0], 120.0);
+        assert_eq!(cusps[1], 150.0);
+        assert_eq!(cusps[11], 90.0);
     }
 }

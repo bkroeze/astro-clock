@@ -21,16 +21,8 @@ pub async fn find_voc_periods(
 
     let start_time = Instant::now();
 
-    let start_datetime = criteria
-        .start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let end_datetime = criteria
-        .end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc();
+    let start_datetime = criteria.start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_datetime = criteria.end_date.and_hms_opt(23, 59, 59).unwrap().and_utc();
 
     // Query to find VoC periods using gap-and-island pattern
     // This aggregates contiguous rows where is_void_of_course = true
@@ -97,7 +89,8 @@ pub async fn find_voc_periods(
                 start,
                 end,
                 duration,
-                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(crate::queries::types::ZodiacSign::Aries),
+                moon_sign: ZodiacSign::from_id(moon_sign_id)
+                    .unwrap_or(crate::queries::types::ZodiacSign::Aries),
             })
         })
         .collect();
@@ -173,9 +166,10 @@ pub async fn is_voc_at_time(
     let result = find_voc_periods(pool, &criteria).await?;
 
     // Find the period containing our datetime
-    let period = result.data.into_iter().find(|p| {
-        p.start <= datetime && p.end >= datetime
-    });
+    let period = result
+        .data
+        .into_iter()
+        .find(|p| p.start <= datetime && p.end >= datetime);
 
     Ok(period)
 }

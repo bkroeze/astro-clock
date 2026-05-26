@@ -37,11 +37,11 @@ clean:
 
 # Run the CLI application with default settings (e.g., just run chart --lat 0 --lon 0)
 run *ARGS:
-    cargo run {{ARGS}}
+    cargo run --bin astro-clock {{ARGS}}
 
 # Run the HTTP server
 run-server:
-    cargo run --features db serve
+    cargo run --bin main --features db serve
 
 # Run with database feature
 run-db *ARGS:

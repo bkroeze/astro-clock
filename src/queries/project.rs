@@ -31,16 +31,8 @@ pub async fn find_project_dates(
     // Convert FAVORABLE_PROJECT_SIGNS to i16 IDs
     let favorable_signs: Vec<i16> = FAVORABLE_PROJECT_SIGNS.iter().map(|s| s.to_id()).collect();
 
-    let start_datetime = criteria
-        .start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let end_datetime = criteria
-        .end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc();
+    let start_datetime = criteria.start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_datetime = criteria.end_date.and_hms_opt(23, 59, 59).unwrap().and_utc();
 
     // Optimized query using aspect_summaries JOIN
     // Filters:
@@ -96,8 +88,7 @@ pub async fn find_project_dates(
 
             ProjectCandidate {
                 datetime: time,
-                moon_sign: ZodiacSign::from_id(moon_sign_id)
-                    .unwrap_or(ZodiacSign::Aries),
+                moon_sign: ZodiacSign::from_id(moon_sign_id).unwrap_or(ZodiacSign::Aries),
                 mercury_direct: true, // We filter for this in SQL
                 favorable_aspects,
             }

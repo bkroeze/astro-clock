@@ -6,16 +6,16 @@ A CLI application for generating astrological charts with Swiss Ephemeris integr
 
 ```bash
 # Generate a chart with current time
-cargo run -- chart --lat 37.7749 --lon -122.4194 --output mychart.png
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --output mychart.png
 
 # Generate chart as markdown table
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format md --output chart.md
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format md --output chart.md
 
 # Analyze aspects
-cargo run -- aspects --lat 37.7749 --lon -122.4194 --orb 3
+cargo run --bin astro-clock -- aspects --lat 37.7749 --lon -122.4194 --orb 3
 
 # Start HTTP server
-cargo run -- serve --port 3000
+cargo run --bin astro-clock -- serve --port 3000
 ```
 
 ## Installation
@@ -34,13 +34,13 @@ cargo test
 
 ```bash
 # Chart generation
-cargo run -- chart [OPTIONS]
+cargo run --bin astro-clock -- chart [OPTIONS]
 
 # Aspect analysis
-cargo run -- aspects [OPTIONS]
+cargo run --bin astro-clock -- aspects [OPTIONS]
 
 # HTTP server
-cargo run -- serve [OPTIONS]
+cargo run --bin astro-clock -- serve [OPTIONS]
 ```
 
 ### Chart Command
@@ -48,7 +48,7 @@ cargo run -- serve [OPTIONS]
 Generate an astrological chart:
 
 ```bash
-cargo run -- chart \\
+cargo run --bin astro-clock -- chart \\
   --lat 37.7749 \\
   --lon -122.4194 \\
   --time "2026-03-01T12:00:00-08:00" \\
@@ -72,7 +72,7 @@ cargo run -- chart \\
 Analyze planetary aspects:
 
 ```bash
-cargo run -- aspects \\
+cargo run --bin astro-clock -- aspects \\
   --lat 37.7749 \\
   --lon -122.4194 \\
   --time "2026-03-01T12:00:00-08:00" \\
@@ -90,7 +90,7 @@ cargo run -- aspects \\
 Start HTTP server for chart generation:
 
 ```bash
-cargo run -- serve --host 127.0.0.1 --port 3000
+cargo run --bin astro-clock -- serve --host 127.0.0.1 --port 3000
 ```
 
 **Endpoints:**
@@ -131,7 +131,7 @@ Create a RON configuration file (optional):
 )
 ```
 
-Use with: `cargo run -- --config config.ron chart`
+Use with: `cargo run --bin astro-clock -- --config config.ron chart`
 
 ## House Systems
 
@@ -153,25 +153,25 @@ Supported house systems:
 ### PNG (default)
 Generates an 800x800 pixel chart wheel:
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format png --output chart.png
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format png --output chart.png
 ```
 
 ### WebP
 Compressed chart image:
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format webp --output chart.webp
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format webp --output chart.webp
 ```
 
 ### Markdown
 Text table with planetary positions and aspects:
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format md --output chart.md
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format md --output chart.md
 ```
 
 ### SVG (Standalone)
 Vector chart that works without font installation:
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format svg --output chart.svg
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format svg --output chart.svg
 ```
 
 The SVG file contains embedded glyph paths and can be viewed in any browser or image viewer without the Astronomicon font installed.
@@ -180,13 +180,13 @@ The SVG file contains embedded glyph paths and can be viewed in any browser or i
 
 ### Current Chart (San Francisco)
 ```bash
-cargo run -- chart --lat 37.7749 --lon -122.4194 --format png
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format png
 # Outputs: mmddyy-HHMMSS.png
 ```
 
 ### Specific Date/Time
 ```bash
-cargo run -- chart \\
+cargo run --bin astro-clock -- chart \\
   --lat 40.7128 \\
   --lon -74.0060 \\
   --time "2026-03-15T14:30:00-04:00" \\
@@ -195,7 +195,7 @@ cargo run -- chart \\
 
 ### Whole Sign Houses
 ```bash
-cargo run -- chart \\
+cargo run --bin astro-clock -- chart \\
   --lat 37.7749 \\
   --lon -122.4194 \\
   --house Whole \\
@@ -204,7 +204,7 @@ cargo run -- chart \\
 
 ### Aspect Analysis with Custom Orb
 ```bash
-cargo run -- aspects --lat 37.7749 --lon -122.4194 --orb 5.0
+cargo run --bin astro-clock -- aspects --lat 37.7749 --lon -122.4194 --orb 5.0
 ```
 
 ## Database Queries (Optional)
@@ -267,7 +267,7 @@ The application uses the embedded Swiss Ephemeris. No external data files requir
 ### House System Errors
 ```bash
 # Invalid house system names will show available options:
-cargo run -- chart --house invalid_system
+cargo run --bin astro-clock -- chart --house invalid_system
 # Error: Invalid house system: 'invalid_system'. Valid options: Placidus, Koch, ...
 ```
 

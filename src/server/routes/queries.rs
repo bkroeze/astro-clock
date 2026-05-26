@@ -5,10 +5,10 @@
 //!
 //! Supports both synchronous (blocking) and asynchronous execution modes.
 
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use uuid::Uuid;
@@ -118,7 +118,7 @@ pub async fn query_handler(
             // Calculate days from start_date to end_date
             let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
             let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d").unwrap();
-            
+
             if end < start {
                 let error = ErrorResponse {
                     error: "invalid_date_range".to_string(),
@@ -126,7 +126,7 @@ pub async fn query_handler(
                 };
                 return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
             }
-            
+
             let days = end.signed_duration_since(start).num_days() + 1;
             if days <= 0 || days > 366 {
                 let error = ErrorResponse {
@@ -180,13 +180,20 @@ pub async fn query_handler(
                     error: "execution_failed".to_string(),
                     message: format!("Query execution failed: {}", e),
                 };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error)))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!(error)),
+                )
                     .into_response()
             }
         }
     } else {
         // Asynchronous execution
-        match state.executor().execute_async(JobType::Query, payload).await {
+        match state
+            .executor()
+            .execute_async(JobType::Query, payload)
+            .await
+        {
             Ok(job_id) => {
                 let response = QueryAsyncResponse {
                     job_id,
@@ -204,7 +211,10 @@ pub async fn query_handler(
                     error: "job_creation_failed".to_string(),
                     message: format!("Failed to create query job: {}", e),
                 };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error)))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!(error)),
+                )
                     .into_response()
             }
         }
@@ -236,11 +246,7 @@ pub async fn travel_query_handler(
 }
 
 /// Shared query execution logic
-async fn execute_named_query(
-    state: AppState,
-    query_name: &str,
-    request: QueryRequest,
-) -> Response {
+async fn execute_named_query(state: AppState, query_name: &str, request: QueryRequest) -> Response {
     // Validate date format (YYYY-MM-DD)
     if !is_valid_date(&request.start_date) {
         let error = ErrorResponse {
@@ -278,7 +284,7 @@ async fn execute_named_query(
             // Calculate days from start_date to end_date
             let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
             let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d").unwrap();
-            
+
             if end < start {
                 let error = ErrorResponse {
                     error: "invalid_date_range".to_string(),
@@ -286,7 +292,7 @@ async fn execute_named_query(
                 };
                 return (StatusCode::BAD_REQUEST, Json(serde_json::json!(error))).into_response();
             }
-            
+
             let days = end.signed_duration_since(start).num_days() + 1;
             if days <= 0 || days > 366 {
                 let error = ErrorResponse {
@@ -340,13 +346,20 @@ async fn execute_named_query(
                     error: "execution_failed".to_string(),
                     message: format!("Query execution failed: {}", e),
                 };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error)))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!(error)),
+                )
                     .into_response()
             }
         }
     } else {
         // Asynchronous execution
-        match state.executor().execute_async(JobType::Query, payload).await {
+        match state
+            .executor()
+            .execute_async(JobType::Query, payload)
+            .await
+        {
             Ok(job_id) => {
                 let response = QueryAsyncResponse {
                     job_id,
@@ -364,7 +377,10 @@ async fn execute_named_query(
                     error: "job_creation_failed".to_string(),
                     message: format!("Failed to create query job: {}", e),
                 };
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!(error)))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!(error)),
+                )
                     .into_response()
             }
         }
@@ -523,19 +539,19 @@ mod tests {
     fn test_date_range_boundaries() {
         // Test boundary conditions for 366-day max
         let start = chrono::NaiveDate::parse_from_str("2024-01-01", "%Y-%m-%d").unwrap();
-        
+
         // 365 days - valid
         let end_365 = start + chrono::Duration::days(364);
         let days_365 = end_365.signed_duration_since(start).num_days() + 1;
         assert_eq!(days_365, 365);
         assert!(days_365 <= 366);
-        
+
         // 366 days - valid (max)
         let end_366 = start + chrono::Duration::days(365);
         let days_366 = end_366.signed_duration_since(start).num_days() + 1;
         assert_eq!(days_366, 366);
         assert!(days_366 <= 366);
-        
+
         // 367 days - invalid (exceeds max)
         let end_367 = start + chrono::Duration::days(366);
         let days_367 = end_367.signed_duration_since(start).num_days() + 1;
@@ -585,7 +601,8 @@ mod tests {
         let request: QueryRequest = serde_json::from_str(json).unwrap();
         // end_date before start_date - should be caught by handler validation
         let start = chrono::NaiveDate::parse_from_str(&request.start_date, "%Y-%m-%d").unwrap();
-        let end = chrono::NaiveDate::parse_from_str(request.end_date.as_ref().unwrap(), "%Y-%m-%d").unwrap();
+        let end = chrono::NaiveDate::parse_from_str(request.end_date.as_ref().unwrap(), "%Y-%m-%d")
+            .unwrap();
         assert!(end < start);
     }
 

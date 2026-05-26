@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use crate::aspects::{find_aspects, AspectConfig, AspectType};
+use crate::aspects::{AspectConfig, AspectType, find_aspects};
 use crate::chart::{ChartData, HouseCusps, PlanetPosition};
 use crate::svg_glyphs::{GlyphData, GlyphRegistry};
 
@@ -46,8 +46,10 @@ impl SvgRenderer {
         svg_elements.push(self.generate_glyph_defs());
 
         // Draw chart components
-        self.draw_zodiac_wheel(&mut svg_elements, center_x, center_y, radius)?;
-        self.draw_zodiac_signs(&mut svg_elements, center_x, center_y, radius)?;
+        let house_anchor = chart_data.houses.houses[0] as f32;
+
+        self.draw_zodiac_wheel(&mut svg_elements, center_x, center_y, radius, house_anchor)?;
+        self.draw_zodiac_signs(&mut svg_elements, center_x, center_y, radius, house_anchor)?;
         self.draw_house_cusps(
             &mut svg_elements,
             center_x,
@@ -60,6 +62,7 @@ impl SvgRenderer {
             center_x,
             center_y,
             radius,
+            house_anchor,
             &chart_data.planets,
         )?;
         self.draw_planets(
@@ -67,6 +70,7 @@ impl SvgRenderer {
             center_x,
             center_y,
             radius,
+            house_anchor,
             &chart_data.planets,
         )?;
         self.draw_house_labels(
@@ -139,6 +143,7 @@ impl SvgRenderer {
         center_x: f32,
         center_y: f32,
         radius: f32,
+        house_anchor: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Outer circle
         svg.push(format!(
@@ -156,7 +161,7 @@ impl SvgRenderer {
                 radius * 0.95
             };
 
-            let angle_rad = (degree as f32 + 180.0).to_radians();
+            let angle_rad = Self::zodiac_angle(degree as f32, house_anchor);
             let x1 = center_x + radius * angle_rad.cos();
             let y1 = center_y + radius * angle_rad.sin();
             let x2 = center_x + length * angle_rad.cos();
@@ -180,6 +185,7 @@ impl SvgRenderer {
         center_x: f32,
         center_y: f32,
         radius: f32,
+        house_anchor: f32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let signs = [
             "aries",
@@ -200,8 +206,7 @@ impl SvgRenderer {
         let symbol_size = 18.0;
 
         for (i, sign) in signs.iter().enumerate() {
-            let angle_deg = (i * 30 + 15) as f32 + 180.0;
-            let angle_rad = angle_deg.to_radians();
+            let angle_rad = Self::zodiac_angle((i * 30 + 15) as f32, house_anchor);
 
             let x = center_x + label_radius * angle_rad.cos();
             let y = center_y + label_radius * angle_rad.sin();
@@ -227,10 +232,10 @@ impl SvgRenderer {
         houses: &HouseCusps,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let inner_radius = radius * 0.7;
+        let house_anchor = houses.houses[0] as f32;
 
         for &cusp in &houses.houses {
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle_rad = rotated_cusp.to_radians() as f32;
+            let angle_rad = Self::zodiac_angle(cusp as f32, house_anchor);
 
             let x1 = center_x + radius * angle_rad.cos();
             let y1 = center_y + radius * angle_rad.sin();
@@ -253,6 +258,7 @@ impl SvgRenderer {
         center_x: f32,
         center_y: f32,
         radius: f32,
+        house_anchor: f32,
         planets: &[PlanetPosition],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let config = AspectConfig::new(3.0);
@@ -265,11 +271,8 @@ impl SvgRenderer {
             let planet2 = planets.iter().find(|p| p.name == aspect.planet2);
 
             if let (Some(p1), Some(p2)) = (planet1, planet2) {
-                let pos1 = (p1.position.longitude + 180.0) % 360.0;
-                let pos2 = (p2.position.longitude + 180.0) % 360.0;
-
-                let angle1 = pos1.to_radians() as f32;
-                let angle2 = pos2.to_radians() as f32;
+                let angle1 = Self::zodiac_angle(p1.position.longitude as f32, house_anchor);
+                let angle2 = Self::zodiac_angle(p2.position.longitude as f32, house_anchor);
 
                 let x1 = center_x + aspect_radius * angle1.cos();
                 let y1 = center_y + aspect_radius * angle1.sin();
@@ -310,6 +313,7 @@ impl SvgRenderer {
         center_x: f32,
         center_y: f32,
         radius: f32,
+        house_anchor: f32,
         planets: &[PlanetPosition],
     ) -> Result<(), Box<dyn std::error::Error>> {
         // Map planet names to glyph registry keys
@@ -337,23 +341,22 @@ impl SvgRenderer {
         let retrograde_size = 8.0;
 
         for planet in planets {
-            let position = (planet.position.longitude + 180.0) % 360.0;
-            let angle_rad = position.to_radians() as f32;
+            let angle_rad = Self::zodiac_angle(planet.position.longitude as f32, house_anchor);
 
             let x = center_x + planet_radius * angle_rad.cos();
             let y = center_y + planet_radius * angle_rad.sin();
 
             // Draw planet symbol
-            if let Some(&glyph_name) = planet_map.get(planet.name.as_str()) {
-                if let Some(glyph) = self.glyph_registry.get(glyph_name) {
-                    let transform = self.calculate_glyph_transform(glyph, x, y, symbol_size);
-                    let use_element = "<use href=\"#".to_string()
-                        + glyph_name
-                        + "\" transform=\""
-                        + &transform
-                        + "\"/>";
-                    svg.push(use_element);
-                }
+            if let Some(&glyph_name) = planet_map.get(planet.name.as_str())
+                && let Some(glyph) = self.glyph_registry.get(glyph_name)
+            {
+                let transform = self.calculate_glyph_transform(glyph, x, y, symbol_size);
+                let use_element = "<use href=\"#".to_string()
+                    + glyph_name
+                    + "\" transform=\""
+                    + &transform
+                    + "\"/>";
+                svg.push(use_element);
             }
 
             // Draw retrograde indicator if applicable
@@ -381,6 +384,7 @@ impl SvgRenderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let label_radius = radius * 0.6;
         let font_size = 10.0;
+        let house_anchor = houses.houses[0] as f32;
 
         let zodiac_order = [
             ("aries", "♈"),
@@ -398,8 +402,7 @@ impl SvgRenderer {
         ];
 
         for &cusp in &houses.houses {
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle_rad = rotated_cusp.to_radians() as f32;
+            let angle_rad = Self::zodiac_angle(cusp as f32, house_anchor);
 
             let x = center_x + label_radius * angle_rad.cos();
             let y = center_y + label_radius * angle_rad.sin();
@@ -438,6 +441,12 @@ impl SvgRenderer {
         let offset_y = y - (glyph_height * scale) / 2.0 + glyph.baseline_offset * scale;
 
         format!("translate({}, {}) scale({})", offset_x, offset_y, scale)
+    }
+
+    fn zodiac_angle(longitude: f32, house_anchor: f32) -> f32 {
+        (180.0 - (longitude - house_anchor))
+            .rem_euclid(360.0)
+            .to_radians()
     }
 
     /// Save SVG to file

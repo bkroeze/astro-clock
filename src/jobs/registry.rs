@@ -9,19 +9,20 @@ use tracing::{debug, info};
 use crate::database::pool::DatabasePool;
 use crate::jobs::error::{JobError, JobResult};
 use crate::jobs::handlers::query::QueryJobPayload;
-use crate::queries::types::{WeddingCriteria, ProjectCriteria, TravelCriteria};
-use crate::queries::wedding::find_wedding_dates;
 use crate::queries::project::find_project_dates;
 use crate::queries::travel::find_travel_dates;
+use crate::queries::types::{ProjectCriteria, TravelCriteria, WeddingCriteria};
+use crate::queries::wedding::find_wedding_dates;
 
 /// Type alias for query execution functions
-/// 
+///
 /// This uses a type-erased future pattern to allow different query functions
 /// with different return types to be stored in the same HashMap.
 pub type QueryExecuteFn = Arc<
-    dyn Fn(&DatabasePool,
-        &QueryJobPayload,
-    ) -> Pin<Box<dyn Future<Output = JobResult<JsonValue>> + Send>>
+    dyn Fn(
+            &DatabasePool,
+            &QueryJobPayload,
+        ) -> Pin<Box<dyn Future<Output = JobResult<JsonValue>> + Send>>
         + Send
         + Sync,
 >;
@@ -65,7 +66,7 @@ impl std::fmt::Debug for QueryTemplateRegistry {
 
 impl QueryTemplateRegistry {
     /// Create a new registry with built-in templates
-    /// 
+    ///
     /// Registers the following query templates:
     /// - "wedding": Finds auspicious wedding dates
     /// - "project": Placeholder for project start dates (to be implemented in 07-02)
@@ -87,12 +88,8 @@ impl QueryTemplateRegistry {
                     debug!("Executing wedding query");
 
                     // Parse start_date
-                    let start_date = chrono::NaiveDate::parse_from_str(
-                        &start_date_str,
-                        "%Y-%m-%d"
-                    ).map_err(|e| {
-                        JobError::Other(format!("Invalid start_date: {}", e))
-                    })?;
+                    let start_date = chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
+                        .map_err(|e| JobError::Other(format!("Invalid start_date: {}", e)))?;
 
                     // Calculate end_date
                     let end_date = start_date + chrono::Duration::days(days - 1);
@@ -101,12 +98,12 @@ impl QueryTemplateRegistry {
                     let criteria = WeddingCriteria::new(start_date, end_date);
 
                     // Execute the wedding query
-                    let result = find_wedding_dates(&pool, &criteria).await
+                    let result = find_wedding_dates(&pool, &criteria)
+                        .await
                         .map_err(|e| JobError::Other(format!("Query failed: {}", e)))?;
 
                     // Serialize the results to JSON
-                    let json_result = serde_json::to_value(&result)
-                        .map_err(JobError::from)?;
+                    let json_result = serde_json::to_value(&result).map_err(JobError::from)?;
 
                     debug!("Wedding query completed with {} results", result.data.len());
                     Ok(json_result)
@@ -126,12 +123,8 @@ impl QueryTemplateRegistry {
                     debug!("Executing project query");
 
                     // Parse start_date
-                    let start_date = chrono::NaiveDate::parse_from_str(
-                        &start_date_str,
-                        "%Y-%m-%d"
-                    ).map_err(|e| {
-                        JobError::Other(format!("Invalid start_date: {}", e))
-                    })?;
+                    let start_date = chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
+                        .map_err(|e| JobError::Other(format!("Invalid start_date: {}", e)))?;
 
                     // Calculate end_date
                     let end_date = start_date + chrono::Duration::days(days - 1);
@@ -140,12 +133,12 @@ impl QueryTemplateRegistry {
                     let criteria = ProjectCriteria::new(start_date, end_date);
 
                     // Execute the project query
-                    let result = find_project_dates(&pool, &criteria).await
+                    let result = find_project_dates(&pool, &criteria)
+                        .await
                         .map_err(|e| JobError::Other(format!("Query failed: {}", e)))?;
 
                     // Serialize the results to JSON
-                    let json_result = serde_json::to_value(&result)
-                        .map_err(JobError::from)?;
+                    let json_result = serde_json::to_value(&result).map_err(JobError::from)?;
 
                     debug!("Project query completed with {} results", result.data.len());
                     Ok(json_result)
@@ -165,12 +158,8 @@ impl QueryTemplateRegistry {
                     debug!("Executing travel query");
 
                     // Parse start_date
-                    let start_date = chrono::NaiveDate::parse_from_str(
-                        &start_date_str,
-                        "%Y-%m-%d"
-                    ).map_err(|e| {
-                        JobError::Other(format!("Invalid start_date: {}", e))
-                    })?;
+                    let start_date = chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
+                        .map_err(|e| JobError::Other(format!("Invalid start_date: {}", e)))?;
 
                     // Calculate end_date
                     let end_date = start_date + chrono::Duration::days(days - 1);
@@ -179,12 +168,12 @@ impl QueryTemplateRegistry {
                     let criteria = TravelCriteria::new(start_date, end_date);
 
                     // Execute the travel query
-                    let result = find_travel_dates(&pool, &criteria).await
+                    let result = find_travel_dates(&pool, &criteria)
+                        .await
                         .map_err(|e| JobError::Other(format!("Query failed: {}", e)))?;
 
                     // Serialize the results to JSON
-                    let json_result = serde_json::to_value(&result)
-                        .map_err(JobError::from)?;
+                    let json_result = serde_json::to_value(&result).map_err(JobError::from)?;
 
                     debug!("Travel query completed with {} results", result.data.len());
                     Ok(json_result)
@@ -201,18 +190,13 @@ impl QueryTemplateRegistry {
     }
 
     /// Register a new query template
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `name` - The query name (used in API requests)
     /// * `description` - Human-readable description
     /// * `execute_fn` - The async function to execute the query
-    pub fn register(
-        &mut self,
-        name: &str,
-        description: &str,
-        execute_fn: QueryExecuteFn,
-    ) {
+    pub fn register(&mut self, name: &str, description: &str, execute_fn: QueryExecuteFn) {
         let template = QueryTemplate {
             name: name.to_string(),
             description: description.to_string(),
@@ -224,21 +208,19 @@ impl QueryTemplateRegistry {
     }
 
     /// Get a query template by name
-    /// 
+    ///
     /// Returns `Some(&QueryTemplate)` if found, `None` otherwise.
-    pub fn get(&self,
-        query_name: &str,
-    ) -> Option<&QueryTemplate> {
+    pub fn get(&self, query_name: &str) -> Option<&QueryTemplate> {
         self.templates.get(query_name)
     }
 
     /// Execute a query by name
-    /// 
+    ///
     /// Convenience method that looks up the template and executes it.
     /// Returns an error if the query name is not found.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `query_name` - The name of the query to execute
     /// * `pool` - The database pool for query execution
     /// * `payload` - The job payload containing query parameters
@@ -248,7 +230,8 @@ impl QueryTemplateRegistry {
         pool: &DatabasePool,
         payload: &QueryJobPayload,
     ) -> JobResult<JsonValue> {
-        let template = self.get(query_name)
+        let template = self
+            .get(query_name)
             .ok_or_else(|| JobError::Other(format!("Unknown query: {}", query_name)))?;
 
         debug!("Executing query template: {}", query_name);
@@ -261,9 +244,7 @@ impl QueryTemplateRegistry {
     }
 
     /// Check if a query is registered
-    pub fn has_query(&self,
-        query_name: &str,
-    ) -> bool {
+    pub fn has_query(&self, query_name: &str) -> bool {
         self.templates.contains_key(query_name)
     }
 }
@@ -354,9 +335,7 @@ mod tests {
             "custom",
             "A custom query for testing",
             Arc::new(|_pool: &DatabasePool, _payload: &QueryJobPayload| {
-                Box::pin(async move {
-                    Ok(serde_json::json!({"test": true}))
-                })
+                Box::pin(async move { Ok(serde_json::json!({"test": true})) })
             }),
         );
 

@@ -55,10 +55,7 @@ fn test_body_id_constants() {
 fn test_discovered_seed_data_constants() {
     use common::*;
 
-    assert_eq!(
-        TOTAL_POSITIONS,
-        POSITIONS_PER_BODY * TOTAL_BODIES as i64,
-    );
+    assert_eq!(TOTAL_POSITIONS, POSITIONS_PER_BODY * TOTAL_BODIES as i64,);
 
     let aspect_sum = known_aspects::CONJUNCTIONS
         + known_aspects::SEXTILES
@@ -185,12 +182,7 @@ mod api_tests {
     /// Helper: send a GET and return the response.
     async fn get_uri(app: &mut axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {
         let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(uri)
-                    .body(Body::empty())
-                    .unwrap(),
-            )
+            .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
             .await
             .unwrap();
 
@@ -203,10 +195,7 @@ mod api_tests {
 
     /// Helper: send a DELETE and return the response.
     /// For 204 No Content, the body will parse to Value::Null.
-    async fn delete_uri(
-        app: &mut axum::Router,
-        uri: &str,
-    ) -> (StatusCode, serde_json::Value) {
+    async fn delete_uri(app: &mut axum::Router, uri: &str) -> (StatusCode, serde_json::Value) {
         let response = app
             .oneshot(
                 Request::builder()
@@ -249,11 +238,15 @@ mod api_tests {
             status,
             StatusCode::OK,
             "sync load should return 200, got {}: {:?}",
-            status, json
+            status,
+            json
         );
         assert_eq!(json["status"], "complete", "sync job should be complete");
         assert!(json["job_id"].is_string(), "response should include job_id");
-        assert!(json["result"].is_object(), "sync response should include result");
+        assert!(
+            json["result"].is_object(),
+            "sync response should include result"
+        );
     }
 
     #[tokio::test]
@@ -276,11 +269,15 @@ mod api_tests {
             status,
             StatusCode::ACCEPTED,
             "async load should return 202, got {}: {:?}",
-            status, json
+            status,
+            json
         );
         assert_eq!(json["status"], "pending", "async job should be pending");
         assert!(json["job_id"].is_string(), "response should include job_id");
-        assert!(json["poll_url"].is_string(), "response should include poll_url");
+        assert!(
+            json["poll_url"].is_string(),
+            "response should include poll_url"
+        );
     }
 
     #[tokio::test]
@@ -331,11 +328,14 @@ mod api_tests {
             status,
             StatusCode::OK,
             "sync wedding query should return 200, got {}: {:?}",
-            status, json
+            status,
+            json
         );
         assert_eq!(json["status"], "complete");
         assert!(json["job_id"].is_string());
-        let result = json.get("result").expect("sync response should include result");
+        let result = json
+            .get("result")
+            .expect("sync response should include result");
         assert_eq!(result["query_name"], "wedding");
         assert!(result["total_results"].is_number());
     }
@@ -356,7 +356,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::ACCEPTED, "async query should return 202");
+        assert_eq!(
+            status,
+            StatusCode::ACCEPTED,
+            "async query should return 202"
+        );
         assert_eq!(json["status"], "pending");
         assert!(json["job_id"].is_string());
     }
@@ -385,7 +389,8 @@ mod api_tests {
             status,
             StatusCode::OK,
             "sync project query should return 200, got {}: {:?}",
-            status, json
+            status,
+            json
         );
 
         // The project query depends on aspect_summaries and retrograde_periods tables.
@@ -430,7 +435,8 @@ mod api_tests {
             status,
             StatusCode::OK,
             "sync travel query should return 200, got {}: {:?}",
-            status, json
+            status,
+            json
         );
 
         // The travel query depends on aspect_summaries and retrograde_periods tables.
@@ -469,9 +475,7 @@ mod api_tests {
         )
         .await;
 
-        let job_id = create_json["job_id"]
-            .as_str()
-            .expect("should have job_id");
+        let job_id = create_json["job_id"].as_str().expect("should have job_id");
 
         // Now retrieve the job
         let (status, get_json) = get_uri(&mut app, &format!("/api/v1/jobs/{}", job_id)).await;
@@ -480,7 +484,8 @@ mod api_tests {
             status,
             StatusCode::OK,
             "get job should return 200, got {}: {:?}",
-            status, get_json
+            status,
+            get_json
         );
         assert_eq!(get_json["job_id"], job_id);
         assert_eq!(get_json["status"], "complete");
@@ -501,7 +506,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::NOT_FOUND, "nonexistent job should return 404");
+        assert_eq!(
+            status,
+            StatusCode::NOT_FOUND,
+            "nonexistent job should return 404"
+        );
         assert_eq!(json["error"], "not_found");
     }
 
@@ -534,7 +543,8 @@ mod api_tests {
             status,
             StatusCode::OK,
             "list jobs should return 200, got {}: {:?}",
-            status, json
+            status,
+            json
         );
         assert!(json["jobs"].is_array(), "response should have jobs array");
         // Cursor-based pagination uses next/prev, not total/limit/offset
@@ -547,12 +557,25 @@ mod api_tests {
             "response should have prev field"
         );
         // Ensure old fields are absent
-        assert!(json.get("total").is_none(), "should not have legacy total field");
-        assert!(json.get("limit").is_none(), "should not have legacy limit field");
-        assert!(json.get("offset").is_none(), "should not have legacy offset field");
+        assert!(
+            json.get("total").is_none(),
+            "should not have legacy total field"
+        );
+        assert!(
+            json.get("limit").is_none(),
+            "should not have legacy limit field"
+        );
+        assert!(
+            json.get("offset").is_none(),
+            "should not have legacy offset field"
+        );
 
         let jobs = json["jobs"].as_array().unwrap();
-        assert!(jobs.len() >= 2, "should have at least 2 jobs, got {}", jobs.len());
+        assert!(
+            jobs.len() >= 2,
+            "should have at least 2 jobs, got {}",
+            jobs.len()
+        );
     }
 
     #[tokio::test]
@@ -611,10 +634,7 @@ mod api_tests {
             "page 1 should have a next URL, got: {:?}",
             page1["next"]
         );
-        assert!(
-            page1["prev"].is_null(),
-            "first page should have prev=null"
-        );
+        assert!(page1["prev"].is_null(), "first page should have prev=null");
 
         // Follow next URL for page 2
         let next_url = page1["next"].as_str().unwrap();
@@ -623,14 +643,8 @@ mod api_tests {
 
         let page2_jobs = page2["jobs"].as_array().unwrap();
         assert_eq!(page2_jobs.len(), 2, "page 2 should have 2 jobs");
-        assert!(
-            page2["next"].is_string(),
-            "page 2 should have a next URL"
-        );
-        assert!(
-            page2["prev"].is_string(),
-            "page 2 should have a prev URL"
-        );
+        assert!(page2["next"].is_string(), "page 2 should have a next URL");
+        assert!(page2["prev"].is_string(), "page 2 should have a prev URL");
     }
 
     // =========================================================================
@@ -653,7 +667,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::BAD_REQUEST, "invalid date should return 400");
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "invalid date should return 400"
+        );
         assert_eq!(json["error"], "invalid_date");
     }
 
@@ -693,7 +711,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::BAD_REQUEST, "days=500 should return 400");
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "days=500 should return 400"
+        );
         assert_eq!(json["error"], "invalid_days");
     }
 
@@ -713,7 +735,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::BAD_REQUEST, "negative days should return 400");
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "negative days should return 400"
+        );
         assert_eq!(json["error"], "invalid_days");
     }
 
@@ -733,7 +759,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::BAD_REQUEST, "bad date format should return 400");
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "bad date format should return 400"
+        );
         assert_eq!(json["error"], "invalid_date");
     }
 
@@ -773,7 +803,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::BAD_REQUEST, "days=400 should return 400");
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "days=400 should return 400"
+        );
         assert_eq!(json["error"], "invalid_days");
     }
 
@@ -802,10 +836,13 @@ mod api_tests {
         )
         .await;
 
-        let (status, json) =
-            get_uri(&mut app, "/api/v1/jobs?status=complete,failed").await;
+        let (status, json) = get_uri(&mut app, "/api/v1/jobs?status=complete,failed").await;
 
-        assert_eq!(status, StatusCode::OK, "multi-status filter should return 200");
+        assert_eq!(
+            status,
+            StatusCode::OK,
+            "multi-status filter should return 200"
+        );
         let jobs = json["jobs"].as_array().expect("should have jobs array");
         for job in jobs {
             let s = job["status"].as_str().expect("job should have status");
@@ -838,10 +875,13 @@ mod api_tests {
         )
         .await;
 
-        let (status, json) =
-            get_uri(&mut app, "/api/v1/jobs?job_type=load,query").await;
+        let (status, json) = get_uri(&mut app, "/api/v1/jobs?job_type=load,query").await;
 
-        assert_eq!(status, StatusCode::OK, "multi-job_type filter should return 200");
+        assert_eq!(
+            status,
+            StatusCode::OK,
+            "multi-job_type filter should return 200"
+        );
         let jobs = json["jobs"].as_array().expect("should have jobs array");
         for job in jobs {
             let jt = job["job_type"].as_str().expect("job should have job_type");
@@ -894,7 +934,11 @@ mod api_tests {
         )
         .await;
 
-        assert_eq!(status, StatusCode::OK, "date range filter should return 200");
+        assert_eq!(
+            status,
+            StatusCode::OK,
+            "date range filter should return 200"
+        );
         assert!(json["jobs"].is_array(), "response should have jobs array");
     }
 
@@ -903,8 +947,7 @@ mod api_tests {
     async fn list_jobs_invalid_date_filter_returns_400() {
         let mut app = build_app().await;
 
-        let (status, json) =
-            get_uri(&mut app, "/api/v1/jobs?created_after=not-a-date").await;
+        let (status, json) = get_uri(&mut app, "/api/v1/jobs?created_after=not-a-date").await;
 
         assert_eq!(
             status,
@@ -942,14 +985,8 @@ mod api_tests {
         assert_eq!(status, StatusCode::OK, "first page should return 200");
         let jobs = json["jobs"].as_array().unwrap();
         assert_eq!(jobs.len(), 3, "first page should have 3 jobs");
-        assert!(
-            json["next"].is_string(),
-            "first page should have next URL"
-        );
-        assert!(
-            json["prev"].is_null(),
-            "first page should have prev=null"
-        );
+        assert!(json["next"].is_string(), "first page should have next URL");
+        assert!(json["prev"].is_null(), "first page should have prev=null");
     }
 
     #[tokio::test]
@@ -979,14 +1016,8 @@ mod api_tests {
 
         // Follow next to get second page
         let (_, page2) = get_uri(&mut app, next_url).await;
-        assert!(
-            page2["next"].is_string(),
-            "second page should have next"
-        );
-        assert!(
-            page2["prev"].is_string(),
-            "second page should have prev"
-        );
+        assert!(page2["next"].is_string(), "second page should have next");
+        assert!(page2["prev"].is_string(), "second page should have prev");
     }
 
     #[tokio::test]
@@ -1035,7 +1066,10 @@ mod api_tests {
             }
         }
 
-        assert!(found_last_page, "should have found a last page with next=null");
+        assert!(
+            found_last_page,
+            "should have found a last page with next=null"
+        );
         assert!(pages_visited >= 2, "should have visited at least 2 pages");
     }
 
@@ -1044,8 +1078,7 @@ mod api_tests {
     async fn cursor_pagination_invalid_cursor_returns_400() {
         let mut app = build_app().await;
 
-        let (status, json) =
-            get_uri(&mut app, "/api/v1/jobs?cursor=!!!invalid!!!").await;
+        let (status, json) = get_uri(&mut app, "/api/v1/jobs?cursor=!!!invalid!!!").await;
 
         assert_eq!(
             status,
@@ -1083,10 +1116,7 @@ mod api_tests {
             let jobs = page["jobs"].as_array().unwrap();
             for job in jobs {
                 let id = job["job_id"].as_str().unwrap().to_string();
-                assert!(
-                    all_ids.insert(id),
-                    "found duplicate job ID across pages"
-                );
+                assert!(all_ids.insert(id), "found duplicate job ID across pages");
             }
 
             match page["next"].as_str() {
@@ -1219,13 +1249,11 @@ mod api_tests {
         let job_id = create_json["job_id"].as_str().expect("should have job_id");
 
         // Delete it
-        let (delete_status, _) =
-            delete_uri(&mut app, &format!("/api/v1/jobs/{}", job_id)).await;
+        let (delete_status, _) = delete_uri(&mut app, &format!("/api/v1/jobs/{}", job_id)).await;
         assert_eq!(delete_status, StatusCode::NO_CONTENT);
 
         // GET the same job should now return 404
-        let (get_status, get_json) =
-            get_uri(&mut app, &format!("/api/v1/jobs/{}", job_id)).await;
+        let (get_status, get_json) = get_uri(&mut app, &format!("/api/v1/jobs/{}", job_id)).await;
         assert_eq!(
             get_status,
             StatusCode::NOT_FOUND,

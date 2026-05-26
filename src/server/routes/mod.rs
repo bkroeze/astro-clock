@@ -12,11 +12,13 @@ pub mod jobs;
 
 #[cfg(feature = "db")]
 // Re-export job-related handlers for convenient access
-pub use jobs::{get_job_handler, load_handler, list_jobs_handler, delete_job_handler};
+pub use jobs::{delete_job_handler, get_job_handler, list_jobs_handler, load_handler};
 
 #[cfg(feature = "db")]
 // Re-export query-related handlers
-pub use queries::{query_handler, wedding_query_handler, project_query_handler, travel_query_handler};
+pub use queries::{
+    project_query_handler, query_handler, travel_query_handler, wedding_query_handler,
+};
 
 #[cfg(feature = "db")]
 pub mod queries;

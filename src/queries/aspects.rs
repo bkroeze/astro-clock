@@ -5,9 +5,7 @@ use std::time::Instant;
 
 use crate::database::pool::DatabasePool;
 use crate::queries::error::QueryError;
-use crate::queries::types::{
-    AspectCriteria, AspectType, Body, ExactAspect, QueryResult,
-};
+use crate::queries::types::{AspectCriteria, AspectType, Body, ExactAspect, QueryResult};
 
 /// Find exact aspects within a date range
 ///
@@ -24,16 +22,8 @@ pub async fn find_exact_aspects(
 
     let start_time = Instant::now();
 
-    let start_datetime = criteria
-        .start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let end_datetime = criteria
-        .end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc();
+    let start_datetime = criteria.start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_datetime = criteria.end_date.and_hms_opt(23, 59, 59).unwrap().and_utc();
     let orb_f64: f64 = criteria.orb_threshold.try_into().unwrap_or(1.0);
 
     // Build dynamic query based on filters
@@ -56,35 +46,35 @@ pub async fn find_exact_aspects(
     let mut has_aspect_types = false;
 
     // Add aspect type filter if specified
-    if let Some(ref types) = criteria.aspect_types {
-        if !types.is_empty() {
-            query.push_str(" AND aspect_type = ANY($4)");
-            has_aspect_types = true;
-        }
+    if let Some(ref types) = criteria.aspect_types
+        && !types.is_empty()
+    {
+        query.push_str(" AND aspect_type = ANY($4)");
+        has_aspect_types = true;
     }
 
     // Add body pair filter if specified
-    if let Some(ref pairs) = criteria.body_pairs {
-        if !pairs.is_empty() {
-            // Build (body1_id, body2_id) conditions
-            let pair_conditions: Vec<String> = pairs
-                .iter()
-                .map(|(b1, b2)| {
-                    let id1 = b1.to_id();
-                    let id2 = b2.to_id();
-                    // Ensure ordering (body1_id < body2_id per schema constraint)
-                    if id1 < id2 {
-                        format!("(body1_id = {} AND body2_id = {})", id1, id2)
-                    } else {
-                        format!("(body1_id = {} AND body2_id = {})", id2, id1)
-                    }
-                })
-                .collect();
+    if let Some(ref pairs) = criteria.body_pairs
+        && !pairs.is_empty()
+    {
+        // Build (body1_id, body2_id) conditions
+        let pair_conditions: Vec<String> = pairs
+            .iter()
+            .map(|(b1, b2)| {
+                let id1 = b1.to_id();
+                let id2 = b2.to_id();
+                // Ensure ordering (body1_id < body2_id per schema constraint)
+                if id1 < id2 {
+                    format!("(body1_id = {} AND body2_id = {})", id1, id2)
+                } else {
+                    format!("(body1_id = {} AND body2_id = {})", id2, id1)
+                }
+            })
+            .collect();
 
-            query.push_str(" AND (");
-            query.push_str(&pair_conditions.join(" OR "));
-            query.push(')');
-        }
+        query.push_str(" AND (");
+        query.push_str(&pair_conditions.join(" OR "));
+        query.push(')');
     }
 
     query.push_str(" ORDER BY time, orb");
@@ -96,11 +86,9 @@ pub async fn find_exact_aspects(
         .bind(orb_f64);
 
     // Bind aspect types if present
-    if has_aspect_types {
-        if let Some(ref types) = criteria.aspect_types {
-            let type_ids: Vec<i16> = types.iter().map(|t| t.to_id()).collect();
-            sqlx_query = sqlx_query.bind(type_ids);
-        }
+    if has_aspect_types && let Some(ref types) = criteria.aspect_types {
+        let type_ids: Vec<i16> = types.iter().map(|t| t.to_id()).collect();
+        sqlx_query = sqlx_query.bind(type_ids);
     }
 
     let rows = sqlx_query.fetch_all(pool.pool()).await?;
