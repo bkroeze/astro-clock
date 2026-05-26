@@ -1,7 +1,7 @@
 use crate::jobs::error::{JobError, JobResult};
 use crate::jobs::types::{Job, JobStatus, JobType};
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -28,8 +28,7 @@ impl JobCursor {
         let json = URL_SAFE_NO_PAD
             .decode(s)
             .map_err(|e| format!("Invalid cursor encoding: {}", e))?;
-        serde_json::from_slice(&json)
-            .map_err(|e| format!("Invalid cursor data: {}", e))
+        serde_json::from_slice(&json).map_err(|e| format!("Invalid cursor data: {}", e))
     }
 }
 
@@ -69,19 +68,15 @@ impl JobRepository {
     }
 
     /// Create a new job in pending status
-    pub async fn create_job(
-        &self,
-        job_type: JobType,
-        payload: JsonValue,
-    ) -> JobResult<Job> {
+    pub async fn create_job(&self, job_type: JobType, payload: JsonValue) -> JobResult<Job> {
         let job = Job::new(job_type, payload);
-        
+
         sqlx::query_as::<_, Job>(
             r#"
             INSERT INTO jobs (id, job_type, status, payload, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
-            "#
+            "#,
         )
         .bind(job.id)
         .bind(&job.job_type)
@@ -95,15 +90,12 @@ impl JobRepository {
     }
 
     /// Get job by ID
-    pub async fn get_job(&self, id: Uuid
-    ) -> JobResult<Option<Job>> {
-        sqlx::query_as::<_, Job>(
-            "SELECT * FROM jobs WHERE id = $1"
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(JobError::from)
+    pub async fn get_job(&self, id: Uuid) -> JobResult<Option<Job>> {
+        sqlx::query_as::<_, Job>("SELECT * FROM jobs WHERE id = $1")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(JobError::from)
     }
 
     /// Delete a job by ID.
@@ -119,12 +111,9 @@ impl JobRepository {
 
     /// Claim next pending job using FOR UPDATE SKIP LOCKED (race-free)
     /// Returns the claimed job or None if no jobs available
-    pub async fn claim_next_job(
-        &self,
-        worker_id: &str,
-    ) -> JobResult<Option<Job>> {
+    pub async fn claim_next_job(&self, worker_id: &str) -> JobResult<Option<Job>> {
         let now = Utc::now();
-        
+
         sqlx::query_as::<_, Job>(
             r#"
             UPDATE jobs 
@@ -140,7 +129,7 @@ impl JobRepository {
                 LIMIT 1
             )
             RETURNING *
-            "#
+            "#,
         )
         .bind(now)
         .bind(worker_id)
@@ -160,10 +149,11 @@ impl JobRepository {
         // Get current job to validate transition
         let current = self.get_job(id).await?;
         let job = current.ok_or_else(|| JobError::NotFound(id.to_string()))?;
-        
-        let current_status = job.status_enum()
+
+        let current_status = job
+            .status_enum()
             .ok_or_else(|| JobError::Other(format!("Invalid status: {}", job.status)))?;
-        
+
         if !current_status.can_transition_to(new_status) {
             return Err(JobError::InvalidStatusTransition(
                 current_status.to_string(),
@@ -172,7 +162,7 @@ impl JobRepository {
         }
 
         let now = Utc::now();
-        
+
         sqlx::query_as::<_, Job>(
             r#"
             UPDATE jobs 
@@ -183,7 +173,7 @@ impl JobRepository {
                 error = COALESCE($4, error)
             WHERE id = $5
             RETURNING *
-            "#
+            "#,
         )
         .bind(new_status.as_ref())
         .bind(now)
@@ -367,7 +357,8 @@ impl JobRepository {
             query.push_bind(before);
         }
 
-        let count: (i64,) = query.build_query_as()
+        let count: (i64,) = query
+            .build_query_as()
             .fetch_one(&self.pool)
             .await
             .map_err(JobError::from)?;
@@ -402,7 +393,7 @@ impl LoadedDaysRepository {
                 coverage_minutes = EXCLUDED.coverage_minutes,
                 loaded_at = EXCLUDED.loaded_at,
                 job_id = EXCLUDED.job_id
-            "#
+            "#,
         )
         .bind(date)
         .bind(coverage_minutes)
@@ -410,23 +401,19 @@ impl LoadedDaysRepository {
         .execute(&self.pool)
         .await
         .map_err(JobError::from)?;
-        
+
         Ok(())
     }
 
     /// Check if a date is already loaded
-    pub async fn is_day_loaded(
-        &self,
-        date: chrono::NaiveDate,
-    ) -> JobResult<bool> {
-        let row: Option<(i64,)> = sqlx::query_as(
-            "SELECT 1 FROM loaded_days WHERE date = $1 LIMIT 1"
-        )
-        .bind(date)
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(JobError::from)?;
-        
+    pub async fn is_day_loaded(&self, date: chrono::NaiveDate) -> JobResult<bool> {
+        let row: Option<(i64,)> =
+            sqlx::query_as("SELECT 1 FROM loaded_days WHERE date = $1 LIMIT 1")
+                .bind(date)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(JobError::from)?;
+
         Ok(row.is_some())
     }
 
@@ -453,7 +440,7 @@ impl LoadedDaysRepository {
         .fetch_all(&self.pool)
         .await
         .map_err(JobError::from)?;
-        
+
         Ok(rows.into_iter().map(|r| r.0).collect())
     }
 
@@ -461,13 +448,12 @@ impl LoadedDaysRepository {
     pub async fn get_loaded_range_summary(
         &self,
     ) -> JobResult<Option<(chrono::NaiveDate, chrono::NaiveDate, i64)>> {
-        let row: Option<(chrono::NaiveDate, chrono::NaiveDate, i64)> = sqlx::query_as(
-            "SELECT MIN(date), MAX(date), COUNT(*) FROM loaded_days"
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(JobError::from)?;
-        
+        let row: Option<(chrono::NaiveDate, chrono::NaiveDate, i64)> =
+            sqlx::query_as("SELECT MIN(date), MAX(date), COUNT(*) FROM loaded_days")
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(JobError::from)?;
+
         Ok(row)
     }
 }
@@ -504,8 +490,8 @@ mod tests {
     #[test]
     fn test_cursor_decode_invalid_json() {
         // Valid base64 of non-JSON payload
-        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         use base64::Engine;
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
         let encoded = URL_SAFE_NO_PAD.encode("this is not json");
         let result = JobCursor::decode(&encoded);
         assert!(result.is_err());

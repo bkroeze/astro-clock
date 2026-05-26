@@ -170,7 +170,10 @@ impl BenchmarkRunner {
             AlertLevel::None => {
                 info!(
                     "Benchmark complete: {:.1}× speedup ({}ms), memory: {}MB {:?}",
-                    run.wedding_speedup, run.wedding_query_ms, run.memory_used_mb, run.memory_pressure
+                    run.wedding_speedup,
+                    run.wedding_query_ms,
+                    run.memory_used_mb,
+                    run.memory_pressure
                 );
             }
         }

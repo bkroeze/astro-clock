@@ -3,12 +3,12 @@
 //! Provides job queue, state management, and repository patterns
 //! for tracking async operations with both sync and async execution modes.
 
+pub mod error;
+pub mod executor;
 #[cfg(feature = "db")]
 pub mod handlers;
 #[cfg(feature = "db")]
 pub mod registry;
-pub mod error;
-pub mod executor;
 pub mod repository;
 pub mod types;
 
@@ -20,8 +20,10 @@ pub use types::{Job, JobStatus, JobType};
 
 // Re-export handlers (only available with db feature)
 #[cfg(feature = "db")]
-pub use handlers::{LoadJobHandler, LoadJobResult, QueryJobHandler, QueryJobPayload, QueryJobResult};
+pub use handlers::{
+    LoadJobHandler, LoadJobResult, QueryJobHandler, QueryJobPayload, QueryJobResult,
+};
 
 // Re-export registry (only available with db feature)
 #[cfg(feature = "db")]
-pub use registry::{QueryTemplateRegistry, QueryTemplate};
+pub use registry::{QueryTemplate, QueryTemplateRegistry};

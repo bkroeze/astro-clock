@@ -46,21 +46,16 @@ impl JobExecutor {
 
     /// Get handler for a job type
     fn get_handler(&self, job_type: JobType) -> JobResult<Arc<dyn JobHandler>> {
-        self.handlers
-            .get(&job_type)
-            .cloned()
-            .ok_or_else(|| JobError::Other(format!("No handler registered for job type: {}", job_type)))
+        self.handlers.get(&job_type).cloned().ok_or_else(|| {
+            JobError::Other(format!("No handler registered for job type: {}", job_type))
+        })
     }
 
     /// Execute a job synchronously - blocks until completion
     /// Returns the completed job with result or error
     ///
     /// This is used by CLI commands where the user waits for results.
-    pub async fn execute_sync(
-        &self,
-        job_type: JobType,
-        payload: JsonValue,
-    ) -> JobResult<Job> {
+    pub async fn execute_sync(&self, job_type: JobType, payload: JsonValue) -> JobResult<Job> {
         // 1. Create the job in pending status
         let job = self.repository.create_job(job_type, payload).await?;
 
@@ -109,11 +104,7 @@ impl JobExecutor {
     /// Job runs in background, caller polls for completion
     ///
     /// This is used by HTTP API where we return immediately with a job-id.
-    pub async fn execute_async(
-        &self,
-        job_type: JobType,
-        payload: JsonValue,
-    ) -> JobResult<Uuid> {
+    pub async fn execute_async(&self, job_type: JobType, payload: JsonValue) -> JobResult<Uuid> {
         // 1. Create the job in pending status
         let job = self.repository.create_job(job_type, payload).await?;
         let job_id = job.id;
@@ -152,9 +143,9 @@ impl JobExecutor {
             }
         };
 
-        let job_type = job.job_type_enum().ok_or_else(|| {
-            JobError::Other(format!("Invalid job type: {}", job.job_type))
-        })?;
+        let job_type = job
+            .job_type_enum()
+            .ok_or_else(|| JobError::Other(format!("Invalid job type: {}", job.job_type)))?;
 
         // 2. Get handler and execute
         let handler = self.get_handler(job_type)?;

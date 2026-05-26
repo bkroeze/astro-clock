@@ -1,25 +1,32 @@
-use axum::{extract::Query, response::{IntoResponse, Response}};
-use axum::routing::{get, post};
 use axum::Json;
-use axum::http::StatusCode;
 use axum::body::Body;
+use axum::http::StatusCode;
+use axum::routing::{get, post};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 use std::net::SocketAddr;
 
-use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
 use crate::SwissEphChartCalculator;
+use crate::aspects::{AspectConfig, analyze_aspects};
+use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
 use crate::errors::Error;
-use crate::aspects::{analyze_aspects, AspectConfig};
 
 // Import job-related types when database feature is enabled
 #[cfg(feature = "db")]
-use crate::jobs::{executor::JobExecutor, repository::JobRepository, handlers::{LoadJobHandler, QueryJobHandler}};
-#[cfg(feature = "db")]
-use crate::server::state::AppState;
+use crate::jobs::{
+    executor::JobExecutor,
+    handlers::{LoadJobHandler, QueryJobHandler},
+    repository::JobRepository,
+};
 #[cfg(feature = "db")]
 use crate::server::routes::query_handler;
+#[cfg(feature = "db")]
+use crate::server::state::AppState;
 
-pub mod state;
 pub mod routes;
+pub mod state;
 
 pub struct Server {
     host: String,
@@ -72,7 +79,8 @@ impl Server {
         use sqlx::postgres::PgPoolOptions;
 
         // Get database URL
-        let db_url = self.database_url
+        let db_url = self
+            .database_url
             .or_else(|| std::env::var("DATABASE_URL").ok())
             .ok_or_else(|| Error::Config("DATABASE_URL not set".to_string()))?;
 
@@ -111,7 +119,10 @@ impl Server {
             .route("/api/v1/chart/data", get(chart_data_handler))
             // Job routes (from 06-03)
             .route("/api/v1/load", post(routes::load_handler))
-            .route("/api/v1/jobs/:id", get(routes::get_job_handler).delete(routes::delete_job_handler))
+            .route(
+                "/api/v1/jobs/:id",
+                get(routes::get_job_handler).delete(routes::delete_job_handler),
+            )
             .route("/api/v1/jobs", get(routes::list_jobs_handler))
             // Query routes (dedicated endpoints)
             .route("/api/v1/query/wedding", post(routes::wedding_query_handler))
@@ -161,11 +172,7 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
     let lon = query.lon.unwrap_or(0.0);
     let _time_str = query.time.clone();
 
-    let config = ChartConfig::new(
-        HouseSystem::Placidus,
-        GeoPos::new(lat, lon, 0.0),
-        2451545.0,
-    );
+    let config = ChartConfig::new(HouseSystem::Placidus, GeoPos::new(lat, lon, 0.0), 2451545.0);
 
     let calculator: SwissEphChartCalculator = match SwissEphChartCalculator::new(config.clone()) {
         Ok(c) => c,
@@ -199,12 +206,13 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
                 StatusCode::OK,
                 [("Content-Type", "image/svg+xml")],
                 Body::from(svg),
-            ).into_response())
+            )
+                .into_response())
         }
         _ => {
             // Default to PNG
             let size = crate::renderer::Size::new(800.0, 800.0);
-            let mut renderer = match crate::renderer::Renderer::new(size.clone()) {
+            let mut renderer = match crate::renderer::Renderer::new(size) {
                 Ok(r) => r,
                 Err(e) => {
                     tracing::error!("Failed to create renderer: {}", e);
@@ -213,7 +221,7 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
             };
 
             match renderer.render_chart(&chart_data) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
                     tracing::error!("Failed to render chart: {}", e);
                     return Err(StatusCode::INTERNAL_SERVER_ERROR);
@@ -232,7 +240,8 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
                 StatusCode::OK,
                 [("Content-Type", "image/png")],
                 Body::from(buffer),
-            ).into_response())
+            )
+                .into_response())
         }
     }
 }
@@ -242,7 +251,7 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
 struct ChartDataQuery {
     lat: Option<f64>,
     lon: Option<f64>,
-    time: Option<String>,
+    _time: Option<String>,
 }
 
 /// Response structure for chart data API
@@ -267,7 +276,9 @@ struct ChartMetadata {
 
 /// JSON endpoint for chart data (planets, houses, aspects)
 /// Returns structured JSON for display in the Django app
-async fn chart_data_handler(Query(query): Query<ChartDataQuery>) -> Result<Json<ChartDataResponse>, StatusCode> {
+async fn chart_data_handler(
+    Query(query): Query<ChartDataQuery>,
+) -> Result<Json<ChartDataResponse>, StatusCode> {
     // Validate required parameters
     let lat = query.lat.ok_or_else(|| {
         tracing::warn!("Missing required parameter: lat");
@@ -280,12 +291,12 @@ async fn chart_data_handler(Query(query): Query<ChartDataQuery>) -> Result<Json<
     })?;
 
     // Validate coordinates
-    if lat < -90.0 || lat > 90.0 {
+    if !(-90.0..=90.0).contains(&lat) {
         tracing::warn!("Invalid latitude: {}", lat);
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    if lon < -180.0 || lon > 180.0 {
+    if !(-180.0..=180.0).contains(&lon) {
         tracing::warn!("Invalid longitude: {}", lon);
         return Err(StatusCode::BAD_REQUEST);
     }
@@ -335,7 +346,11 @@ async fn chart_data_handler(Query(query): Query<ChartDataQuery>) -> Result<Json<
         },
     };
 
-    tracing::info!("Successfully calculated chart data for lat={}, lon={}", lat, lon);
+    tracing::info!(
+        "Successfully calculated chart data for lat={}, lon={}",
+        lat,
+        lon
+    );
     Ok(Json(response))
 }
 
@@ -346,9 +361,9 @@ use std::sync::Arc;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tower::ServiceExt;
     use axum::http::{Request, StatusCode};
     use http_body_util::BodyExt;
+    use tower::ServiceExt;
 
     #[tokio::test]
     async fn test_health_endpoint() {
@@ -471,12 +486,19 @@ mod tests {
         // Verify metadata
         let metadata = json_value.get("metadata").unwrap();
         assert_eq!(metadata.get("latitude").unwrap().as_f64().unwrap(), 40.7128);
-        assert_eq!(metadata.get("longitude").unwrap().as_f64().unwrap(), -74.0060);
-        assert_eq!(metadata.get("house_system").unwrap().as_str().unwrap(), "Placidus");
+        assert_eq!(
+            metadata.get("longitude").unwrap().as_f64().unwrap(),
+            -74.0060
+        );
+        assert_eq!(
+            metadata.get("house_system").unwrap().as_str().unwrap(),
+            "Placidus"
+        );
 
         // Verify planets array contains expected planets
         let planets = json_value.get("planets").unwrap().as_array().unwrap();
-        let planet_names: Vec<&str> = planets.iter()
+        let planet_names: Vec<&str> = planets
+            .iter()
             .map(|p| p.get("name").unwrap().as_str().unwrap())
             .collect();
 

@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::chart::{planet, PlanetPosition};
+use crate::chart::{PlanetPosition, planet};
 
 /// The type of astrological aspect
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -135,11 +135,7 @@ impl AspectConfig {
 /// Calculate the shortest angular distance between two longitudes
 fn angular_distance(long1: f64, long2: f64) -> f64 {
     let diff = (long1 - long2).abs();
-    if diff > 180.0 {
-        360.0 - diff
-    } else {
-        diff
-    }
+    if diff > 180.0 { 360.0 - diff } else { diff }
 }
 
 /// Check if two planets form a specific aspect within the given orb
@@ -295,10 +291,10 @@ pub fn is_moon_void_of_course(planets: &[PlanetPosition], config: AspectConfig) 
             };
 
             // If this aspect happens before Moon leaves sign, Moon is not void
-            if distance < (moon_sign_end - moon.position.longitude) {
-                if distance <= config.orb || (distance - *angle).abs() <= config.orb {
-                    return None;
-                }
+            if distance < (moon_sign_end - moon.position.longitude)
+                && (distance <= config.orb || (distance - *angle).abs() <= config.orb)
+            {
+                return None;
             }
         }
     }

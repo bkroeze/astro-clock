@@ -2,21 +2,21 @@ pub mod aspects;
 pub mod chart;
 pub mod cli;
 pub mod config;
+#[cfg(feature = "db")]
+pub mod database;
 pub mod ephemeris;
 pub mod errors;
+#[cfg(feature = "db")]
+pub mod jobs;
 pub mod logging;
 pub mod output_handler;
 pub mod performance;
+#[cfg(feature = "db")]
+pub mod queries;
 pub mod renderer;
 pub mod server;
 pub mod svg_glyphs;
 pub mod svg_renderer;
-#[cfg(feature = "db")]
-pub mod database;
-#[cfg(feature = "db")]
-pub mod jobs;
-#[cfg(feature = "db")]
-pub mod queries;
 
 pub mod swiss_eph_impl;
 

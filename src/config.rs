@@ -29,7 +29,7 @@ impl From<ron::error::SpannedError> for ConfigError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct LocationConfig {
     #[serde(default)]
     pub latitude: Option<f64>,
@@ -37,32 +37,23 @@ pub struct LocationConfig {
     pub longitude: Option<f64>,
 }
 
-impl Default for LocationConfig {
-    fn default() -> Self {
-        Self {
-            latitude: None,
-            longitude: None,
-        }
-    }
-}
-
 impl LocationConfig {
     pub fn validate(&self) -> Result<(), ConfigError> {
-        if let Some(lat) = self.latitude {
-            if lat < -90.0 || lat > 90.0 {
-                return Err(ConfigError::InvalidValue(format!(
-                    "latitude must be between -90 and 90, got {}",
-                    lat
-                )));
-            }
+        if let Some(lat) = self.latitude
+            && !(-90.0..=90.0).contains(&lat)
+        {
+            return Err(ConfigError::InvalidValue(format!(
+                "latitude must be between -90 and 90, got {}",
+                lat
+            )));
         }
-        if let Some(lon) = self.longitude {
-            if lon < -180.0 || lon > 180.0 {
-                return Err(ConfigError::InvalidValue(format!(
-                    "longitude must be between -180 and 180, got {}",
-                    lon
-                )));
-            }
+        if let Some(lon) = self.longitude
+            && !(-180.0..=180.0).contains(&lon)
+        {
+            return Err(ConfigError::InvalidValue(format!(
+                "longitude must be between -180 and 180, got {}",
+                lon
+            )));
         }
         Ok(())
     }
@@ -278,7 +269,7 @@ impl Default for DatabaseConfig {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct AppConfig {
     #[serde(default)]
     pub chart: ChartConfig,
@@ -286,16 +277,6 @@ pub struct AppConfig {
     pub server: ServerConfig,
     #[serde(default)]
     pub database: DatabaseConfig,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            chart: ChartConfig::default(),
-            server: ServerConfig::default(),
-            database: DatabaseConfig::default(),
-        }
-    }
 }
 
 impl AppConfig {

@@ -75,14 +75,7 @@ fn cli_query_wedding_sync_succeeds() {
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
 fn cli_query_wedding_async_returns_job_id() {
     let output = cli()
-        .args(&[
-            "query",
-            "wedding",
-            "--start",
-            "2025-01-01",
-            "--days",
-            "7",
-        ])
+        .args(&["query", "wedding", "--start", "2025-01-01", "--days", "7"])
         .output()
         .expect("Failed to execute CLI");
 
@@ -250,11 +243,7 @@ fn cli_job_list_invalid_status_fails() {
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
 fn cli_job_status_nonexistent_reports_not_found() {
     let output = cli()
-        .args(&[
-            "job",
-            "status",
-            "00000000-0000-0000-0000-000000000000",
-        ])
+        .args(&["job", "status", "00000000-0000-0000-0000-000000000000"])
         .output()
         .expect("Failed to execute CLI");
 
@@ -295,14 +284,7 @@ fn cli_job_status_invalid_uuid_fails() {
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
 fn cli_load_sync_succeeds() {
     let output = cli()
-        .args(&[
-            "load",
-            "--start",
-            "2025-01-01",
-            "--days",
-            "1",
-            "--sync",
-        ])
+        .args(&["load", "--start", "2025-01-01", "--days", "1", "--sync"])
         .output()
         .expect("Failed to execute CLI");
 
@@ -350,14 +332,7 @@ fn cli_load_async_returns_job_id() {
 #[ignore = "requires TEST_PG_URL and TimescaleDB with seed data"]
 fn cli_load_invalid_date_fails() {
     let output = cli()
-        .args(&[
-            "load",
-            "--start",
-            "not-a-date",
-            "--days",
-            "7",
-            "--sync",
-        ])
+        .args(&["load", "--start", "not-a-date", "--days", "7", "--sync"])
         .output()
         .expect("Failed to execute CLI");
 
@@ -381,10 +356,7 @@ fn cli_load_days_zero_fails() {
         .output()
         .expect("Failed to execute CLI");
 
-    assert!(
-        !output.status.success(),
-        "load with days=0 should fail"
-    );
+    assert!(!output.status.success(), "load with days=0 should fail");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains("Days must be") || stderr.contains("error"),

@@ -29,11 +29,10 @@ impl FontState {
         ];
 
         for path in &paths {
-            if let Ok(bytes) = std::fs::read(path) {
-                if let Ok(font) = fontdue::Font::from_bytes(bytes, fontdue::FontSettings::default())
-                {
-                    return Some(font);
-                }
+            if let Ok(bytes) = std::fs::read(path)
+                && let Ok(font) = fontdue::Font::from_bytes(bytes, fontdue::FontSettings::default())
+            {
+                return Some(font);
             }
         }
 
@@ -129,7 +128,7 @@ impl Color {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    fn to_skia(&self) -> tiny_skia::Color {
+    fn to_skia(self) -> tiny_skia::Color {
         tiny_skia::Color::from_rgba8(
             (self.r * 255.0) as u8,
             (self.g * 255.0) as u8,
@@ -250,7 +249,7 @@ impl Renderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let house_cusps = houses.houses;
         let house_anchor = houses.houses[0] as f32;
-        for (_i, &cusp) in house_cusps.iter().enumerate() {
+        for &cusp in house_cusps.iter() {
             let angle = Self::zodiac_angle(cusp as f32, house_anchor);
             let start = Point::new(
                 center.x + radius * angle.cos(),
@@ -401,7 +400,7 @@ impl Renderer {
             "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓",
         ];
 
-        for (_i, &cusp) in house_cusps.iter().enumerate() {
+        for &cusp in house_cusps.iter() {
             let angle = Self::zodiac_angle(cusp as f32, house_anchor);
             let label_radius = radius * 0.6;
             let label_x = center.x + label_radius * angle.cos();
@@ -525,8 +524,11 @@ impl Renderer {
         for c in text.chars() {
             // Use symbol font for astrological symbols (U+2600 to U+26FF range)
             let is_symbol = c as u32 >= 0x2600 && c as u32 <= 0x26FF;
-            let font = if is_symbol && self.font_state.symbol_font.is_some() {
-                self.font_state.symbol_font.as_ref().unwrap()
+            let font = if is_symbol {
+                self.font_state
+                    .symbol_font
+                    .as_ref()
+                    .unwrap_or(&self.font_state.font)
             } else {
                 &self.font_state.font
             };

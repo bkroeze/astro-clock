@@ -347,16 +347,16 @@ impl SvgRenderer {
             let y = center_y + planet_radius * angle_rad.sin();
 
             // Draw planet symbol
-            if let Some(&glyph_name) = planet_map.get(planet.name.as_str()) {
-                if let Some(glyph) = self.glyph_registry.get(glyph_name) {
-                    let transform = self.calculate_glyph_transform(glyph, x, y, symbol_size);
-                    let use_element = "<use href=\"#".to_string()
-                        + glyph_name
-                        + "\" transform=\""
-                        + &transform
-                        + "\"/>";
-                    svg.push(use_element);
-                }
+            if let Some(&glyph_name) = planet_map.get(planet.name.as_str())
+                && let Some(glyph) = self.glyph_registry.get(glyph_name)
+            {
+                let transform = self.calculate_glyph_transform(glyph, x, y, symbol_size);
+                let use_element = "<use href=\"#".to_string()
+                    + glyph_name
+                    + "\" transform=\""
+                    + &transform
+                    + "\"/>";
+                svg.push(use_element);
             }
 
             // Draw retrograde indicator if applicable

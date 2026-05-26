@@ -209,11 +209,15 @@ impl App {
                 tracing::info!("Running chart generation mode");
                 tracing::debug!(
                     "Chart options: lat={:?}, lon={:?}, time={:?}, output={:?}, format={}",
-                    lat, lon, time, output, format
+                    lat,
+                    lon,
+                    time,
+                    output,
+                    format
                 );
 
                 // Parse format
-                let output_format = OutputFormat::from_str(format);
+                let output_format = OutputFormat::parse_lossy(format);
 
                 // Determine output filename
                 let output_path = match output {
@@ -235,9 +239,13 @@ impl App {
                 // Parse time or use current time
                 let julian_day = match time {
                     Some(time_str) => {
-                        let datetime = chrono::DateTime::parse_from_rfc3339(time_str)
-                            .map_err(|e| crate::errors::Error::Config(format!("Invalid time format: {}", e)))?;
-                        crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc))
+                        let datetime =
+                            chrono::DateTime::parse_from_rfc3339(time_str).map_err(|e| {
+                                crate::errors::Error::Config(format!("Invalid time format: {}", e))
+                            })?;
+                        crate::ephemeris::julian_day_from_chrono(
+                            datetime.with_timezone(&chrono::Utc),
+                        )
                     }
                     None => {
                         let now = chrono::Utc::now();
@@ -250,7 +258,8 @@ impl App {
                 let longitude = lon.or(config.chart.location.longitude).unwrap_or(0.0);
 
                 // Get house system from CLI or config
-                let house_system_str = house.as_ref()
+                let house_system_str = house
+                    .as_ref()
                     .map(|s| s.as_str())
                     .unwrap_or_else(|| config.chart.house_system.as_str());
                 let house_system = Self::parse_house_system(house_system_str)?;
@@ -265,11 +274,8 @@ impl App {
 
                 // Create chart config
                 let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
-                let chart_config = crate::chart::ChartConfig::new(
-                    house_system,
-                    geo_pos,
-                    julian_day,
-                );
+                let chart_config =
+                    crate::chart::ChartConfig::new(house_system, geo_pos, julian_day);
 
                 // Calculate chart data
                 let calculator = crate::swiss_eph_impl::SwissEphChartCalculator::new(chart_config)
@@ -291,15 +297,25 @@ impl App {
 
                 Ok(())
             }
-            Commands::Aspects { lat, lon, time, orb, house } => {
+            Commands::Aspects {
+                lat,
+                lon,
+                time,
+                orb,
+                house,
+            } => {
                 tracing::info!("Running aspects analysis mode");
 
                 // Parse time or use current time
                 let julian_day = match time {
                     Some(time_str) => {
-                        let datetime = chrono::DateTime::parse_from_rfc3339(time_str)
-                            .map_err(|e| crate::errors::Error::Config(format!("Invalid time format: {}", e)))?;
-                        crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc))
+                        let datetime =
+                            chrono::DateTime::parse_from_rfc3339(time_str).map_err(|e| {
+                                crate::errors::Error::Config(format!("Invalid time format: {}", e))
+                            })?;
+                        crate::ephemeris::julian_day_from_chrono(
+                            datetime.with_timezone(&chrono::Utc),
+                        )
                     }
                     None => {
                         let now = chrono::Utc::now();
@@ -313,7 +329,8 @@ impl App {
                 let orb_value = *orb;
 
                 // Get house system from CLI or config
-                let house_system_str = house.as_ref()
+                let house_system_str = house
+                    .as_ref()
                     .map(|s| s.as_str())
                     .unwrap_or_else(|| config.chart.house_system.as_str());
                 let house_system = Self::parse_house_system(house_system_str)?;
@@ -329,11 +346,8 @@ impl App {
 
                 // Create chart config
                 let geo_pos = crate::chart::GeoPos::new(latitude, longitude, 0.0);
-                let chart_config = crate::chart::ChartConfig::new(
-                    house_system,
-                    geo_pos,
-                    julian_day,
-                );
+                let chart_config =
+                    crate::chart::ChartConfig::new(house_system, geo_pos, julian_day);
 
                 // Calculate chart data
                 let calculator = crate::swiss_eph_impl::SwissEphChartCalculator::new(chart_config)
@@ -343,7 +357,7 @@ impl App {
                     .map_err(|e| crate::errors::Error::Chart(e.to_string()))?;
 
                 // Analyze aspects
-                use crate::aspects::{analyze_aspects, AspectConfig};
+                use crate::aspects::{AspectConfig, analyze_aspects};
                 let analysis = analyze_aspects(&chart_data.planets, AspectConfig::new(orb_value));
 
                 // Print results
@@ -386,19 +400,28 @@ impl App {
                 Ok(())
             }
             Commands::Load { start, days, sync } => {
-                tracing::info!("Running data load mode: start={}, days={}, sync={}", start, days, sync);
+                tracing::info!(
+                    "Running data load mode: start={}, days={}, sync={}",
+                    start,
+                    days,
+                    sync
+                );
 
                 // Validate date format
-                let _start_date = chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d")
-                    .map_err(|_| crate::errors::Error::Config(
-                        format!("Invalid date format: {}. Expected YYYY-MM-DD", start)
-                    ))?;
+                let _start_date =
+                    chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d").map_err(|_| {
+                        crate::errors::Error::Config(format!(
+                            "Invalid date format: {}. Expected YYYY-MM-DD",
+                            start
+                        ))
+                    })?;
 
                 // Validate days range
                 if *days < 1 || *days > 365 {
-                    return Err(crate::errors::Error::Config(
-                        format!("Days must be between 1 and 365, got {}", days)
-                    ));
+                    return Err(crate::errors::Error::Config(format!(
+                        "Days must be between 1 and 365, got {}",
+                        days
+                    )));
                 }
 
                 // Check if db feature is enabled
@@ -421,10 +444,12 @@ impl App {
 
                     if *sync {
                         let result: crate::errors::Result<_> = rt.block_on(async {
-                            let db_pool = DatabasePool::connect(&db_url).await
-                                .map_err(|e| crate::errors::Error::Database(
-                                    format!("Failed to connect to database: {}", e)
-                                ))?;
+                            let db_pool = DatabasePool::connect(&db_url).await.map_err(|e| {
+                                crate::errors::Error::Database(format!(
+                                    "Failed to connect to database: {}",
+                                    e
+                                ))
+                            })?;
                             let pool = db_pool.pool().clone();
                             let job_repo = JobRepository::new(pool.clone());
                             let load_handler = LoadJobHandler::new(pool);
@@ -437,25 +462,39 @@ impl App {
                                 "start_date": start,
                                 "days": days
                             });
-                            executor.execute_sync(JobType::Load, payload).await
+                            executor
+                                .execute_sync(JobType::Load, payload)
+                                .await
                                 .map_err(|e| crate::errors::Error::Chart(format!("{}", e)))
                         });
 
-                        let result = result.map_err(|e| crate::errors::Error::Chart(format!("Load failed: {}", e)))?;
+                        let result = result.map_err(|e| {
+                            crate::errors::Error::Chart(format!("Load failed: {}", e))
+                        })?;
 
-                        println!("Loading planetary data for {} days starting from {}...", days, start);
+                        println!(
+                            "Loading planetary data for {} days starting from {}...",
+                            days, start
+                        );
                         {
                             let job = result;
                             if let Some(ref job_result) = job.result {
-                                if let Ok(load_result) = serde_json::from_value::<crate::jobs::handlers::LoadJobResult>(job_result.clone()) {
+                                if let Ok(load_result) =
+                                    serde_json::from_value::<crate::jobs::handlers::LoadJobResult>(
+                                        job_result.clone(),
+                                    )
+                                {
                                     println!("\n✓ Load completed successfully");
                                     println!("  Dates loaded: {}", load_result.dates_loaded);
                                     println!("  Dates skipped: {}", load_result.dates_skipped);
                                     println!("  Dates failed: {}", load_result.dates_failed);
                                     println!("  Total positions: {}", load_result.total_positions);
                                     println!("  Total aspects: {}", load_result.total_aspects);
-                                    println!("  Total lunar conditions: {}", load_result.total_lunar_conditions);
-                                    
+                                    println!(
+                                        "  Total lunar conditions: {}",
+                                        load_result.total_lunar_conditions
+                                    );
+
                                     if !load_result.failed.is_empty() {
                                         println!("\nFailed dates:");
                                         for failure in &load_result.failed {
@@ -471,10 +510,12 @@ impl App {
                         }
                     } else {
                         let job_id: crate::errors::Result<_> = rt.block_on(async {
-                            let db_pool = DatabasePool::connect(&db_url).await
-                                .map_err(|e| crate::errors::Error::Database(
-                                    format!("Failed to connect to database: {}", e)
-                                ))?;
+                            let db_pool = DatabasePool::connect(&db_url).await.map_err(|e| {
+                                crate::errors::Error::Database(format!(
+                                    "Failed to connect to database: {}",
+                                    e
+                                ))
+                            })?;
                             let pool = db_pool.pool().clone();
                             let job_repo = JobRepository::new(pool.clone());
                             let load_handler = LoadJobHandler::new(pool);
@@ -487,11 +528,15 @@ impl App {
                                 "start_date": start,
                                 "days": days
                             });
-                            executor.execute_async(JobType::Load, payload).await
+                            executor
+                                .execute_async(JobType::Load, payload)
+                                .await
                                 .map_err(|e| crate::errors::Error::Chart(format!("{}", e)))
                         });
 
-                        let job_id = job_id.map_err(|e| crate::errors::Error::Chart(format!("Failed to start load job: {}", e)))?;
+                        let job_id = job_id.map_err(|e| {
+                            crate::errors::Error::Chart(format!("Failed to start load job: {}", e))
+                        })?;
 
                         {
                             let id = job_id;
@@ -511,12 +556,8 @@ impl App {
                     ))
                 }
             }
-            Commands::Query(query_cmd) => {
-                self.handle_query_command(query_cmd, &config)
-            }
-            Commands::Job(job_cmd) => {
-                self.handle_job_command(job_cmd, &config)
-            }
+            Commands::Query(query_cmd) => self.handle_query_command(query_cmd, &config),
+            Commands::Job(job_cmd) => self.handle_job_command(job_cmd, &config),
         }
     }
 
@@ -607,22 +648,17 @@ impl App {
             use serde_json::json;
 
             // Get database URL from environment or config
-            let db_url = std::env::var("DATABASE_URL")
-                .unwrap_or_else(|_| config.database.url.clone());
+            let db_url =
+                std::env::var("DATABASE_URL").unwrap_or_else(|_| config.database.url.clone());
 
             // Create database pool — use a single runtime to avoid "pool timed out"
             // from connections bound to a dropped runtime.
             let rt = tokio::runtime::Runtime::new()?;
 
             let pool = rt.block_on(async {
-                let db_pool = DatabasePool::connect(&db_url)
-                    .await
-                    .map_err(|e| {
-                        crate::errors::Error::Config(format!(
-                            "Failed to connect to database: {}",
-                            e
-                        ))
-                    })?;
+                let db_pool = DatabasePool::connect(&db_url).await.map_err(|e| {
+                    crate::errors::Error::Config(format!("Failed to connect to database: {}", e))
+                })?;
                 Ok::<_, crate::errors::Error>(db_pool.pool().clone())
             })?;
 
@@ -651,9 +687,8 @@ impl App {
                     query_name, days, start
                 );
 
-                let result = rt.block_on(async {
-                    executor.execute_sync(JobType::Query, payload).await
-                });
+                let result =
+                    rt.block_on(async { executor.execute_sync(JobType::Query, payload).await });
 
                 match result {
                     Ok(job) => {
@@ -665,7 +700,8 @@ impl App {
                             {
                                 println!("\n✓ Query completed successfully");
                                 println!("  Query: {}", query_result.query_name);
-                                println!("  Date range: {} to {} ({} days)",
+                                println!(
+                                    "  Date range: {} to {} ({} days)",
                                     query_result.start_date,
                                     query_result.start_date, // Note: we'd need to calculate end date
                                     query_result.days
@@ -676,7 +712,9 @@ impl App {
                                 // Pretty-print the results
                                 if query_result.total_results > 0 {
                                     println!("\n  Results:");
-                                    if let Ok(results_json) = serde_json::to_string_pretty(&query_result.results) {
+                                    if let Ok(results_json) =
+                                        serde_json::to_string_pretty(&query_result.results)
+                                    {
                                         // Indent the JSON output
                                         for line in results_json.lines() {
                                             println!("    {}", line);
@@ -684,12 +722,12 @@ impl App {
                                     }
                                 }
 
-                                if let Some(warnings) = query_result.warnings {
-                                    if !warnings.is_empty() {
-                                        println!("\n  Warnings:");
-                                        for warning in &warnings {
-                                            println!("    - {}", warning);
-                                        }
+                                if let Some(warnings) = query_result.warnings
+                                    && !warnings.is_empty()
+                                {
+                                    println!("\n  Warnings:");
+                                    for warning in &warnings {
+                                        println!("    - {}", warning);
                                     }
                                 }
                             } else {
@@ -700,16 +738,12 @@ impl App {
                         }
                     }
                     Err(e) => {
-                        return Err(crate::errors::Error::Chart(format!(
-                            "Query failed: {}",
-                            e
-                        )));
+                        return Err(crate::errors::Error::Chart(format!("Query failed: {}", e)));
                     }
                 }
             } else {
-                let job_id = rt.block_on(async {
-                    executor.execute_async(JobType::Query, payload).await
-                });
+                let job_id =
+                    rt.block_on(async { executor.execute_async(JobType::Query, payload).await });
 
                 match job_id {
                     Ok(id) => {
@@ -746,9 +780,7 @@ impl App {
         #[cfg(feature = "db")]
         {
             match job_cmd {
-                JobCommands::Status { job_id } => {
-                    self.handle_job_status(job_id, config)
-                }
+                JobCommands::Status { job_id } => self.handle_job_status(job_id, config),
                 JobCommands::List { status, count } => {
                     self.handle_job_list(status.as_ref(), *count, config)
                 }
@@ -758,7 +790,8 @@ impl App {
         #[cfg(not(feature = "db"))]
         {
             Err(crate::errors::Error::Config(
-                "Database support not enabled. Build with --features db to use the job command.".to_string()
+                "Database support not enabled. Build with --features db to use the job command."
+                    .to_string(),
             ))
         }
     }
@@ -769,32 +802,33 @@ impl App {
         job_id_str: &str,
         config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
-        use uuid::Uuid;
         use crate::jobs::repository::JobRepository;
+        use uuid::Uuid;
 
         // Validate UUID format
         let job_id = match Uuid::parse_str(job_id_str) {
             Ok(id) => id,
             Err(_) => {
-                return Err(crate::errors::Error::Config(
-                    format!("Invalid job ID format: {}. Expected UUID.", job_id_str)
-                ));
+                return Err(crate::errors::Error::Config(format!(
+                    "Invalid job ID format: {}. Expected UUID.",
+                    job_id_str
+                )));
             }
         };
 
         // Get database URL from environment or config
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| config.database.url.clone());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| config.database.url.clone());
 
         // Create database pool — use a single runtime to avoid "pool timed out" from
         // connections bound to a dropped runtime.
         let rt = tokio::runtime::Runtime::new()?;
 
         let pool = rt.block_on(async {
-            let db_pool = crate::database::pool::DatabasePool::connect(&db_url).await
-                .map_err(|e| crate::errors::Error::Config(
-                    format!("Failed to connect to database: {}", e)
-                ))?;
+            let db_pool = crate::database::pool::DatabasePool::connect(&db_url)
+                .await
+                .map_err(|e| {
+                    crate::errors::Error::Config(format!("Failed to connect to database: {}", e))
+                })?;
             Ok::<_, crate::errors::Error>(db_pool.pool().clone())
         })?;
 
@@ -809,10 +843,26 @@ impl App {
                 println!("Job: {}", job.id);
                 println!("Type: {}", job.job_type);
                 println!("Status: {}", job.status);
-                println!("Created: {}", job.created_at.format("%Y-%m-%d %H:%M:%S UTC"));
-                println!("Updated: {}", job.updated_at.format("%Y-%m-%d %H:%M:%S UTC"));
-                println!("Started: {}", job.started_at.map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string()).unwrap_or_else(|| "N/A".to_string()));
-                println!("Completed: {}", job.completed_at.map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string()).unwrap_or_else(|| "N/A".to_string()));
+                println!(
+                    "Created: {}",
+                    job.created_at.format("%Y-%m-%d %H:%M:%S UTC")
+                );
+                println!(
+                    "Updated: {}",
+                    job.updated_at.format("%Y-%m-%d %H:%M:%S UTC")
+                );
+                println!(
+                    "Started: {}",
+                    job.started_at
+                        .map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string())
+                        .unwrap_or_else(|| "N/A".to_string())
+                );
+                println!(
+                    "Completed: {}",
+                    job.completed_at
+                        .map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string())
+                        .unwrap_or_else(|| "N/A".to_string())
+                );
                 println!();
 
                 if let Some(ref payload) = job.payload {
@@ -854,7 +904,10 @@ impl App {
                 println!("Job {} not found", job_id);
             }
             Err(e) => {
-                return Err(crate::errors::Error::Chart(format!("Failed to get job: {}", e)));
+                return Err(crate::errors::Error::Chart(format!(
+                    "Failed to get job: {}",
+                    e
+                )));
             }
         }
 
@@ -868,24 +921,23 @@ impl App {
         count: Option<i64>,
         config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
+        use crate::jobs::repository::{CursorDirection, JobListFilters, JobRepository};
         use crate::jobs::types::JobStatus;
-        use crate::jobs::repository::{JobRepository, JobListFilters, CursorDirection};
 
         // Parse status filter
         let status = match status_filter {
-            Some(s) => {
-                match s.as_str() {
-                    "pending" => Some(JobStatus::Pending),
-                    "in_process" => Some(JobStatus::InProcess),
-                    "complete" => Some(JobStatus::Complete),
-                    "failed" => Some(JobStatus::Failed),
-                    _ => {
-                        return Err(crate::errors::Error::Config(
-                            format!("Invalid status: '{}'. Valid options: pending, in_process, complete, failed", s)
-                        ));
-                    }
+            Some(s) => match s.as_str() {
+                "pending" => Some(JobStatus::Pending),
+                "in_process" => Some(JobStatus::InProcess),
+                "complete" => Some(JobStatus::Complete),
+                "failed" => Some(JobStatus::Failed),
+                _ => {
+                    return Err(crate::errors::Error::Config(format!(
+                        "Invalid status: '{}'. Valid options: pending, in_process, complete, failed",
+                        s
+                    )));
                 }
-            }
+            },
             None => None,
         };
 
@@ -896,28 +948,29 @@ impl App {
         };
 
         // Set defaults and cap count
-        let count = count.unwrap_or(20).min(100).max(1);
+        let count = count.unwrap_or(20).clamp(1, 100);
 
         // Get database URL from environment or config
-        let db_url = std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| config.database.url.clone());
+        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| config.database.url.clone());
 
         // Create database pool — use a single runtime to avoid "pool timed out" from
         // connections bound to a dropped runtime.
         let rt = tokio::runtime::Runtime::new()?;
 
         let pool = rt.block_on(async {
-            let db_pool = crate::database::pool::DatabasePool::connect(&db_url).await
-                .map_err(|e| crate::errors::Error::Config(
-                    format!("Failed to connect to database: {}", e)
-                ))?;
+            let db_pool = crate::database::pool::DatabasePool::connect(&db_url)
+                .await
+                .map_err(|e| {
+                    crate::errors::Error::Config(format!("Failed to connect to database: {}", e))
+                })?;
             Ok::<_, crate::errors::Error>(db_pool.pool().clone())
         })?;
 
         // Query jobs — fetch count+1 to detect next page
         let result: Result<Vec<_>, crate::jobs::error::JobError> = rt.block_on(async {
             let repo = JobRepository::new(pool);
-            repo.list_jobs(filters.clone(), count, None, CursorDirection::Forward).await
+            repo.list_jobs(filters.clone(), count, None, CursorDirection::Forward)
+                .await
         });
 
         match result {
@@ -933,7 +986,10 @@ impl App {
                     }
                 } else {
                     println!("Jobs (cursor-based pagination, showing {}):\n", jobs.len());
-                    println!("{:<40} {:<10} {:<12} {:<20}", "ID", "Type", "Status", "Created");
+                    println!(
+                        "{:<40} {:<10} {:<12} {:<20}",
+                        "ID", "Type", "Status", "Created"
+                    );
                     println!("{}", "-".repeat(82));
 
                     for job in &jobs {
@@ -941,20 +997,34 @@ impl App {
                         let created = job.created_at.format("%Y-%m-%d %H:%M");
                         let status_str = format!("{:>10}", job.status);
                         let type_str = format!("{:<10}", job.job_type);
-                        println!("{:<40} {:<10} {:<12} {:<20}", id_short, type_str, status_str, created);
+                        println!(
+                            "{:<40} {:<10} {:<12} {:<20}",
+                            id_short, type_str, status_str, created
+                        );
                     }
 
                     if has_next {
-                        println!("\nMore results available — use cursor-based pagination via the API");
+                        println!(
+                            "\nMore results available — use cursor-based pagination via the API"
+                        );
                     }
                 }
             }
             Err(e) => {
-                return Err(crate::errors::Error::Chart(format!("Failed to list jobs: {}", e)));
+                return Err(crate::errors::Error::Chart(format!(
+                    "Failed to list jobs: {}",
+                    e
+                )));
             }
         }
 
         Ok(())
+    }
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

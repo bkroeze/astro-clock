@@ -56,7 +56,7 @@ pub fn get_body_category(body_id: i16) -> Result<BodyCategory, MultiResolutionEr
     match body_id {
         1 => Ok(BodyCategory::Moon),
         0 | 2 | 3 | 4 => Ok(BodyCategory::Inner),
-        5 | 6 | 7 | 8 | 9 => Ok(BodyCategory::Outer),
+        5..=9 => Ok(BodyCategory::Outer),
         _ => Err(MultiResolutionError::InvalidBodyId(body_id)),
     }
 }
@@ -211,46 +211,27 @@ impl MultiResolutionManager {
         // Query each resolution table if there are bodies for that category
         if !moon_bodies.is_empty() {
             let positions = self
-                .load_positions_for_resolution(
-                    Resolution::OneMinute,
-                    &moon_bodies,
-                    start,
-                    end,
-                )
+                .load_positions_for_resolution(Resolution::OneMinute, &moon_bodies, start, end)
                 .await?;
             all_positions.extend(positions);
         }
 
         if !inner_bodies.is_empty() {
             let positions = self
-                .load_positions_for_resolution(
-                    Resolution::FiveMinute,
-                    &inner_bodies,
-                    start,
-                    end,
-                )
+                .load_positions_for_resolution(Resolution::FiveMinute, &inner_bodies, start, end)
                 .await?;
             all_positions.extend(positions);
         }
 
         if !outer_bodies.is_empty() {
             let positions = self
-                .load_positions_for_resolution(
-                    Resolution::SixtyMinute,
-                    &outer_bodies,
-                    start,
-                    end,
-                )
+                .load_positions_for_resolution(Resolution::SixtyMinute, &outer_bodies, start, end)
                 .await?;
             all_positions.extend(positions);
         }
 
         // Sort by time, then by body_id for consistent ordering
-        all_positions.sort_by(|a, b| {
-            a.time
-                .cmp(&b.time)
-                .then_with(|| a.body_id.cmp(&b.body_id))
-        });
+        all_positions.sort_by(|a, b| a.time.cmp(&b.time).then_with(|| a.body_id.cmp(&b.body_id)));
 
         Ok(all_positions)
     }
@@ -385,7 +366,10 @@ mod tests {
 
     #[test]
     fn test_get_table_for_resolution() {
-        assert_eq!(get_table_for_resolution(Resolution::OneMinute), "planet_positions");
+        assert_eq!(
+            get_table_for_resolution(Resolution::OneMinute),
+            "planet_positions"
+        );
         assert_eq!(
             get_table_for_resolution(Resolution::FiveMinute),
             "planet_positions_5min"

@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use std::time::Instant;
 use thiserror::Error;
 
@@ -136,16 +136,16 @@ impl CompactPlanetPosition {
         // Convert Decimal degrees to millidegrees
         let longitude_millidegrees = (pos.longitude * Decimal::from(1000))
             .to_i32()
-            .ok_or_else(|| ChunkError::InvalidLongitude(pos.longitude))?;
+            .ok_or(ChunkError::InvalidLongitude(pos.longitude))?;
 
         let latitude_millidegrees = (pos.latitude * Decimal::from(1000))
             .to_i32()
-            .ok_or_else(|| ChunkError::InvalidLatitude(pos.latitude))?;
+            .ok_or(ChunkError::InvalidLatitude(pos.latitude))?;
 
         // Convert speed to millidegrees per day (fits in i16 for normal planetary motion)
         let speed_millidegrees = (pos.speed_lon * Decimal::from(1000))
             .to_i16()
-            .ok_or_else(|| ChunkError::InvalidSpeed(pos.speed_lon))?;
+            .ok_or(ChunkError::InvalidSpeed(pos.speed_lon))?;
 
         // Convert body_id and zodiac_sign to compact u8
         let body_id = pos
@@ -383,12 +383,12 @@ impl CompactLunarCondition {
         // Convert phase angle to millidegrees
         let moon_phase_angle_milli = (condition.moon_phase_angle * Decimal::from(1000))
             .to_u32()
-            .ok_or_else(|| ChunkError::InvalidLongitude(condition.moon_phase_angle))?;
+            .ok_or(ChunkError::InvalidLongitude(condition.moon_phase_angle))?;
 
         // Convert illumination to permille (0-1000)
         let moon_illumination_permille = (condition.moon_illumination * Decimal::from(1000))
             .to_u16()
-            .ok_or_else(|| ChunkError::InvalidIllumination(condition.moon_illumination))?;
+            .ok_or(ChunkError::InvalidIllumination(condition.moon_illumination))?;
 
         Ok(Self {
             timestamp_minutes: minutes_since_start as u32,

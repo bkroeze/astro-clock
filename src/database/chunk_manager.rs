@@ -3,14 +3,14 @@ use lru::LruCache;
 use rust_decimal::Decimal;
 use sqlx::Row;
 use std::num::NonZeroUsize;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
 use tokio::sync::RwLock;
 
 use crate::performance::{MemoryMonitor, MemoryPressure};
 
-use super::chunk::{ChunkData, ChunkKey, CACHE_SIZE_CHUNKS};
+use super::chunk::{CACHE_SIZE_CHUNKS, ChunkData, ChunkKey};
 use super::chunk_generator::{ChunkGenerator, ChunkGeneratorError};
 use super::pool::DatabasePool;
 use super::schema;
@@ -206,10 +206,7 @@ impl ChunkManager {
     /// 3. If not in database, generate from Swiss Ephemeris
     /// 4. Save generated data to database in background
     /// 5. Populate cache with loaded/generated data for future queries
-    pub async fn get_chunk(
-        &self,
-        date: NaiveDate,
-    ) -> Result<Arc<ChunkData>, ChunkManagerError> {
+    pub async fn get_chunk(&self, date: NaiveDate) -> Result<Arc<ChunkData>, ChunkManagerError> {
         let key = ChunkKey::new(date);
 
         // 1. Check cache first
@@ -253,7 +250,10 @@ impl ChunkManager {
             }
             Err(e) => {
                 // Other database error, log and try generation
-                tracing::warn!("Database error loading chunk, falling back to generation: {}", e);
+                tracing::warn!(
+                    "Database error loading chunk, falling back to generation: {}",
+                    e
+                );
             }
         }
 
@@ -273,7 +273,10 @@ impl ChunkManager {
             if let Err(e) = generator.save_chunk_to_db(&chunk_for_save).await {
                 tracing::warn!("Failed to save generated chunk to database: {}", e);
             } else {
-                tracing::info!("Successfully saved chunk to database: {}", chunk_for_save.date);
+                tracing::info!(
+                    "Successfully saved chunk to database: {}",
+                    chunk_for_save.date
+                );
             }
         });
 
@@ -295,21 +298,14 @@ impl ChunkManager {
     ///
     /// Queries all three hypertables (planet_positions, aspects, lunar_conditions)
     /// and converts the results to compact in-memory representations.
-    async fn load_chunk_from_db(
-        &self,
-        date: NaiveDate,
-    ) -> Result<ChunkData, ChunkManagerError> {
+    async fn load_chunk_from_db(&self, date: NaiveDate) -> Result<ChunkData, ChunkManagerError> {
         let start_time = date
             .and_hms_opt(0, 0, 0)
-            .ok_or_else(|| {
-                ChunkManagerError::Conversion(format!("Invalid date: {}", date))
-            })?
+            .ok_or_else(|| ChunkManagerError::Conversion(format!("Invalid date: {}", date)))?
             .and_utc();
         let end_time = date
             .and_hms_opt(23, 59, 59)
-            .ok_or_else(|| {
-                ChunkManagerError::Conversion(format!("Invalid date: {}", date))
-            })?
+            .ok_or_else(|| ChunkManagerError::Conversion(format!("Invalid date: {}", date)))?
             .and_utc();
 
         // Load planet positions using sqlx::query and manual mapping
@@ -333,7 +329,7 @@ impl ChunkManager {
             let latitude: f64 = row.try_get(3)?;
             let distance: f64 = row.try_get(4)?;
             let speed_lon: f64 = row.try_get(5)?;
-            
+
             positions.push(schema::PlanetPosition {
                 time: row.try_get(0)?,
                 body_id: row.try_get(1)?,
@@ -367,7 +363,7 @@ impl ChunkManager {
         let mut aspects = Vec::with_capacity(rows.len());
         for row in rows {
             let orb: f64 = row.try_get(4)?;
-            
+
             aspects.push(schema::Aspect {
                 time: row.try_get(0)?,
                 body1_id: row.try_get(1)?,
@@ -398,15 +394,16 @@ impl ChunkManager {
         for row in rows {
             let moon_phase_angle: f64 = row.try_get(3)?;
             let moon_illumination: f64 = row.try_get(4)?;
-            
+
             lunar.push(schema::LunarCondition {
                 time: row.try_get(0)?,
                 moon_phase: row.try_get(1)?,
                 moon_sign: row.try_get(2)?,
                 moon_phase_angle: Decimal::from_f64_retain(moon_phase_angle)
                     .ok_or_else(|| ChunkManagerError::Conversion("moon_phase_angle".to_string()))?,
-                moon_illumination: Decimal::from_f64_retain(moon_illumination)
-                    .ok_or_else(|| ChunkManagerError::Conversion("moon_illumination".to_string()))?,
+                moon_illumination: Decimal::from_f64_retain(moon_illumination).ok_or_else(
+                    || ChunkManagerError::Conversion("moon_illumination".to_string()),
+                )?,
                 is_void_of_course: row.try_get(5)?,
                 voc_start: row.try_get(6)?,
                 voc_end: row.try_get(7)?,
@@ -460,10 +457,7 @@ impl ChunkManager {
     /// This is a fire-and-forget operation - failures are silent and don't
     /// affect the main query flow. Pre-fetched chunks populate the cache
     /// for faster subsequent queries.
-    fn pre_fetch_adjacent_chunks(
-        self: Arc<Self>,
-        center_date: NaiveDate,
-    ) {
+    fn pre_fetch_adjacent_chunks(self: Arc<Self>, center_date: NaiveDate) {
         if !self.config.enable_pre_fetching {
             return;
         }
@@ -519,7 +513,7 @@ impl ChunkManager {
         while current <= end_date {
             let chunk = self.get_chunk(current).await?;
             chunks.push(chunk);
-            current = current + Duration::days(1);
+            current += Duration::days(1);
         }
 
         Ok(chunks)
@@ -546,7 +540,10 @@ impl ChunkManager {
                 while cache.len() > target_size {
                     cache.pop_lru();
                 }
-                tracing::error!("Critical memory pressure: evicted to {} chunks", cache.len());
+                tracing::error!(
+                    "Critical memory pressure: evicted to {} chunks",
+                    cache.len()
+                );
             }
             MemoryPressure::High => {
                 // Evict 25% of cache

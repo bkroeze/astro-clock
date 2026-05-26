@@ -23,16 +23,8 @@ pub async fn find_retrograde_periods(
 
     let start_time = Instant::now();
 
-    let start_datetime = criteria
-        .start_date
-        .and_hms_opt(0, 0, 0)
-        .unwrap()
-        .and_utc();
-    let end_datetime = criteria
-        .end_date
-        .and_hms_opt(23, 59, 59)
-        .unwrap()
-        .and_utc();
+    let start_datetime = criteria.start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let end_datetime = criteria.end_date.and_hms_opt(23, 59, 59).unwrap().and_utc();
 
     // Build and execute query based on whether planet filter is specified
     let rows = if let Some(ref planets) = criteria.planets {
@@ -139,17 +131,19 @@ fn calculate_status(
     }
 
     // Check pre-shadow period
-    if let Some(shadow_start) = pre_shadow_start {
-        if query_time >= shadow_start && query_time < retrograde_start {
-            return RetrogradeStatus::PreShadow;
-        }
+    if let Some(shadow_start) = pre_shadow_start
+        && query_time >= shadow_start
+        && query_time < retrograde_start
+    {
+        return RetrogradeStatus::PreShadow;
     }
 
     // Check post-shadow period
-    if let Some(shadow_end) = post_shadow_end {
-        if query_time > retrograde_end && query_time <= shadow_end {
-            return RetrogradeStatus::PostShadow;
-        }
+    if let Some(shadow_end) = post_shadow_end
+        && query_time > retrograde_end
+        && query_time <= shadow_end
+    {
+        return RetrogradeStatus::PostShadow;
     }
 
     RetrogradeStatus::Direct

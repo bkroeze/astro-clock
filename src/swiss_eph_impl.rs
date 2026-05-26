@@ -1,6 +1,6 @@
 use crate::chart::{
-    planet, ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem,
-    PlanetPosition, Position,
+    ChartCalculator, ChartConfig, ChartData, Error, HouseCusps, HouseSystem, PlanetPosition,
+    Position, planet,
 };
 use crate::ephemeris::Ephemeris;
 

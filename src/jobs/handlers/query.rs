@@ -220,8 +220,8 @@ impl QueryJobHandler {
                     error = %e,
                     "Failed to save chunk"
                 );
-                    warnings.push(format!("Failed to save data for {}: {}", date, e));
-                    continue;
+                warnings.push(format!("Failed to save data for {}: {}", date, e));
+                continue;
             }
 
             // Mark day as loaded
@@ -236,7 +236,7 @@ impl QueryJobHandler {
                     error = %e,
                     "Failed to mark day loaded"
                 );
-                    warnings.push(format!("Failed to track {}: {}", date, e));
+                warnings.push(format!("Failed to track {}: {}", date, e));
                 continue;
             }
 
@@ -267,9 +267,8 @@ impl JobHandler for QueryJobHandler {
         // 1. Parse payload
         let payload = self.parse_payload(job)?;
 
-        let start_date = NaiveDate::parse_from_str(&payload.start_date, "%Y-%m-%d").map_err(|e| {
-            JobError::Other(format!("Failed to parse start_date: {}", e))
-        })?;
+        let start_date = NaiveDate::parse_from_str(&payload.start_date, "%Y-%m-%d")
+            .map_err(|e| JobError::Other(format!("Failed to parse start_date: {}", e)))?;
 
         info!(
             job_id = %job.id,
@@ -281,17 +280,27 @@ impl JobHandler for QueryJobHandler {
         );
 
         // 2. Ensure data is loaded
-        let warnings = self.ensure_data_loaded(job.id, start_date, payload.days).await?;
+        let warnings = self
+            .ensure_data_loaded(job.id, start_date, payload.days)
+            .await?;
 
         // 3. Get query template from registry and execute
         let db_pool = DatabasePool::from_pool(self.pool.clone());
-        let query_results = self.registry.execute(&payload.query_name, &db_pool, &payload).await?;
+        let query_results = self
+            .registry
+            .execute(&payload.query_name, &db_pool, &payload)
+            .await?;
 
         // 4. Extract result count (handle both array and object results)
         let total_results = query_results
             .as_array()
             .map(|arr| arr.len())
-            .or_else(|| query_results.get("data").and_then(|d| d.as_array()).map(|arr| arr.len()))
+            .or_else(|| {
+                query_results
+                    .get("data")
+                    .and_then(|d| d.as_array())
+                    .map(|arr| arr.len())
+            })
             .unwrap_or(0);
 
         let execution_time_ms = start_time.elapsed().as_millis() as u64;
@@ -305,7 +314,11 @@ impl JobHandler for QueryJobHandler {
             total_results,
             execution_time_ms,
             results: query_results,
-            warnings: if warnings.is_empty() { None } else { Some(warnings) },
+            warnings: if warnings.is_empty() {
+                None
+            } else {
+                Some(warnings)
+            },
         };
 
         info!(
@@ -422,8 +435,7 @@ mod tests {
             };
 
             // Verify payload serializes correctly for job system
-            let payload_json =
-                serde_json::to_value(&payload).expect("payload should serialize");
+            let payload_json = serde_json::to_value(&payload).expect("payload should serialize");
             assert_eq!(payload_json["query_name"], "wedding");
             assert_eq!(payload_json["start_date"], "2024-06-01");
             assert_eq!(payload_json["end_date"], "2024-06-30");
