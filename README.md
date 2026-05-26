@@ -238,8 +238,15 @@ cargo build --features db
 
 ```
 astro-clock/
+├── assets/
+│   └── astronomicon/       # Generated Astronomicon SVG glyphs
+├── fonts/
+│   ├── astronomicon.csv    # Astronomicon glyph export map
+│   └── AstronomiconFonts_1.1/
 ├── src/
-│   ├── bin/main.rs          # Application entry point
+│   ├── bin/
+│   │   ├── main.rs          # Application entry point
+│   │   └── export_astronomicon_svg.rs
 │   ├── cli/
 │   │   ├── app.rs           # CLI argument parsing and main logic
 │   │   └── mod.rs

@@ -14,15 +14,11 @@
 
 **Review the design doc:** `docs/plans/2026-03-26-svg-glyphs-design.md`
 
-**Font file location:** `/home/bruce/Documents/projects/astro-clock/fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
+**Font file location:** `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
 
-**Glyph mapping:** `/home/bruce/Documents/projects/astro-clock/data/fonts.csv`
+**Glyph mapping:** `fonts/astronomicon.csv`
 
-**Needed glyphs (40 total):**
-- Planets: Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-- Zodiac: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces
-- Aspects: Conjunction, Sextile, Square, Trine, Opposition, Quincunx, Semi-Sextile, Semi-Square, Sesquisquare, Biquintile, Quintile, Semi-Quintile, Quindecile
-- Other: Retrograde, North Node, South Node, Chiron
+**Needed glyphs (67 total):** all mapped entries in `fonts/astronomicon.csv`, including planets and alternates, zodiac signs, aspects, lots, asteroids, chart markers, alchemical symbols, and elements.
 
 ---
 
@@ -223,7 +219,7 @@ path = "scripts/extract_glyphs.rs"
 **Step 3: Run the extraction script**
 
 Run: `cargo run --bin extract_glyphs > src/svg_glyph_paths.rs`
-Expected: Generated file with 40 GlyphData constants
+Expected: Generated file with 67 GlyphData constants
 
 **Step 4: Verify output**
 
@@ -290,7 +286,7 @@ pub const SUN: GlyphData = GlyphData {
     baseline_offset: 0.0,
 };
 
-// ... (all 40 glyphs)
+// ... (all 67 glyphs)
 
 /// Registry mapping semantic names to glyph data
 pub struct GlyphRegistry {
