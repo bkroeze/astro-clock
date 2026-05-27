@@ -1,7 +1,9 @@
 use axum::Json;
 use axum::body::Body;
 use axum::http::StatusCode;
-use axum::routing::{get, post};
+use axum::routing::get;
+#[cfg(feature = "db")]
+use axum::routing::post;
 use axum::{
     extract::Query,
     response::{IntoResponse, Response},

@@ -604,7 +604,7 @@ impl App {
     fn handle_query_command(
         &self,
         query_cmd: &QueryCommands,
-        config: &crate::config::AppConfig,
+        #[cfg_attr(not(feature = "db"), allow(unused_variables))] config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
         // Extract query parameters based on variant
         let (query_name, start, days, sync) = match query_cmd {
@@ -774,8 +774,8 @@ impl App {
 
     fn handle_job_command(
         &self,
-        job_cmd: &JobCommands,
-        config: &crate::config::AppConfig,
+        #[cfg_attr(not(feature = "db"), allow(unused_variables))] job_cmd: &JobCommands,
+        #[cfg_attr(not(feature = "db"), allow(unused_variables))] config: &crate::config::AppConfig,
     ) -> Result<(), crate::errors::Error> {
         #[cfg(feature = "db")]
         {
