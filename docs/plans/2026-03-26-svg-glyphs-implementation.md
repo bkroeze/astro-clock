@@ -4,9 +4,9 @@
 
 **Goal:** Add SVG output format to astro-clock that embeds astrological glyphs as SVG paths, making charts viewable without the Astronomicon font installed.
 
-**Architecture:** Create a glyph registry with extracted SVG paths from the TTF font, a new SVG renderer module, and integrate with the existing output handler. Glyphs are stored as static constants and rendered as `<path>` elements with transforms.
+**Architecture:** Create a glyph registry with extracted SVG paths from the TTF font, a new SVG renderer module, and integrate with the existing output handler. The repository also includes a glyph exporter that writes standalone Astronomicon SVG assets under `assets/astronomicon/`.
 
-**Tech Stack:** Rust, `ttf-parser` (dev dependency for extraction), `svg` crate (already in Cargo.toml), existing chart/render infrastructure.
+**Tech Stack:** Rust, `ttf-parser` (for glyph extraction), `svg` crate (already in Cargo.toml), existing chart/render infrastructure.
 
 ---
 
@@ -14,15 +14,11 @@
 
 **Review the design doc:** `docs/plans/2026-03-26-svg-glyphs-design.md`
 
-**Font file location:** `/home/bruce/Documents/projects/astro-clock/fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
+**Font file location:** `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
 
-**Glyph mapping:** `/home/bruce/Documents/projects/astro-clock/data/fonts.csv`
+**Glyph mapping:** `fonts/astronomicon.csv`
 
-**Needed glyphs (40 total):**
-- Planets: Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-- Zodiac: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces
-- Aspects: Conjunction, Sextile, Square, Trine, Opposition, Quincunx, Semi-Sextile, Semi-Square, Sesquisquare, Biquintile, Quintile, Semi-Quintile, Quindecile
-- Other: Retrograde, North Node, South Node, Chiron
+**Needed glyphs (67 total):** all mapped entries in `fonts/astronomicon.csv`, including planets and alternates, zodiac signs, aspects, lots, asteroids, chart markers, alchemical symbols, and elements.
 
 ---
 
@@ -31,11 +27,13 @@
 **Files:**
 - Modify: `Cargo.toml`
 
-**Step 1: Add ttf-parser as dev dependency**
+**Step 1: Add ttf-parser dependency**
 
 ```toml
-[dev-dependencies]
+[dependencies]
 ttf-parser = "0.25"
+
+[dev-dependencies]
 tempfile = "3"
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
@@ -58,183 +56,54 @@ git commit -m "chore: add ttf-parser for glyph extraction"
 
 ---
 
-## Task 2: Create glyph extraction script
+## Task 2: Create glyph export binary
 
 **Files:**
-- Create: `scripts/extract_glyphs.rs`
+- Create: `src/bin/export_astronomicon_svg.rs`
+- Modify: `Justfile`
 
-**Step 1: Write extraction script**
+**Step 1: Write export binary**
 
 ```rust
-//! Extract SVG paths from Astronomicon.ttf
-//! Run: cargo run --example extract_glyphs (after adding to examples)
+#[command(about = "Export mapped font glyphs to individual SVG files")]
+struct Args {
+    /// Strict, unquoted CSV: single-character glyph key,output basename
+    map_csv: PathBuf,
 
-use std::collections::HashMap;
-use std::fs;
+    /// TrueType font file to export glyphs from
+    ttf_file: PathBuf,
 
-fn main() {
-    let font_path = "fonts/AstronomiconFonts_1.1/Astronomicon.ttf";
-    let font_data = fs::read(font_path).expect("Failed to read font file");
-    let font = ttf_parser::Face::parse(&font_data, 0).expect("Failed to parse font");
-
-    // Define needed glyphs: (semantic_name, character_code)
-    let glyphs: HashMap<&str, char> = [
-        // Planets
-        ("sun", 'Q'),
-        ("moon", 'R'),
-        ("mercury", 'S'),
-        ("venus", 'T'),
-        ("mars", 'U'),
-        ("jupiter", 'V'),
-        ("saturn", 'W'),
-        ("uranus", 'X'),
-        ("neptune", 'Y'),
-        ("pluto", 'Z'),
-        // Zodiac
-        ("aries", 'A'),
-        ("taurus", 'B'),
-        ("gemini", 'C'),
-        ("cancer", 'D'),
-        ("leo", 'E'),
-        ("virgo", 'F'),
-        ("libra", 'G'),
-        ("scorpio", 'H'),
-        ("sagittarius", 'I'),
-        ("capricorn", '\\'),
-        ("aquarius", 'K'),
-        ("pisces", 'L'),
-        // Aspects
-        ("conjunction", '!'),
-        ("sextile", '%'),
-        ("square", '#'),
-        ("trine", '$'),
-        ("opposition", '"'),
-        ("quincunx", '&'),
-        ("semi_sextile", '\''),
-        ("semi_square", '('),
-        ("sesquisquare", ')'),
-        ("biquintile", '*'),
-        ("quintile", '+'),
-        ("semi_quintile", ','),
-        ("quindecile", '.'),
-        // Other
-        ("retrograde", 'N'),
-        ("north_node", 'g'),
-        ("south_node", 'i'),
-        ("chiron", 'q'),
-    ]
-    .iter()
-    .cloned()
-    .collect();
-
-    println!("// Generated glyph paths - DO NOT EDIT MANUALLY");
-    println!("// Run: cargo run --bin extract_glyphs");
-    println!();
-
-    for (name, ch) in glyphs {
-        let glyph_id = font.glyph_index(ch).expect(&format!("No glyph for {}", ch));
-        let mut builder = SvgPathBuilder::new();
-        font.outline_glyph(glyph_id, &mut builder)
-            .expect(&format!("No outline for {}", ch));
-
-        println!("pub const {}: GlyphData = GlyphData {{", name.to_uppercase());
-        println!("    path: \"{}\"," , builder.path);
-        println!("    view_box: ({}, {}, {}, {}),",
-            builder.min_x, builder.min_y, builder.width, builder.height);
-        println!("    baseline_offset: {},", builder.min_y.abs());
-        println!("}};");
-        println!();
-    }
-}
-
-struct SvgPathBuilder {
-    path: String,
-    min_x: f32,
-    min_y: f32,
-    max_x: f32,
-    max_y: f32,
-}
-
-impl SvgPathBuilder {
-    fn new() -> Self {
-        Self {
-            path: String::new(),
-            min_x: f32::INFINITY,
-            min_y: f32::INFINITY,
-            max_x: f32::NEG_INFINITY,
-            max_y: f32::NEG_INFINITY,
-        }
-    }
-
-    fn update_bounds(&mut self, x: f32, y: f32) {
-        self.min_x = self.min_x.min(x);
-        self.min_y = self.min_y.min(y);
-        self.max_x = self.max_x.max(x);
-        self.max_y = self.max_y.max(y);
-    }
-
-    fn width(&self) -> f32 {
-        self.max_x - self.min_x
-    }
-
-    fn height(&self) -> f32 {
-        self.max_y - self.min_y
-    }
-}
-
-impl ttf_parser::OutlineBuilder for SvgPathBuilder {
-    fn move_to(&mut self, x: f32, y: f32) {
-        self.update_bounds(x, y);
-        self.path.push_str(&format!("M{},{} ", x, y));
-    }
-
-    fn line_to(&mut self, x: f32, y: f32) {
-        self.update_bounds(x, y);
-        self.path.push_str(&format!("L{},{} ", x, y));
-    }
-
-    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.update_bounds(x1, y1);
-        self.update_bounds(x, y);
-        self.path.push_str(&format!("Q{},{} {},{} ", x1, y1, x, y));
-    }
-
-    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
-        self.update_bounds(x1, y1);
-        self.update_bounds(x2, y2);
-        self.update_bounds(x, y);
-        self.path.push_str(&format!("C{},{} {},{} {},{} ", x1, y1, x2, y2, x, y));
-    }
-
-    fn close(&mut self) {
-        self.path.push_str("Z ");
-    }
+    /// Directory where SVG files will be written
+    output_dir: PathBuf,
 }
 ```
 
-**Step 2: Add script to Cargo.toml as a binary**
+The binary should read `fonts/astronomicon.csv`, extract each mapped glyph outline
+from `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`, and write one
+`currentColor` SVG file per glyph to `assets/astronomicon/`.
 
-```toml
-[[bin]]
-name = "extract_glyphs"
-path = "scripts/extract_glyphs.rs"
+**Step 2: Add a Justfile recipe**
+
+```make
+make-svg:
+    cargo run --bin export_astronomicon_svg -- fonts/astronomicon.csv fonts/AstronomiconFonts_1.1/Astronomicon.ttf assets/astronomicon
 ```
 
-**Step 3: Run the extraction script**
+**Step 3: Run the exporter**
 
-Run: `cargo run --bin extract_glyphs > src/svg_glyph_paths.rs`
-Expected: Generated file with 40 GlyphData constants
+Run: `just make-svg`
+Expected: 67 generated SVG files in `assets/astronomicon/`
 
 **Step 4: Verify output**
 
-Run: `head -20 src/svg_glyph_paths.rs`
-Expected: See generated GlyphData constants
+Run: `ls assets/astronomicon | head`
+Expected: See generated Astronomicon SVG files
 
 **Step 5: Commit**
 
 ```bash
-git add Cargo.toml scripts/extract_glyphs.rs src/svg_glyph_paths.rs
-git commit -m "feat: extract glyph paths from Astronomicon font"
+git add Justfile src/bin/export_astronomicon_svg.rs fonts/astronomicon.csv assets/astronomicon
+git commit -m "feat: export Astronomicon glyph SVG assets"
 ```
 
 ---
@@ -246,7 +115,7 @@ git commit -m "feat: extract glyph paths from Astronomicon font"
 
 **Step 1: Write glyph registry with extracted paths**
 
-Copy the generated paths from `src/svg_glyph_paths.rs` into this module structure:
+Use the extracted Astronomicon path data in this module structure:
 
 ```rust
 //! SVG Glyph Registry
@@ -282,7 +151,7 @@ impl GlyphData {
 // ===== EMBEDDED GLYPH PATHS =====
 // Generated from Astronomicon.ttf - DO NOT EDIT
 
-// PASTE GENERATED CONSTANTS HERE from svg_glyph_paths.rs
+// PASTE EXTRACTED CONSTANTS HERE
 // Example format:
 pub const SUN: GlyphData = GlyphData {
     path: "M10,10 L20,20 ...",
@@ -290,7 +159,7 @@ pub const SUN: GlyphData = GlyphData {
     baseline_offset: 0.0,
 };
 
-// ... (all 40 glyphs)
+// ... (all 67 glyphs)
 
 /// Registry mapping semantic names to glyph data
 pub struct GlyphRegistry {
@@ -906,49 +775,34 @@ git commit -m "feat: add SVG output to HTTP server"
 
 ---
 
-## Task 7: Clean up extraction artifacts
+## Task 7: Verify glyph export artifacts
 
 **Files:**
-- Delete: `src/svg_glyph_paths.rs` (if it exists as a separate file)
-- Modify: `Cargo.toml` (remove ttf-parser from dev-dependencies)
+- Keep: `src/bin/export_astronomicon_svg.rs`
+- Keep: `fonts/astronomicon.csv`
+- Keep: `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
+- Keep: `assets/astronomicon/*.svg`
 
-**Step 1: Remove temporary extraction file**
+**Step 1: Regenerate SVG assets**
 
-Run: `rm -f src/svg_glyph_paths.rs`
+Run: `just make-svg`
+Expected: 67 generated SVG files in `assets/astronomicon/`
 
-**Step 2: Optionally remove extraction script**
+**Step 2: Verify the exporter remains available**
 
-The script can be kept for future glyph updates, or removed.
+Run: `cargo run --bin export_astronomicon_svg -- --help`
+Expected: Help text for the Astronomicon SVG exporter
 
-If removing:
-Run: `rm -rf scripts/extract_glyphs.rs`
-Remove from Cargo.toml:
-```toml
-# Remove this:
-[[bin]]
-name = "extract_glyphs"
-path = "scripts/extract_glyphs.rs"
-```
-
-**Step 3: Remove ttf-parser dependency**
-
-In `Cargo.toml`, remove from `[dev-dependencies]`:
-```toml
-ttf-parser = "0.25"  # Remove this line
-```
-
-**Step 4: Verify build still works**
+**Step 3: Verify build still works**
 
 Run: `cargo build`
 Expected: Success
 
-**Step 5: Commit**
+**Step 4: Commit**
 
 ```bash
-git add Cargo.toml
-git rm -f src/svg_glyph_paths.rs 2>/dev/null || true
-git rm -rf scripts/extract_glyphs.rs 2>/dev/null || true
-git commit -m "chore: remove temporary glyph extraction artifacts"
+git add Justfile src/bin/export_astronomicon_svg.rs fonts assets/astronomicon
+git commit -m "feat: add Astronomicon glyph asset workflow"
 ```
 
 ---
@@ -1090,10 +944,10 @@ git commit -m "feat: complete SVG glyph rendering implementation
 
 ## Summary
 
-This implementation plan adds SVG output support to astro-clock using embedded glyph paths instead of font references. The approach:
+This implementation plan adds SVG output support to astro-clock using embedded glyph paths and checked-in glyph assets instead of font references. The approach:
 
-1. **Extracts** glyph paths from the TTF font once using ttf-parser
-2. **Embeds** paths as static constants in the binary
+1. **Extracts** glyph paths from the TTF font using ttf-parser
+2. **Exports** mapped Astronomicon glyphs as standalone SVG assets
 3. **Renders** charts using `<path>` elements with transforms
 4. **Produces** standalone SVGs that work anywhere
 
@@ -1104,12 +958,16 @@ This implementation plan adds SVG output support to astro-clock using embedded g
 - Simple, maintainable code
 
 **Files Created:**
+- `src/bin/export_astronomicon_svg.rs` - Astronomicon glyph SVG exporter
+- `fonts/astronomicon.csv` - Glyph export mapping
+- `assets/astronomicon/*.svg` - Generated glyph SVG assets
 - `src/svg_glyphs.rs` - Glyph registry with embedded paths
 - `src/svg_renderer.rs` - SVG generation logic
 - `tests/svg_output_test.rs` - Integration tests
 
 **Files Modified:**
-- `Cargo.toml` - Added ttf-parser (dev), module exports
+- `Justfile` - Added `make-svg` asset generation recipe
+- `Cargo.toml` - Added ttf-parser, module exports
 - `src/lib.rs` - Added module declarations
 - `src/output_handler.rs` - Added SVG format
 - `src/server/mod.rs` - Added SVG endpoint

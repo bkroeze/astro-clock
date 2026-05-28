@@ -176,6 +176,20 @@ cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format svg 
 
 The SVG file contains embedded glyph paths and can be viewed in any browser or image viewer without the Astronomicon font installed.
 
+## Astronomicon Glyph SVGs
+
+Generate one SVG file per mapped Astronomicon glyph with:
+
+```bash
+just make-svg
+```
+
+The recipe reads `fonts/astronomicon.csv` and `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`, then writes the generated files to `assets/astronomicon/`. Each SVG uses `currentColor`, so callers can color the glyphs with CSS or SVG attributes.
+
+`fonts/astronomicon.csv` is strict, unquoted CSV with one glyph per line:
+`single-character glyph key,output basename`. Output basenames must be unique,
+non-empty, and must not contain `/` or `\`; extra commas are rejected.
+
 ## Example Usage
 
 ### Current Chart (San Francisco)
@@ -228,8 +242,15 @@ cargo build --features db
 
 ```
 astro-clock/
+├── assets/
+│   └── astronomicon/       # Generated Astronomicon SVG glyphs
+├── fonts/
+│   ├── astronomicon.csv    # Astronomicon glyph export map
+│   └── AstronomiconFonts_1.1/
 ├── src/
-│   ├── bin/main.rs          # Application entry point
+│   ├── bin/
+│   │   ├── main.rs          # Application entry point
+│   │   └── export_astronomicon_svg.rs
 │   ├── cli/
 │   │   ├── app.rs           # CLI argument parsing and main logic
 │   │   └── mod.rs

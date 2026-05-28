@@ -15,25 +15,25 @@ The project uses the Astronomicon font to render astrological symbols (planets, 
 ## Requirements
 
 - **Standalone SVGs:** No external font dependencies
-- **Target Glyphs:** ~40 glyphs (planets, zodiac signs, aspects, retrograde, nodes, chiron)
+- **Target Glyphs:** 67 mapped glyphs (planets, zodiac signs, aspects, points, alchemical symbols, elements)
 - **Consistent Rendering:** Identical appearance across all viewers
 - **Integration:** New output format alongside existing PNG/WebP
 
 ## Glyph Mapping
 
-Based on `data/fonts.csv`, we need these semantic glyphs:
+Based on `fonts/astronomicon.csv`, we need these semantic glyphs:
 
-### Planets (10 glyphs)
-- Sun (Q), Moon (R), Mercury (S), Venus (T), Mars (U), Jupiter (V), Saturn (W), Uranus (X), Neptune (Y), Pluto (Z)
+### Planets and Points (21 glyphs)
+- Sun (Q), Moon (R), Mercury (S), Venus (T), Mars (U), Jupiter (V), Saturn (W), Uranus (X), Neptune (Y), Pluto (Z), alternates, nodes, Earth, Lilith, Vulcan
 
 ### Zodiac Signs (13 glyphs)
-- Aries (A), Taurus (B), Gemini (C), Cancer (D), Leo (E), Virgo (F), Libra (G), Scorpio (H), Sagittarius (I), Capricorn (\), Aquarius (K), Pisces (L)
+- Aries (A), Taurus (B), Gemini (C), Cancer (D), Leo (E), Virgo (F), Libra (G), Scorpio (H), Sagittarius (I), Capricorn (USA and Europe variants), Aquarius (K), Pisces (L)
 
-### Aspects (13 glyphs)
-- Conjunction (!), Sextile (%), Square (#), Trine ($), Opposition (") and others
+### Aspects and Lots (14 glyphs)
+- Conjunction (!), Sextile (%), Square (#), Trine ($), Opposition (") and other mapped aspects, Part of Fortune, Part of Spirit
 
-### Other (4 glyphs)
-- Retrograde (N), North Node (g), South Node (i), Chiron (q)
+### Other (19 glyphs)
+- Asteroids, Chiron, Pholus, chart markers, alchemical symbols, elements, pentagram, hexagram
 
 ## Architecture
 
@@ -98,17 +98,16 @@ Generates standalone SVG documents using the glyph registry:
 
 ## Extraction Process
 
-One-time step to extract glyph paths from Astronomicon.ttf:
+The checked-in `export_astronomicon_svg` binary regenerates standalone glyph
+assets from the Astronomicon font:
 
-1. Add `ttf-parser` crate as a dev-dependency
-2. Create extraction script that:
-   - Opens the TTF file
-   - Iterates through needed codepoints
-   - Extracts outline data (move_to, line_to, quad_to, curve_to)
-   - Converts to SVG path format
-   - Generates Rust code with static constants
-3. Run once, commit generated code
-4. Remove extraction script and ttf-parser dependency
+1. Reads `fonts/astronomicon.csv` for codepoint-to-name mappings
+2. Opens `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
+3. Extracts outline data (move_to, line_to, quad_to, curve_to)
+4. Converts each outline to an individual SVG path
+5. Writes the generated files under `assets/astronomicon/`
+
+Run `just make-svg` after changing the mapping or bundled font.
 
 ## Integration Points
 
@@ -137,7 +136,7 @@ HTTP endpoint serves SVG with `Content-Type: image/svg+xml`.
 
 1. **Truly Standalone:** No font installation required
 2. **Consistent:** Renders identically in all SVG viewers
-3. **Efficient:** Only embeds needed glyphs (~40 vs. full font)
+3. **Efficient:** Only embeds mapped glyphs (67 vs. full font)
 4. **Simple:** No runtime font dependencies
 
 ## Trade-offs

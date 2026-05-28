@@ -15,6 +15,9 @@ Compressed chart images for web use.
 ### Markdown Tables
 Text-based tables showing planetary positions and aspects.
 
+### SVG Charts
+Standalone vector charts with embedded glyph paths.
+
 ## How to Generate Examples
 
 ```bash
@@ -27,12 +30,21 @@ cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format webp
 # Generate markdown table
 cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format md --output docs/example_sf.md
 
+# Generate SVG chart
+cargo run --bin astro-clock -- chart --lat 37.7749 --lon -122.4194 --format svg --output docs/example_sf.svg
+
 # Generate with specific date
 cargo run --bin astro-clock -- chart \\
   --lat 40.7128 \\
   --lon -74.0060 \\
   --time "2026-03-15T14:30:00-04:00" \\
   --output docs/nyc_spring.png
+```
+
+Generate the standalone Astronomicon glyph assets with:
+
+```bash
+just make-svg
 ```
 
 ## Chart Types
