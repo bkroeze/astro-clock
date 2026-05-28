@@ -65,7 +65,7 @@ git commit -m "chore: add ttf-parser for glyph extraction"
 **Step 1: Write export binary**
 
 ```rust
-#[command(about = "Export mapped font glyphs to individual SVG files")]
+#[command(about = "Export mapped font glyphs to SVG files and optional embedded Rust data")]
 struct Args {
     /// Strict, unquoted CSV: single-character glyph key,output basename
     map_csv: PathBuf,
@@ -577,7 +577,8 @@ fn test_svg_valid_xml() {
 #[test]
 fn test_svg_standalone() {
     // Verify no external references (fonts, images)
-    // Should not contain "font-family", "@import", etc.
+    // House labels may use font-family="sans-serif", but output should not
+    // reference external font files, imports, or URLs.
 }
 ```
 
@@ -641,8 +642,8 @@ Generate an SVG:
 Run: `cargo run -- chart --lat 40.7128 --lon -74.006 --format svg --output final_test.svg`
 
 Check content:
-Run: `cat final_test.svg | grep -i font`
-Expected: No font references found
+Run: `grep -Ei '\.ttf|@font-face|@import|url\(' final_test.svg`
+Expected: No external font or resource references found
 
 **Step 3: Test cross-platform viewing**
 
