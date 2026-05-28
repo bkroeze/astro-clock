@@ -5,7 +5,7 @@ use axum::routing::get;
 #[cfg(feature = "db")]
 use axum::routing::post;
 use axum::{
-    extract::Query,
+    extract::{Query, rejection::QueryRejection},
     response::{IntoResponse, Response},
 };
 use std::net::SocketAddr;
@@ -328,7 +328,18 @@ fn parse_chart_data_time(time: Option<&str>) -> Result<f64, (StatusCode, Json<Er
 
 /// JSON endpoint for chart data (planets, houses, aspects)
 /// Returns structured JSON for display in the Django app
-async fn chart_data_handler(Query(query): Query<ChartDataQuery>) -> ChartDataResult {
+async fn chart_data_handler(
+    query: Result<Query<ChartDataQuery>, QueryRejection>,
+) -> ChartDataResult {
+    let Query(query) = query.map_err(|e| {
+        tracing::warn!("Invalid chart data query: {}", e);
+        chart_data_error(
+            StatusCode::BAD_REQUEST,
+            "invalid_query",
+            format!("Invalid query parameters: {}", e),
+        )
+    })?;
+
     // Validate required parameters
     let lat = query.lat.ok_or_else(|| {
         tracing::warn!("Missing required parameter: lat");
@@ -551,6 +562,39 @@ mod tests {
         assert_eq!(
             json_value.get("error").unwrap().as_str().unwrap(),
             "invalid_lat"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_rejects_malformed_lat_as_json() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=abc&lon=-74.0060")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "invalid_query"
+        );
+        assert!(
+            json_value
+                .get("message")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .starts_with("Invalid query parameters:")
         );
     }
 
