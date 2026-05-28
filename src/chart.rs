@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 use serde::Serialize;
 
@@ -88,6 +88,30 @@ impl fmt::Display for HouseSystem {
             HouseSystem::Alcabitus => write!(f, "Alcabitus"),
             HouseSystem::Topocentric => write!(f, "Topocentric"),
             HouseSystem::Vehlow => write!(f, "Vehlow"),
+        }
+    }
+}
+
+impl FromStr for HouseSystem {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "placidus" => Ok(HouseSystem::Placidus),
+            "koch" => Ok(HouseSystem::Koch),
+            "equal" => Ok(HouseSystem::Equal),
+            "whole" | "wholesign" | "whole_sign" => Ok(HouseSystem::Whole),
+            "porphyry" => Ok(HouseSystem::Porphyry),
+            "regiomontanus" => Ok(HouseSystem::Regiomontanus),
+            "campanus" => Ok(HouseSystem::Campanus),
+            "morinus" => Ok(HouseSystem::Morinus),
+            "alcabitus" => Ok(HouseSystem::Alcabitus),
+            "topocentric" => Ok(HouseSystem::Topocentric),
+            "vehlow" => Ok(HouseSystem::Vehlow),
+            _ => Err(format!(
+                "Invalid house system: '{}'. Valid options: Placidus, Koch, Equal, Whole, Porphyry, Regiomontanus, Campanus, Morinus, Alcabitus, Topocentric, Vehlow",
+                s
+            )),
         }
     }
 }

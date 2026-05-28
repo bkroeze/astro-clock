@@ -95,7 +95,8 @@ cargo run --bin astro-clock -- serve --host 127.0.0.1 --port 3000
 
 **Endpoints:**
 - `GET /health` - Health check
-- `GET /chart?lat=<lat>&lon=<lon>&time=<iso8601>&format=<png|svg>` - Generate chart PNG or SVG
+- `GET /chart?lat=<lat>&lon=<lon>&time=<iso8601>&format=<png|svg>` - Generate chart image output (`png` default, or `svg`)
+- `GET /api/v1/chart/data?lat=<lat>&lon=<lon>&time=<iso8601>&house=<SYSTEM>` - Generate structured chart data as JSON
 
 ## Configuration
 

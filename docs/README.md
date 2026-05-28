@@ -125,6 +125,7 @@ Get a chart:
 ```bash
 curl "http://localhost:3000/chart?lat=37.7749&lon=-122.4194" > docs/server_chart.png
 curl "http://localhost:3000/chart?lat=37.7749&lon=-122.4194&format=svg" > docs/server_chart.svg
+curl "http://localhost:3000/api/v1/chart/data?lat=37.7749&lon=-122.4194&house=Whole" > docs/server_chart.json
 ```
 
 Check health:
