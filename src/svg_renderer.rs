@@ -91,45 +91,11 @@ impl SvgRenderer {
     fn generate_glyph_defs(&self) -> String {
         let mut defs = vec!["<defs>".to_string()];
 
-        // Define all glyphs as reusable paths
-        let glyph_names = [
-            "sun",
-            "moon",
-            "mercury",
-            "venus",
-            "mars",
-            "jupiter",
-            "saturn",
-            "uranus",
-            "neptune",
-            "pluto",
-            "aries",
-            "taurus",
-            "gemini",
-            "cancer",
-            "leo",
-            "virgo",
-            "libra",
-            "scorpio",
-            "sagittarius",
-            "capricorn",
-            "aquarius",
-            "pisces",
-            "retrograde",
-            "chiron",
-            "north_node",
-            "south_node",
-            "conjunction",
-            "sextile",
-            "square",
-            "trine",
-            "opposition",
-        ];
+        let mut glyphs: Vec<_> = self.glyph_registry.iter().collect();
+        glyphs.sort_by_key(|(name, _)| *name);
 
-        for name in &glyph_names {
-            if let Some(glyph) = self.glyph_registry.get(name) {
-                defs.push(format!(r#"<path id="{name}" d="{}" />"#, glyph.path));
-            }
+        for (name, glyph) in glyphs {
+            defs.push(format!(r#"<path id="{name}" d="{}" />"#, glyph.path));
         }
 
         defs.push("</defs>".to_string());
@@ -363,10 +329,13 @@ impl SvgRenderer {
             if planet.retrograde {
                 let retro_x = x + symbol_size / 2.0 + 2.0;
                 let retro_y = y - symbol_size / 2.0;
-                svg.push(format!(
-                    r#"<text x="{}" y="{}" font-size="{}" fill="black" font-family="sans-serif">r</text>"#,
-                    retro_x, retro_y + retrograde_size / 2.0, retrograde_size
-                ));
+                if let Some(glyph) = self.glyph_registry.get("retrograde") {
+                    let transform =
+                        self.calculate_glyph_transform(glyph, retro_x, retro_y, retrograde_size);
+                    svg.push(format!(
+                        r##"<use href="#retrograde" transform="{transform}"/>"##
+                    ));
+                }
             }
         }
 
@@ -437,8 +406,8 @@ impl SvgRenderer {
         let scale = target_size / f32::max(glyph_width, glyph_height);
 
         // Center the glyph at the target position
-        let offset_x = x - (glyph_width * scale) / 2.0;
-        let offset_y = y - (glyph_height * scale) / 2.0 + glyph.baseline_offset * scale;
+        let offset_x = x - (glyph.view_box.0 + glyph_width / 2.0) * scale;
+        let offset_y = y - (glyph.view_box.1 + glyph_height / 2.0) * scale;
 
         format!("translate({}, {}) scale({})", offset_x, offset_y, scale)
     }
