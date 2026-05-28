@@ -72,14 +72,19 @@ Glyphs are referenced by semantic names (e.g., "sun", "aries", "conjunction") ra
 Generates standalone SVG documents using the glyph registry:
 
 1. Calculate chart geometry (same logic as PNG renderer)
-2. Look up glyph paths by semantic key
-3. Render as `<path>` elements with transform attributes
+2. Emit registered glyph paths once in `<defs>`
+3. Place chart glyphs with `<use>` elements and transform attributes
 4. Include wheel, house cusps, aspects, planet positions
 
 **Example Output:**
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <path id="sun" d="M738 -320.5 Q738 -224 690 -142..."/>
+    <path id="retrograde" d="M14 -432 L170 -432..."/>
+  </defs>
+
   <!-- Background -->
   <rect width="800" height="800" fill="white"/>
   
@@ -89,10 +94,9 @@ Generates standalone SVG documents using the glyph registry:
   <!-- House cusp lines -->
   <line x1="400" y1="120" x2="400" y2="280" stroke="black" stroke-width="1.5"/>
   
-  <!-- Planet symbol (rendered as path, not text) -->
-  <path d="M10,20 C6.48,2..." 
-        transform="translate(680, 400) scale(0.5)" 
-        fill="black"/>
+  <!-- Planet symbol (rendered from defs, not text) -->
+  <use href="#sun" transform="translate(680, 400) scale(0.5)"/>
+  <use href="#retrograde" transform="translate(692, 392) scale(0.2)"/>
 </svg>
 ```
 

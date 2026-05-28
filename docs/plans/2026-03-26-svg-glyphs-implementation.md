@@ -265,288 +265,55 @@ git commit -m "feat: add glyph registry with embedded SVG paths"
 
 ```rust
 //! SVG Chart Renderer
-//! Generates standalone SVG charts with embedded glyph paths.
+//! Generates standalone SVG charts using embedded glyph paths from the glyph registry.
 
-use crate::chart::{ChartData, PlanetPosition, HouseCusps};
+use crate::chart::ChartData;
 use crate::svg_glyphs::GlyphRegistry;
-use svg::Document;
-use svg::node::element::{Circle, Line, Path, Rectangle, Text};
-use svg::node::element::path::Data;
-
-/// Configuration for SVG rendering
-#[derive(Debug, Clone)]
-pub struct SvgConfig {
-    pub width: u32,
-    pub height: u32,
-    pub background_color: String,
-    pub stroke_color: String,
-    pub planet_color: String,
-}
-
-impl Default for SvgConfig {
-    fn default() -> Self {
-        Self {
-            width: 800,
-            height: 800,
-            background_color: "white".to_string(),
-            stroke_color: "black".to_string(),
-            planet_color: "black".to_string(),
-        }
-    }
-}
 
 /// SVG Chart Renderer
 pub struct SvgRenderer {
-    config: SvgConfig,
+    width: u32,
+    height: u32,
     glyph_registry: GlyphRegistry,
 }
 
 impl SvgRenderer {
-    pub fn new(config: SvgConfig) -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         Self {
-            config,
+            width,
+            height,
             glyph_registry: GlyphRegistry::new(),
         }
     }
     
     /// Render a chart to SVG string
-    pub fn render(&self, chart_data: &ChartData) -> Result<String, Box<dyn std::error::Error>> {
-        let mut doc = Document::new()
-            .set("viewBox", format!("0 0 {} {}", self.config.width, self.config.height))
-            .set("xmlns", "http://www.w3.org/2000/svg");
-        
-        // Add background
-        let bg = Rectangle::new()
-            .set("width", "100%")
-            .set("height", "100%")
-            .set("fill", &self.config.background_color);
-        doc = doc.add(bg);
-        
-        let center_x = self.config.width as f32 / 2.0;
-        let center_y = self.config.height as f32 / 2.0;
-        let radius = (self.config.width.min(self.config.height) as f32 * 0.35) as u32;
-        
-        // Draw zodiac wheel
-        doc = self.draw_zodiac_wheel(doc, center_x, center_y, radius);
-        
-        // Draw house cusps
-        doc = self.draw_house_cusps(doc, center_x, center_y, radius, &chart_data.houses);
-        
-        // Draw zodiac sign labels
-        doc = self.draw_zodiac_labels(doc, center_x, center_y, radius);
-        
-        // Draw planets
-        doc = self.draw_planets(doc, center_x, center_y, radius, &chart_data.planets)?;
-        
-        // Draw house degree labels
-        doc = self.draw_house_labels(doc, center_x, center_y, radius, &chart_data.houses)?;
-        
-        Ok(doc.to_string())
+    pub fn render_chart(&self, chart_data: &ChartData) -> Result<String, Box<dyn std::error::Error>> {
+        let mut svg_elements = Vec::new();
+        svg_elements.push(format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}" viewBox="0 0 {} {}" style="background-color: white;">"#,
+            self.width, self.height, self.width, self.height
+        ));
+        svg_elements.push(self.generate_glyph_defs());
+
+        // Draw wheel, signs, aspects, planets, and house labels.
+        // Glyph placements use `<use href="#glyph_name" transform="..."/>`.
+
+        svg_elements.push("</svg>".to_string());
+        Ok(svg_elements.join("\n"))
     }
-    
-    fn draw_zodiac_wheel(&self, doc: Document, cx: f32, cy: f32, radius: u32) -> Document {
-        // Outer circle
-        let circle = Circle::new()
-            .set("cx", cx)
-            .set("cy", cy)
-            .set("r", radius)
-            .set("fill", "none")
-            .set("stroke", &self.config.stroke_color)
-            .set("stroke-width", 2);
-        
-        let mut doc = doc.add(circle);
-        
-        // Degree marks
-        for degree in 0..360 {
-            let length = if degree % 30 == 0 {
-                radius as f32 * 0.88
-            } else if degree % 10 == 0 {
-                radius as f32 * 0.92
-            } else if degree % 5 == 0 {
-                radius as f32 * 0.95
-            } else {
-                continue;
-            };
-            
-            let angle = (degree as f32).to_radians();
-            let x1 = cx + radius as f32 * angle.cos();
-            let y1 = cy + radius as f32 * angle.sin();
-            let x2 = cx + length * angle.cos();
-            let y2 = cy + length * angle.sin();
-            
-            let stroke_width = if degree % 30 == 0 { 2.0 } else { 1.0 };
-            
-            let line = Line::new()
-                .set("x1", x1)
-                .set("y1", y1)
-                .set("x2", x2)
-                .set("y2", y2)
-                .set("stroke", &self.config.stroke_color)
-                .set("stroke-width", stroke_width);
-            
-            doc = doc.add(line);
+
+    /// Generate sorted SVG defs for every registered glyph, including retrograde.
+    fn generate_glyph_defs(&self) -> String {
+        let mut defs = vec!["<defs>".to_string()];
+        let mut glyphs: Vec<_> = self.glyph_registry.iter().collect();
+        glyphs.sort_by_key(|(name, _)| *name);
+
+        for (name, glyph) in glyphs {
+            defs.push(format!(r#"<path id="{name}" d="{}" />"#, glyph.path));
         }
-        
-        doc
-    }
-    
-    fn draw_zodiac_labels(&self, doc: Document, cx: f32, cy: f32, radius: u32) -> Document {
-        let signs = [
-            ("aries", 0), ("taurus", 30), ("gemini", 60), ("cancer", 90),
-            ("leo", 120), ("virgo", 150), ("libra", 180), ("scorpio", 210),
-            ("sagittarius", 240), ("capricorn", 270), ("aquarius", 300), ("pisces", 330),
-        ];
-        
-        let label_radius = radius as f32 * 1.08;
-        let mut doc = doc;
-        
-        for (sign, start_deg) in &signs {
-            let mid_deg = (*start_deg as f32 + 15.0 + 180.0).to_radians();
-            let x = cx + label_radius * mid_deg.cos();
-            let y = cy + label_radius * mid_deg.sin();
-            
-            if let Some(glyph) = self.glyph_registry.get(sign) {
-                let path = self.render_glyph_path(glyph, x, y, 24.0);
-                doc = doc.add(path);
-            }
-        }
-        
-        doc
-    }
-    
-    fn draw_house_cusps(&self, doc: Document, cx: f32, cy: f32, radius: u32, houses: &HouseCusps) -> Document {
-        let mut doc = doc;
-        
-        for cusp in &houses.houses {
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle = (rotated_cusp as f32).to_radians();
-            
-            let x1 = cx + radius as f32 * angle.cos();
-            let y1 = cy + radius as f32 * angle.sin();
-            let x2 = cx + (radius as f32 * 0.7) * angle.cos();
-            let y2 = cy + (radius as f32 * 0.7) * angle.sin();
-            
-            let line = Line::new()
-                .set("x1", x1)
-                .set("y1", y1)
-                .set("x2", x2)
-                .set("y2", y2)
-                .set("stroke", &self.config.stroke_color)
-                .set("stroke-width", 1.5);
-            
-            doc = doc.add(line);
-        }
-        
-        doc
-    }
-    
-    fn draw_planets(&self, doc: Document, cx: f32, cy: f32, radius: u32, planets: &[PlanetPosition]) -> Result<Document, Box<dyn std::error::Error>> {
-        let planet_map: std::collections::HashMap<&str, &str> = [
-            ("Sun", "sun"), ("Moon", "moon"), ("Mercury", "mercury"),
-            ("Venus", "venus"), ("Mars", "mars"), ("Jupiter", "jupiter"),
-            ("Saturn", "saturn"), ("Uranus", "uranus"), ("Neptune", "neptune"),
-            ("Pluto", "pluto"), ("True Node", "north_node"),
-            ("Mean Node", "north_node"), ("Chiron", "chiron"),
-        ]
-        .iter()
-        .cloned()
-        .collect();
-        
-        let planet_radius = radius as f32 * 0.75;
-        let mut doc = doc;
-        
-        for planet in planets {
-            let glyph_name = planet_map.get(planet.name.as_str())
-                .copied()
-                .unwrap_or(&planet.name.to_lowercase());
-            
-            let position = (planet.position.longitude + 180.0) % 360.0;
-            let angle = (position as f32).to_radians();
-            
-            let x = cx + planet_radius * angle.cos();
-            let y = cy + planet_radius * angle.sin();
-            
-            if let Some(glyph) = self.glyph_registry.get(glyph_name) {
-                let path = self.render_glyph_path(glyph, x, y, 20.0);
-                doc = doc.add(path);
-                
-                // Add retrograde indicator
-                if planet.retrograde {
-                    let retro_text = Text::new("R")
-                        .set("x", x + 12.0)
-                        .set("y", y - 8.0)
-                        .set("font-size", 10)
-                        .set("fill", &self.config.planet_color);
-                    doc = doc.add(retro_text);
-                }
-            }
-        }
-        
-        Ok(doc)
-    }
-    
-    fn draw_house_labels(&self, doc: Document, cx: f32, cy: f32, radius: u32, houses: &HouseCusps) -> Result<Document, Box<dyn std::error::Error>> {
-        let label_radius = radius as f32 * 0.6;
-        let zodiac_order = [
-            "aries", "taurus", "gemini", "cancer", "leo", "virgo",
-            "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
-        ];
-        let mut doc = doc;
-        
-        for cusp in &houses.houses {
-            let rotated_cusp = (cusp + 180.0) % 360.0;
-            let angle = (rotated_cusp as f32).to_radians();
-            
-            let x = cx + label_radius * angle.cos();
-            let y = cy + label_radius * angle.sin();
-            
-            let degree_in_sign = cusp % 30.0;
-            let sign_index = (cusp / 30.0) as usize % 12;
-            let sign_name = zodiac_order[sign_index];
-            
-            // Render sign symbol
-            if let Some(glyph) = self.glyph_registry.get(sign_name) {
-                let path = self.render_glyph_path(glyph, x - 15.0, y, 12.0);
-                doc = doc.add(path);
-            }
-            
-            // Render degree text
-            let deg = degree_in_sign as i32;
-            let min = ((degree_in_sign - deg as f64) * 60.0) as i32;
-            let label = format!("{:02}°{:02}'", deg, min);
-            
-            let text = Text::new(label)
-                .set("x", x)
-                .set("y", y + 4.0)
-                .set("font-size", 10)
-                .set("text-anchor", "middle")
-                .set("fill", &self.config.stroke_color);
-            
-            doc = doc.add(text);
-        }
-        
-        Ok(doc)
-    }
-    
-    /// Render a glyph as an SVG path element
-    fn render_glyph_path(&self, glyph: &crate::svg_glyphs::GlyphData, x: f32, y: f32, size: f32) -> Path {
-        // Calculate scale to fit desired size
-        let glyph_height = glyph.height();
-        let scale = size / glyph_height;
-        
-        // Center the glyph at x, y
-        let glyph_width = glyph.width() * scale;
-        let glyph_scaled_height = glyph_height * scale;
-        let x_offset = x - glyph_width / 2.0;
-        let y_offset = y - glyph_scaled_height / 2.0 + glyph.baseline_offset * scale;
-        
-        // Build transform
-        let transform = format!("translate({}, {}) scale({})", x_offset, y_offset, scale);
-        
-        Path::new()
-            .set("d", glyph.path)
-            .set("transform", transform)
-            .set("fill", &self.config.planet_color)
+
+        defs.push("</defs>".to_string());
+        defs.join("\n")
     }
 }
 
@@ -557,15 +324,13 @@ mod tests {
     
     #[test]
     fn test_svg_renderer_creation() {
-        let config = SvgConfig::default();
-        let renderer = SvgRenderer::new(config);
-        assert_eq!(renderer.config.width, 800);
+        let renderer = SvgRenderer::new(800, 800);
+        assert_eq!(renderer.width, 800);
     }
     
     #[test]
     fn test_svg_rendering() {
-        let config = SvgConfig::default();
-        let renderer = SvgRenderer::new(config);
+        let renderer = SvgRenderer::new(800, 800);
         
         let chart_data = ChartData {
             geo_pos: GeoPos::new(40.7128, -74.0060, 0.0),
@@ -584,10 +349,11 @@ mod tests {
             sidereal_time: 0.0,
         };
         
-        let svg = renderer.render(&chart_data).unwrap();
+        let svg = renderer.render_chart(&chart_data).unwrap();
         assert!(svg.contains("<svg"));
         assert!(svg.contains("</svg>"));
-        assert!(svg.contains("Sun") || svg.contains("sun"));
+        assert!(svg.contains("<defs>"));
+        assert!(svg.contains(r##"<use href="#sun""##));
     }
 }
 ```
@@ -654,13 +420,12 @@ impl std::str::FromStr for OutputFormat {
 In the output handling code, add a case for SVG:
 
 ```rust
-use crate::svg_renderer::{SvgRenderer, SvgConfig};
+use crate::svg_renderer::SvgRenderer;
 
 // In the output handling function:
 OutputFormat::Svg => {
-    let config = SvgConfig::default();
-    let renderer = SvgRenderer::new(config);
-    let svg_content = renderer.render(chart_data)?;
+    let renderer = SvgRenderer::new(800, 800);
+    let svg_content = renderer.render_chart(chart_data)?;
     std::fs::write(output_path, svg_content)?;
 }
 ```
@@ -705,10 +470,9 @@ async fn get_chart(
     
     match params.format.as_deref() {
         Some("svg") => {
-            use crate::svg_renderer::{SvgRenderer, SvgConfig};
-            let config = SvgConfig::default();
-            let renderer = SvgRenderer::new(config);
-            let svg = renderer.render(&chart_data)?;
+            use crate::svg_renderer::SvgRenderer;
+            let renderer = SvgRenderer::new(800, 800);
+            let svg = renderer.render_chart(&chart_data)?;
             
             Ok(Response::builder()
                 .header("Content-Type", "image/svg+xml")
@@ -782,7 +546,7 @@ git commit -m "feat: add Astronomicon glyph asset workflow"
 
 ```rust
 use astro_clock::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
-use astro_clock::svg_renderer::{SvgRenderer, SvgConfig};
+use astro_clock::svg_renderer::SvgRenderer;
 
 #[test]
 fn test_svg_contains_all_planets() {
@@ -794,14 +558,13 @@ fn test_svg_contains_all_planets() {
     
     // This test assumes you have a way to create calculator
     // Adjust based on actual API
-    let svg_config = SvgConfig::default();
-    let renderer = SvgRenderer::new(svg_config);
+    let renderer = SvgRenderer::new(800, 800);
     
     // Create mock chart data or use calculator
     // ...
     
     // Render and verify
-    // let svg = renderer.render(&chart_data).unwrap();
+    // let svg = renderer.render_chart(&chart_data).unwrap();
     // assert!(svg.contains("sun") || svg.contains("Sun"));
     // Check for other planets...
 }
@@ -914,7 +677,7 @@ This implementation plan adds SVG output support to astro-clock using embedded g
 
 1. **Extracts** glyph paths from the TTF font using ttf-parser
 2. **Exports** mapped Astronomicon glyphs as standalone SVG assets
-3. **Renders** charts using `<path>` elements with transforms
+3. **Renders** charts using sorted `<defs>` and `<use>` elements with transforms
 4. **Produces** standalone SVGs that work anywhere
 
 **Key Benefits:**
