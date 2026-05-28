@@ -253,7 +253,7 @@ async fn chart_handler(Query(query): Query<ChartQuery>) -> Result<Response, Stat
 struct ChartDataQuery {
     lat: Option<f64>,
     lon: Option<f64>,
-    _time: Option<String>,
+    time: Option<String>,
     house: Option<String>,
 }
 
@@ -277,57 +277,131 @@ struct ChartMetadata {
     house_system: String,
 }
 
+#[derive(Debug, serde::Serialize)]
+struct ErrorResponse {
+    error: String,
+    message: String,
+}
+
+type ChartDataResult = Result<Json<ChartDataResponse>, (StatusCode, Json<ErrorResponse>)>;
+
+fn chart_data_error(
+    status: StatusCode,
+    error: &str,
+    message: impl Into<String>,
+) -> (StatusCode, Json<ErrorResponse>) {
+    (
+        status,
+        Json(ErrorResponse {
+            error: error.to_string(),
+            message: message.into(),
+        }),
+    )
+}
+
+fn parse_chart_data_time(time: Option<&str>) -> Result<f64, (StatusCode, Json<ErrorResponse>)> {
+    match time {
+        Some(time) => {
+            let datetime = chrono::DateTime::parse_from_rfc3339(time).map_err(|e| {
+                tracing::warn!("Invalid time: {}", e);
+                chart_data_error(
+                    StatusCode::BAD_REQUEST,
+                    "invalid_time",
+                    format!("Invalid time format: {}", e),
+                )
+            })?;
+            let julian_day =
+                crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc));
+            if !julian_day.is_finite() {
+                tracing::warn!("Invalid Julian day calculated from time");
+                return Err(chart_data_error(
+                    StatusCode::BAD_REQUEST,
+                    "invalid_time",
+                    "Time produced an invalid Julian day",
+                ));
+            }
+            Ok(julian_day)
+        }
+        None => Ok(crate::ephemeris::julian_day_from_chrono(chrono::Utc::now())),
+    }
+}
+
 /// JSON endpoint for chart data (planets, houses, aspects)
 /// Returns structured JSON for display in the Django app
-async fn chart_data_handler(
-    Query(query): Query<ChartDataQuery>,
-) -> Result<Json<ChartDataResponse>, StatusCode> {
+async fn chart_data_handler(Query(query): Query<ChartDataQuery>) -> ChartDataResult {
     // Validate required parameters
     let lat = query.lat.ok_or_else(|| {
         tracing::warn!("Missing required parameter: lat");
-        StatusCode::BAD_REQUEST
+        chart_data_error(
+            StatusCode::BAD_REQUEST,
+            "missing_lat",
+            "Missing required parameter: lat",
+        )
     })?;
 
     let lon = query.lon.ok_or_else(|| {
         tracing::warn!("Missing required parameter: lon");
-        StatusCode::BAD_REQUEST
+        chart_data_error(
+            StatusCode::BAD_REQUEST,
+            "missing_lon",
+            "Missing required parameter: lon",
+        )
     })?;
 
     // Validate coordinates
     if !(-90.0..=90.0).contains(&lat) {
         tracing::warn!("Invalid latitude: {}", lat);
-        return Err(StatusCode::BAD_REQUEST);
+        return Err(chart_data_error(
+            StatusCode::BAD_REQUEST,
+            "invalid_lat",
+            "Latitude must be between -90 and 90",
+        ));
     }
 
     if !(-180.0..=180.0).contains(&lon) {
         tracing::warn!("Invalid longitude: {}", lon);
-        return Err(StatusCode::BAD_REQUEST);
+        return Err(chart_data_error(
+            StatusCode::BAD_REQUEST,
+            "invalid_lon",
+            "Longitude must be between -180 and 180",
+        ));
     }
+
+    let julian_day = parse_chart_data_time(query.time.as_deref())?;
 
     let house_system = match query.house.as_deref() {
         Some(house) => match house.parse::<HouseSystem>() {
             Ok(system) => system,
             Err(e) => {
                 tracing::warn!("{}", e);
-                return Err(StatusCode::BAD_REQUEST);
+                return Err(chart_data_error(
+                    StatusCode::BAD_REQUEST,
+                    "invalid_house",
+                    e.to_string(),
+                ));
             }
         },
         None => HouseSystem::Placidus,
     };
 
-    tracing::info!("Fetching chart data for lat={}, lon={}", lat, lon);
-
-    let config = ChartConfig::new(
-        house_system,
-        GeoPos::new(lat, lon, 0.0),
-        2451545.0, // Default: J2000 epoch (no specific time provided)
+    tracing::info!(
+        "Fetching chart data for lat={}, lon={}, jd={}",
+        lat,
+        lon,
+        julian_day
     );
+
+    let config = ChartConfig::new(house_system, GeoPos::new(lat, lon, 0.0), julian_day);
 
     let calculator: SwissEphChartCalculator = match SwissEphChartCalculator::new(config.clone()) {
         Ok(c) => c,
         Err(e) => {
             tracing::error!("Failed to create chart calculator: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(chart_data_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "chart_calculator_error",
+                "Failed to create chart calculator",
+            ));
         }
     };
 
@@ -335,7 +409,11 @@ async fn chart_data_handler(
         Ok(data) => data,
         Err(e) => {
             tracing::error!("Failed to calculate chart: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(chart_data_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "chart_calculation_error",
+                "Failed to calculate chart",
+            ));
         }
     };
 
@@ -412,6 +490,17 @@ mod tests {
 
         let response = response.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "missing_lat"
+        );
+        assert_eq!(
+            json_value.get("message").unwrap().as_str().unwrap(),
+            "Missing required parameter: lat"
+        );
     }
 
     #[tokio::test]
@@ -430,6 +519,13 @@ mod tests {
 
         let response = response.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "missing_lon"
+        );
     }
 
     #[tokio::test]
@@ -449,6 +545,13 @@ mod tests {
 
         let response = response.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "invalid_lat"
+        );
     }
 
     #[tokio::test]
@@ -468,6 +571,13 @@ mod tests {
 
         let response = response.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "invalid_lon"
+        );
     }
 
     #[tokio::test]
@@ -557,6 +667,39 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_parse_chart_data_time_uses_time_parameter() {
+        assert_eq!(
+            parse_chart_data_time(Some("2000-01-01T12:00:00Z")).unwrap(),
+            2451545.0
+        );
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_rejects_invalid_time() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060&time=not-a-time")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "invalid_time"
+        );
+    }
+
     #[tokio::test]
     async fn test_chart_data_rejects_invalid_house_system() {
         let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
@@ -573,5 +716,12 @@ mod tests {
 
         let response = response.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(
+            json_value.get("error").unwrap().as_str().unwrap(),
+            "invalid_house"
+        );
     }
 }

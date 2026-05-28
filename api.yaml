@@ -441,6 +441,7 @@ paths:
           description: Time for the chart (optional, defaults to current time)
           schema:
             type: string
+            format: date-time
         - name: house
           in: query
           required: false
@@ -468,7 +469,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChartDataResponse'
         '400':
-          description: Invalid request parameters (missing or invalid lat/lon)
+          description: Invalid request parameters
           content:
             application/json:
               schema:
