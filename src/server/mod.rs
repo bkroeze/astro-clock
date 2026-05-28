@@ -254,6 +254,7 @@ struct ChartDataQuery {
     lat: Option<f64>,
     lon: Option<f64>,
     _time: Option<String>,
+    house: Option<String>,
 }
 
 /// Response structure for chart data API
@@ -303,10 +304,21 @@ async fn chart_data_handler(
         return Err(StatusCode::BAD_REQUEST);
     }
 
+    let house_system = match query.house.as_deref() {
+        Some(house) => match house.parse::<HouseSystem>() {
+            Ok(system) => system,
+            Err(e) => {
+                tracing::warn!("{}", e);
+                return Err(StatusCode::BAD_REQUEST);
+            }
+        },
+        None => HouseSystem::Placidus,
+    };
+
     tracing::info!("Fetching chart data for lat={}, lon={}", lat, lon);
 
     let config = ChartConfig::new(
-        HouseSystem::Placidus,
+        house_system,
         GeoPos::new(lat, lon, 0.0),
         2451545.0, // Default: J2000 epoch (no specific time provided)
     );
@@ -517,5 +529,49 @@ mod tests {
         let aspects = json_value.get("aspects").unwrap().as_array().unwrap();
         // Aspects may be empty depending on positions, but should be a valid array
         assert!(!aspects.is_empty() || true); // aspects.is_array() is implicit from as_array()
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_accepts_house_system() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060&house=Whole")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let metadata = json_value.get("metadata").unwrap();
+        assert_eq!(
+            metadata.get("house_system").unwrap().as_str().unwrap(),
+            "Whole"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_rejects_invalid_house_system() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060&house=Invalid")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
 }

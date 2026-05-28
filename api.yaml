@@ -32,7 +32,10 @@ paths:
   /chart:
     get:
       summary: Generate astrological chart
-      description: Generates and returns an astrological chart as PNG or SVG
+      description: |
+        Generates and returns an astrological chart image. Supported output
+        formats are png and svg. For structured JSON chart data, use
+        /api/v1/chart/data.
       operationId: getChart
       parameters:
         - name: lat
@@ -56,14 +59,14 @@ paths:
             type: string
         - name: format
           in: query
-          description: "Output format - svg or png (default: png)"
+          description: "Image output format. Supported values: png, svg. Defaults to png."
           schema:
             type: string
-            enum: [svg, png]
+            enum: [png, svg]
             default: png
       responses:
         '200':
-          description: Chart image
+          description: Chart image output in the requested format
           content:
             image/png:
               schema:
@@ -438,6 +441,25 @@ paths:
           description: Time for the chart (optional, defaults to current time)
           schema:
             type: string
+        - name: house
+          in: query
+          required: false
+          description: House system for calculating house cusps. Defaults to Placidus.
+          schema:
+            type: string
+            enum:
+              - Placidus
+              - Koch
+              - Equal
+              - Whole
+              - Porphyry
+              - Regiomontanus
+              - Campanus
+              - Morinus
+              - Alcabitus
+              - Topocentric
+              - Vehlow
+            default: Placidus
       responses:
         '200':
           description: Chart data retrieved successfully
