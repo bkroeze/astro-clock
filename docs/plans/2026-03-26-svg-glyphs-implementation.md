@@ -4,7 +4,7 @@
 
 **Goal:** Add SVG output format to astro-clock that embeds astrological glyphs as SVG paths, making charts viewable without the Astronomicon font installed.
 
-**Architecture:** Create a glyph registry with extracted SVG paths from the TTF font, a new SVG renderer module, and integrate with the existing output handler. The repository also includes a glyph exporter that writes standalone Astronomicon SVG assets under `assets/astronomicon/`.
+**Architecture:** Create a glyph registry with extracted SVG paths from the TTF font, a new SVG renderer module, and integrate with the existing output handler. The repository also includes a glyph exporter that writes standalone Astronomicon SVG assets under `assets/astronomicon/` and generated embedded glyph data in `src/svg_glyph_paths.rs`.
 
 **Tech Stack:** Rust, `ttf-parser` (for glyph extraction), `svg` crate (already in Cargo.toml), existing chart/render infrastructure.
 
@@ -75,24 +75,29 @@ struct Args {
 
     /// Directory where SVG files will be written
     output_dir: PathBuf,
+
+    /// Optional Rust source file for embedded glyph data
+    #[arg(long)]
+    rust_output: Option<PathBuf>,
 }
 ```
 
 The binary should read `fonts/astronomicon.csv`, extract each mapped glyph outline
 from `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`, and write one
-`currentColor` SVG file per glyph to `assets/astronomicon/`.
+`currentColor` SVG file per glyph to `assets/astronomicon/`. When
+`--rust-output` is provided, it also writes generated embedded glyph data.
 
 **Step 2: Add a Justfile recipe**
 
 ```make
 make-svg:
-    cargo run --bin export_astronomicon_svg -- fonts/astronomicon.csv fonts/AstronomiconFonts_1.1/Astronomicon.ttf assets/astronomicon
+    cargo run --bin export_astronomicon_svg -- fonts/astronomicon.csv fonts/AstronomiconFonts_1.1/Astronomicon.ttf assets/astronomicon --rust-output src/svg_glyph_paths.rs
 ```
 
 **Step 3: Run the exporter**
 
 Run: `just make-svg`
-Expected: 67 generated SVG files in `assets/astronomicon/`
+Expected: 67 generated SVG files in `assets/astronomicon/` and refreshed embedded glyph data in `src/svg_glyph_paths.rs`
 
 **Step 4: Verify output**
 
@@ -102,7 +107,7 @@ Expected: See generated Astronomicon SVG files
 **Step 5: Commit**
 
 ```bash
-git add Justfile src/bin/export_astronomicon_svg.rs fonts/astronomicon.csv assets/astronomicon
+git add Justfile src/bin/export_astronomicon_svg.rs fonts/astronomicon.csv assets/astronomicon src/svg_glyph_paths.rs
 git commit -m "feat: export Astronomicon glyph SVG assets"
 ```
 
@@ -115,7 +120,7 @@ git commit -m "feat: export Astronomicon glyph SVG assets"
 
 **Step 1: Write glyph registry with extracted paths**
 
-Use the extracted Astronomicon path data in this module structure:
+Use the generated Astronomicon path data in this module structure:
 
 ```rust
 //! SVG Glyph Registry
@@ -125,16 +130,8 @@ Use the extracted Astronomicon path data in this module structure:
 
 use std::collections::HashMap;
 
-/// Data for a single glyph
-#[derive(Debug, Clone)]
-pub struct GlyphData {
-    /// SVG path "d" attribute
-    pub path: &'static str,
-    /// View box (min_x, min_y, width, height)
-    pub view_box: (f32, f32, f32, f32),
-    /// Baseline offset for vertical alignment
-    pub baseline_offset: f32,
-}
+// Include the generated glyph data
+include!("svg_glyph_paths.rs");
 
 impl GlyphData {
     /// Get the width from view_box
@@ -147,19 +144,6 @@ impl GlyphData {
         self.view_box.3
     }
 }
-
-// ===== EMBEDDED GLYPH PATHS =====
-// Generated from Astronomicon.ttf - DO NOT EDIT
-
-// PASTE EXTRACTED CONSTANTS HERE
-// Example format:
-pub const SUN: GlyphData = GlyphData {
-    path: "M10,10 L20,20 ...",
-    view_box: (0.0, 0.0, 100.0, 100.0),
-    baseline_offset: 0.0,
-};
-
-// ... (all 67 glyphs)
 
 /// Registry mapping semantic names to glyph data
 pub struct GlyphRegistry {
@@ -176,49 +160,26 @@ impl GlyphRegistry {
     pub fn new() -> Self {
         let mut glyphs = HashMap::new();
         
-        // Insert all glyph references
-        glyphs.insert("sun", &SUN);
-        glyphs.insert("moon", &MOON);
-        glyphs.insert("mercury", &MERCURY);
-        glyphs.insert("venus", &VENUS);
-        glyphs.insert("mars", &MARS);
-        glyphs.insert("jupiter", &JUPITER);
-        glyphs.insert("saturn", &SATURN);
-        glyphs.insert("uranus", &URANUS);
-        glyphs.insert("neptune", &NEPTUNE);
-        glyphs.insert("pluto", &PLUTO);
-        
-        glyphs.insert("aries", &ARIES);
-        glyphs.insert("taurus", &TAURUS);
-        glyphs.insert("gemini", &GEMINI);
-        glyphs.insert("cancer", &CANCER);
-        glyphs.insert("leo", &LEO);
-        glyphs.insert("virgo", &VIRGO);
-        glyphs.insert("libra", &LIBRA);
-        glyphs.insert("scorpio", &SCORPIO);
-        glyphs.insert("sagittarius", &SAGITTARIUS);
-        glyphs.insert("capricorn", &CAPRICORN);
-        glyphs.insert("aquarius", &AQUARIUS);
-        glyphs.insert("pisces", &PISCES);
-        
-        glyphs.insert("conjunction", &CONJUNCTION);
-        glyphs.insert("sextile", &SEXTILE);
-        glyphs.insert("square", &SQUARE);
-        glyphs.insert("trine", &TRINE);
-        glyphs.insert("opposition", &OPPOSITION);
-        glyphs.insert("quincunx", &QUINCUNX);
-        glyphs.insert("semi_sextile", &SEMI_SEXTILE);
-        glyphs.insert("semi_square", &SEMI_SQUARE);
-        glyphs.insert("sesquisquare", &SESQUISQUARE);
-        glyphs.insert("biquintile", &BIQUINTILE);
-        glyphs.insert("quintile", &QUINTILE);
-        glyphs.insert("semi_quintile", &SEMI_QUINTILE);
-        glyphs.insert("quindecile", &QUINDECILE);
-        
-        glyphs.insert("retrograde", &RETROGRADE);
-        glyphs.insert("north_node", &NORTH_NODE);
-        glyphs.insert("south_node", &SOUTH_NODE);
-        glyphs.insert("chiron", &CHIRON);
+        for (name, glyph) in GLYPHS {
+            glyphs.insert(*name, *glyph);
+        }
+
+        // Compatibility aliases used by chart rendering and public callers.
+        if let Some(glyph) = glyphs.get("capricorn_europe").copied() {
+            glyphs.insert("capricorn", glyph);
+        }
+        if let Some(glyph) = glyphs.get("lunar_north_node").copied() {
+            glyphs.insert("north_node", glyph);
+        }
+        if let Some(glyph) = glyphs.get("lunar_south_node").copied() {
+            glyphs.insert("south_node", glyph);
+        }
+        if let Some(glyph) = glyphs.get("earth_antinomy").copied() {
+            glyphs.insert("earth_antimony", glyph);
+        }
+        if let Some(glyph) = glyphs.get("quincunx_inconjunct").copied() {
+            glyphs.insert("quincunx", glyph);
+        }
         
         Self { glyphs }
     }
@@ -231,6 +192,11 @@ impl GlyphRegistry {
     /// Check if glyph exists
     pub fn contains(&self, name: &str) -> bool {
         self.glyphs.contains_key(name)
+    }
+
+    /// Iterate over every registered glyph.
+    pub fn iter(&self) -> impl Iterator<Item = (&'static str, &'static GlyphData)> + '_ {
+        self.glyphs.iter().map(|(name, glyph)| (*name, *glyph))
     }
 }
 
@@ -786,7 +752,7 @@ git commit -m "feat: add SVG output to HTTP server"
 **Step 1: Regenerate SVG assets**
 
 Run: `just make-svg`
-Expected: 67 generated SVG files in `assets/astronomicon/`
+Expected: 67 generated SVG files in `assets/astronomicon/` and refreshed embedded glyph data in `src/svg_glyph_paths.rs`
 
 **Step 2: Verify the exporter remains available**
 
@@ -801,7 +767,7 @@ Expected: Success
 **Step 4: Commit**
 
 ```bash
-git add Justfile src/bin/export_astronomicon_svg.rs fonts assets/astronomicon
+git add Justfile src/bin/export_astronomicon_svg.rs fonts assets/astronomicon src/svg_glyph_paths.rs
 git commit -m "feat: add Astronomicon glyph asset workflow"
 ```
 
@@ -961,6 +927,7 @@ This implementation plan adds SVG output support to astro-clock using embedded g
 - `src/bin/export_astronomicon_svg.rs` - Astronomicon glyph SVG exporter
 - `fonts/astronomicon.csv` - Glyph export mapping
 - `assets/astronomicon/*.svg` - Generated glyph SVG assets
+- `src/svg_glyph_paths.rs` - Generated embedded glyph data
 - `src/svg_glyphs.rs` - Glyph registry with embedded paths
 - `src/svg_renderer.rs` - SVG generation logic
 - `tests/svg_output_test.rs` - Integration tests

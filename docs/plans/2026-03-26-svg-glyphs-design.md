@@ -99,13 +99,14 @@ Generates standalone SVG documents using the glyph registry:
 ## Extraction Process
 
 The checked-in `export_astronomicon_svg` binary regenerates standalone glyph
-assets from the Astronomicon font:
+assets and embedded glyph data from the Astronomicon font:
 
 1. Reads `fonts/astronomicon.csv` for codepoint-to-name mappings
 2. Opens `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`
 3. Extracts outline data (move_to, line_to, quad_to, curve_to)
 4. Converts each outline to an individual SVG path
 5. Writes the generated files under `assets/astronomicon/`
+6. Writes the embedded Rust glyph registry data to `src/svg_glyph_paths.rs`
 
 Run `just make-svg` after changing the mapping or bundled font.
 

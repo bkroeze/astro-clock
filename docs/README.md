@@ -41,7 +41,7 @@ cargo run --bin astro-clock -- chart \\
   --output docs/nyc_spring.png
 ```
 
-Generate the standalone Astronomicon glyph assets with:
+Generate the standalone Astronomicon glyph assets and embedded glyph registry with:
 
 ```bash
 just make-svg
