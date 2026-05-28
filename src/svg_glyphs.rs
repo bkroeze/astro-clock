@@ -162,7 +162,10 @@ mod tests {
             assert!(registry.contains(name), "Missing generated glyph: {name}");
             let registered = registry.get(name).unwrap();
             assert_eq!(registered.path, glyph.path, "Wrong path for {name}");
-            assert_eq!(registered.view_box, glyph.view_box, "Wrong view box for {name}");
+            assert_eq!(
+                registered.view_box, glyph.view_box,
+                "Wrong view box for {name}"
+            );
             assert_eq!(
                 registered.baseline_offset, glyph.baseline_offset,
                 "Wrong baseline offset for {name}"
