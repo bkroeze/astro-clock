@@ -51,7 +51,7 @@ impl GlyphRegistry {
             glyphs.insert("south_node", glyph);
         }
         if let Some(glyph) = glyphs.get("earth_antinomy").copied() {
-            glyphs.insert("earth", glyph);
+            glyphs.insert("earth_antimony", glyph);
         }
         if let Some(glyph) = glyphs.get("quincunx_inconjunct").copied() {
             glyphs.insert("quincunx", glyph);
@@ -160,9 +160,31 @@ mod tests {
 
         for (name, glyph) in GLYPHS {
             assert!(registry.contains(name), "Missing generated glyph: {name}");
-            assert!(!glyph.path.is_empty(), "Empty path for {name}");
-            assert!(glyph.width() > 0.0, "Zero width for {name}");
-            assert!(glyph.height() > 0.0, "Zero height for {name}");
+            let registered = registry.get(name).unwrap();
+            assert_eq!(registered.path, glyph.path, "Wrong path for {name}");
+            assert_eq!(registered.view_box, glyph.view_box, "Wrong view box for {name}");
+            assert_eq!(
+                registered.baseline_offset, glyph.baseline_offset,
+                "Wrong baseline offset for {name}"
+            );
+            assert!(!registered.path.is_empty(), "Empty path for {name}");
+            assert!(registered.width() > 0.0, "Zero width for {name}");
+            assert!(registered.height() > 0.0, "Zero height for {name}");
         }
+    }
+
+    #[test]
+    fn test_earth_antimony_alias_does_not_replace_earth() {
+        let registry = GlyphRegistry::new();
+
+        assert_eq!(registry.get("earth").unwrap().path, EARTH.path);
+        assert_eq!(
+            registry.get("earth_antimony").unwrap().path,
+            EARTH_ANTINOMY.path
+        );
+        assert_eq!(
+            registry.get("earth_antinomy").unwrap().path,
+            EARTH_ANTINOMY.path
+        );
     }
 }
