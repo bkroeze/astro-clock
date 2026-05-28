@@ -42,6 +42,7 @@ Based on `fonts/astronomicon.csv`, we need these semantic glyphs:
 ```
 src/
 ├── svg_glyphs.rs      # Glyph registry with embedded SVG paths
+├── svg_glyph_paths.rs # Generated embedded glyph path data
 ├── svg_renderer.rs    # SVG generation logic
 └── output_handler.rs  # Extended to support SVG format
 ```

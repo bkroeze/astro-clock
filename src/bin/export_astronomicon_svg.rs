@@ -7,7 +7,7 @@ use clap::Parser;
 use ttf_parser::{Face, OutlineBuilder};
 
 #[derive(Parser, Debug)]
-#[command(about = "Export mapped font glyphs to individual SVG files")]
+#[command(about = "Export mapped font glyphs to SVG files and optional embedded Rust data")]
 struct Args {
     /// Strict, unquoted CSV: single-character glyph key,output basename
     map_csv: PathBuf,

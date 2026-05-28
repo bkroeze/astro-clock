@@ -6,7 +6,7 @@
 
 **Architecture:** Create a glyph registry with extracted SVG paths from the TTF font, a new SVG renderer module, and integrate with the existing output handler. The repository also includes a glyph exporter that writes standalone Astronomicon SVG assets under `assets/astronomicon/` and generated embedded glyph data in `src/svg_glyph_paths.rs`.
 
-**Tech Stack:** Rust, `ttf-parser` (for glyph extraction), `svg` crate (already in Cargo.toml), existing chart/render infrastructure.
+**Tech Stack:** Rust, `ttf-parser` (for glyph extraction), string-built SVG output, existing chart/render infrastructure.
 
 ---
 

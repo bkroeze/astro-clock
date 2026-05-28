@@ -257,6 +257,9 @@ astro-clock/
 │   ├── chart.rs             # Chart data structures and traits
 │   ├── swiss_eph_impl.rs    # Swiss Ephemeris implementation
 │   ├── renderer.rs          # Chart rendering (PNG/WebP)
+│   ├── svg_glyph_paths.rs   # Generated embedded SVG glyph paths
+│   ├── svg_glyphs.rs        # SVG glyph registry
+│   ├── svg_renderer.rs      # Chart rendering (SVG)
 │   ├── output_handler.rs    # Output format handling
 │   ├── aspects.rs           # Aspect calculations
 │   ├── config.rs            # Configuration management (RON format)

@@ -63,7 +63,7 @@ serve:
 notebook:
     marimo edit notebooks/explore.py --mcp
 
-# Generate individual SVG files from the Astronomicon font glyph map
+# Generate SVG files and embedded Rust glyph data from the Astronomicon font glyph map
 make-svg:
     cargo run --bin export_astronomicon_svg -- fonts/astronomicon.csv fonts/AstronomiconFonts_1.1/Astronomicon.ttf assets/astronomicon --rust-output src/svg_glyph_paths.rs
 
