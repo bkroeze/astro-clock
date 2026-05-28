@@ -1,6 +1,7 @@
 //! SVG Output Integration Tests
 //! Tests that verify SVG output works correctly end-to-end
 
+use astro_clock::svg_glyphs::GLYPHS;
 use astro_clock::svg_renderer::SvgRenderer;
 use astro_clock::{ChartData, GeoPos, HouseCusps, HouseSystem, PlanetPosition, Position};
 
@@ -135,11 +136,10 @@ fn test_svg_retrograde_indicator() {
 
     let svg = renderer.render_chart(&chart_data).unwrap();
 
-    // Mars is retrograde in test data - check for retrograde indicator
-    // The renderer uses a 'r' text element for retrograde indicators
+    // Mars is retrograde in test data - check for embedded retrograde glyph use.
     assert!(
-        svg.contains("<text") && svg.contains(">r<"),
-        "SVG should indicate retrograde planets with 'r' text element"
+        svg.contains(r##"href="#retrograde""##),
+        "SVG should indicate retrograde planets with the embedded retrograde glyph"
     );
 }
 
@@ -211,6 +211,22 @@ fn test_svg_contains_zodiac_sign_glyphs() {
             svg.contains(&format!(r#"id="{}""#, sign)),
             "SVG should contain {} zodiac glyph",
             sign
+        );
+    }
+}
+
+#[test]
+fn test_svg_contains_all_generated_glyph_defs() {
+    let renderer = SvgRenderer::new(800, 800);
+    let chart_data = create_test_chart_data();
+
+    let svg = renderer.render_chart(&chart_data).unwrap();
+
+    assert_eq!(GLYPHS.len(), 67);
+    for (name, _) in GLYPHS {
+        assert!(
+            svg.contains(&format!(r#"id="{}""#, name)),
+            "SVG should contain generated glyph definition {name}",
         );
     }
 }

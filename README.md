@@ -184,7 +184,7 @@ Generate one SVG file per mapped Astronomicon glyph with:
 just make-svg
 ```
 
-The recipe reads `fonts/astronomicon.csv` and `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`, then writes the generated files to `assets/astronomicon/`. Each SVG uses `currentColor`, so callers can color the glyphs with CSS or SVG attributes.
+The recipe reads `fonts/astronomicon.csv` and `fonts/AstronomiconFonts_1.1/Astronomicon.ttf`, writes individual SVG files to `assets/astronomicon/`, and refreshes the embedded glyph registry at `src/svg_glyph_paths.rs`. Each SVG uses `currentColor`, so callers can color the glyphs with CSS or SVG attributes.
 
 `fonts/astronomicon.csv` is strict, unquoted CSV with one glyph per line:
 `single-character glyph key,output basename`. Output basenames must be unique,
