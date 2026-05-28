@@ -36,52 +36,26 @@ impl GlyphRegistry {
     pub fn new() -> Self {
         let mut glyphs = HashMap::new();
 
-        // Planets
-        glyphs.insert("sun", &SUN);
-        glyphs.insert("moon", &MOON);
-        glyphs.insert("mercury", &MERCURY);
-        glyphs.insert("venus", &VENUS);
-        glyphs.insert("mars", &MARS);
-        glyphs.insert("jupiter", &JUPITER);
-        glyphs.insert("saturn", &SATURN);
-        glyphs.insert("uranus", &URANUS);
-        glyphs.insert("neptune", &NEPTUNE);
-        glyphs.insert("pluto", &PLUTO);
+        for (name, glyph) in GLYPHS {
+            glyphs.insert(*name, *glyph);
+        }
 
-        // Zodiac signs
-        glyphs.insert("aries", &ARIES);
-        glyphs.insert("taurus", &TAURUS);
-        glyphs.insert("gemini", &GEMINI);
-        glyphs.insert("cancer", &CANCER);
-        glyphs.insert("leo", &LEO);
-        glyphs.insert("virgo", &VIRGO);
-        glyphs.insert("libra", &LIBRA);
-        glyphs.insert("scorpio", &SCORPIO);
-        glyphs.insert("sagittarius", &SAGITTARIUS);
-        glyphs.insert("capricorn", &CAPRICORN);
-        glyphs.insert("aquarius", &AQUARIUS);
-        glyphs.insert("pisces", &PISCES);
-
-        // Aspects
-        glyphs.insert("conjunction", &CONJUNCTION);
-        glyphs.insert("sextile", &SEXTILE);
-        glyphs.insert("square", &SQUARE);
-        glyphs.insert("trine", &TRINE);
-        glyphs.insert("opposition", &OPPOSITION);
-        glyphs.insert("quincunx", &QUINCUNX);
-        glyphs.insert("semi_sextile", &SEMI_SEXTILE);
-        glyphs.insert("semi_square", &SEMI_SQUARE);
-        glyphs.insert("sesquisquare", &SESQUISQUARE);
-        glyphs.insert("biquintile", &BIQUINTILE);
-        glyphs.insert("quintile", &QUINTILE);
-        glyphs.insert("semi_quintile", &SEMI_QUINTILE);
-        glyphs.insert("quindecile", &QUINDECILE);
-
-        // Other
-        glyphs.insert("retrograde", &RETROGRADE);
-        glyphs.insert("north_node", &NORTH_NODE);
-        glyphs.insert("south_node", &SOUTH_NODE);
-        glyphs.insert("chiron", &CHIRON);
+        // Compatibility aliases used by chart rendering and public callers.
+        if let Some(glyph) = glyphs.get("capricorn_europe").copied() {
+            glyphs.insert("capricorn", glyph);
+        }
+        if let Some(glyph) = glyphs.get("lunar_north_node").copied() {
+            glyphs.insert("north_node", glyph);
+        }
+        if let Some(glyph) = glyphs.get("lunar_south_node").copied() {
+            glyphs.insert("south_node", glyph);
+        }
+        if let Some(glyph) = glyphs.get("earth_antinomy").copied() {
+            glyphs.insert("earth_antimony", glyph);
+        }
+        if let Some(glyph) = glyphs.get("quincunx_inconjunct").copied() {
+            glyphs.insert("quincunx", glyph);
+        }
 
         Self { glyphs }
     }
@@ -94,6 +68,11 @@ impl GlyphRegistry {
     /// Check if glyph exists
     pub fn contains(&self, name: &str) -> bool {
         self.glyphs.contains_key(name)
+    }
+
+    /// Iterate over every registered glyph.
+    pub fn iter(&self) -> impl Iterator<Item = (&'static str, &'static GlyphData)> + '_ {
+        self.glyphs.iter().map(|(name, glyph)| (*name, *glyph))
     }
 }
 
@@ -156,8 +135,7 @@ mod tests {
             "sesquisquare",
             "biquintile",
             "quintile",
-            "semi_quintile",
-            "quindecile",
+            "quintile_alternate",
         ];
 
         for aspect in &aspects {
@@ -173,5 +151,43 @@ mod tests {
         assert!(glyph.width() > 0.0, "Glyph width should be positive");
         assert!(glyph.height() > 0.0, "Glyph height should be positive");
         assert!(!glyph.path.is_empty(), "Glyph path should not be empty");
+    }
+
+    #[test]
+    fn test_registry_contains_generated_csv_entries() {
+        let registry = GlyphRegistry::new();
+        assert_eq!(GLYPHS.len(), 67);
+
+        for (name, glyph) in GLYPHS {
+            assert!(registry.contains(name), "Missing generated glyph: {name}");
+            let registered = registry.get(name).unwrap();
+            assert_eq!(registered.path, glyph.path, "Wrong path for {name}");
+            assert_eq!(
+                registered.view_box, glyph.view_box,
+                "Wrong view box for {name}"
+            );
+            assert_eq!(
+                registered.baseline_offset, glyph.baseline_offset,
+                "Wrong baseline offset for {name}"
+            );
+            assert!(!registered.path.is_empty(), "Empty path for {name}");
+            assert!(registered.width() > 0.0, "Zero width for {name}");
+            assert!(registered.height() > 0.0, "Zero height for {name}");
+        }
+    }
+
+    #[test]
+    fn test_earth_antimony_alias_does_not_replace_earth() {
+        let registry = GlyphRegistry::new();
+
+        assert_eq!(registry.get("earth").unwrap().path, EARTH.path);
+        assert_eq!(
+            registry.get("earth_antimony").unwrap().path,
+            EARTH_ANTINOMY.path
+        );
+        assert_eq!(
+            registry.get("earth_antinomy").unwrap().path,
+            EARTH_ANTINOMY.path
+        );
     }
 }

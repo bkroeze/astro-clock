@@ -4,10 +4,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::Parser;
-use ttf_parser::{Face, GlyphId, OutlineBuilder};
+use ttf_parser::{Face, OutlineBuilder};
 
 #[derive(Parser, Debug)]
-#[command(about = "Export mapped font glyphs to individual SVG files")]
+#[command(about = "Export mapped font glyphs to SVG files and optional embedded Rust data")]
 struct Args {
     /// Strict, unquoted CSV: single-character glyph key,output basename
     map_csv: PathBuf,
@@ -17,6 +17,10 @@ struct Args {
 
     /// Directory where SVG files will be written
     output_dir: PathBuf,
+
+    /// Optional Rust source file for embedded glyph data
+    #[arg(long)]
+    rust_output: Option<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -85,9 +89,16 @@ fn main() -> Result<()> {
     })?;
 
     let mut written = 0usize;
+    let mut embedded = Vec::new();
     for mapping in &mappings {
-        export_mapping(&face, mapping, &args.output_dir)?;
+        let glyph = extract_glyph(&face, mapping)?;
+        export_svg(mapping, &glyph, &args.output_dir)?;
+        embedded.push((mapping, glyph));
         written += 1;
+    }
+
+    if let Some(rust_output) = &args.rust_output {
+        write_embedded_rust(&embedded, rust_output)?;
     }
 
     println!("Wrote {written} SVG files to {}", args.output_dir.display());
@@ -145,7 +156,14 @@ fn read_map_csv(path: &Path) -> Result<Vec<GlyphMapping>> {
     Ok(mappings)
 }
 
-fn export_mapping(face: &Face<'_>, mapping: &GlyphMapping, output_dir: &Path) -> Result<()> {
+#[derive(Debug)]
+struct ExtractedGlyph {
+    path_data: String,
+    view_box: (i16, i16, i16, i16),
+    baseline_offset: i16,
+}
+
+fn extract_glyph(face: &Face<'_>, mapping: &GlyphMapping) -> Result<ExtractedGlyph> {
     let glyph_id = face.glyph_index(mapping.character).ok_or_else(|| {
         anyhow!(
             "line {}: no glyph found for character {:?}",
@@ -191,13 +209,20 @@ fn export_mapping(face: &Face<'_>, mapping: &GlyphMapping, output_dir: &Path) ->
         );
     }
 
-    let path_data = builder.commands.join(" ");
+    Ok(ExtractedGlyph {
+        path_data: builder.commands.join(" "),
+        view_box: (view_min_x, view_min_y, width, height),
+        baseline_offset: -view_min_y,
+    })
+}
+
+fn export_svg(mapping: &GlyphMapping, glyph: &ExtractedGlyph, output_dir: &Path) -> Result<()> {
     let svg = format!(
         r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="{} {} {} {}">
   <path d="{}" fill="currentColor"/>
 </svg>
 "#,
-        view_min_x, view_min_y, width, height, path_data
+        glyph.view_box.0, glyph.view_box.1, glyph.view_box.2, glyph.view_box.3, glyph.path_data
     );
 
     let output_path = output_dir.join(format!("{}.svg", mapping.basename));
@@ -205,6 +230,76 @@ fn export_mapping(face: &Face<'_>, mapping: &GlyphMapping, output_dir: &Path) ->
         .with_context(|| format!("failed to write SVG {}", output_path.display()))?;
 
     Ok(())
+}
+
+fn write_embedded_rust(entries: &[(&GlyphMapping, ExtractedGlyph)], path: &Path) -> Result<()> {
+    let mut output = String::from(
+        r#"// Generated glyph paths from fonts/astronomicon.csv and Astronomicon.ttf
+// DO NOT EDIT MANUALLY - Run: just make-svg
+
+/// Data for a single glyph
+#[derive(Debug, Clone, Copy)]
+pub struct GlyphData {
+    pub path: &'static str,
+    pub view_box: (f32, f32, f32, f32),
+    pub baseline_offset: f32,
+}
+
+"#,
+    );
+
+    for (mapping, glyph) in entries {
+        output.push_str(&format!(
+            "pub const {}: GlyphData = GlyphData {{\n    path: {:?},\n    view_box: ({}.0, {}.0, {}.0, {}.0),\n    baseline_offset: {}.0,\n}};\n\n",
+            const_name(&mapping.basename),
+            glyph.path_data,
+            glyph.view_box.0,
+            glyph.view_box.1,
+            glyph.view_box.2,
+            glyph.view_box.3,
+            glyph.baseline_offset
+        ));
+    }
+
+    output.push_str("pub static GLYPHS: &[(&str, &GlyphData)] = &[\n");
+    for (mapping, _) in entries {
+        output.push_str(&format!(
+            "    ({:?}, &{}),\n",
+            registry_key(&mapping.basename),
+            const_name(&mapping.basename)
+        ));
+    }
+    output.push_str("];\n");
+
+    fs::write(path, output)
+        .with_context(|| format!("failed to write embedded Rust {}", path.display()))?;
+    Ok(())
+}
+
+fn registry_key(basename: &str) -> String {
+    normalize_name(basename).to_lowercase()
+}
+
+fn const_name(basename: &str) -> String {
+    normalize_name(basename).to_uppercase()
+}
+
+fn normalize_name(name: &str) -> String {
+    let stripped = name.strip_prefix("The ").unwrap_or(name);
+    let mut normalized = String::new();
+    let mut last_was_separator = false;
+
+    for character in stripped.chars() {
+        if character.is_ascii_alphanumeric() {
+            normalized.push(character);
+            last_was_separator = false;
+        } else if !last_was_separator {
+            normalized.push('_');
+            last_was_separator = true;
+        }
+    }
+
+    normalized.trim_matches('_').to_string()
 }
 
 fn fmt_num(value: f32) -> String {
@@ -221,9 +316,4 @@ fn fmt_num(value: f32) -> String {
         formatted.pop();
     }
     formatted
-}
-
-#[allow(dead_code)]
-fn _glyph_id_for_debug(glyph_id: GlyphId) -> u16 {
-    glyph_id.0
 }

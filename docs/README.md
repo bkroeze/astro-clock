@@ -41,7 +41,7 @@ cargo run --bin astro-clock -- chart \\
   --output docs/nyc_spring.png
 ```
 
-Generate the standalone Astronomicon glyph assets with:
+Generate the standalone Astronomicon glyph assets and embedded glyph registry with:
 
 ```bash
 just make-svg
@@ -124,6 +124,7 @@ cargo run --bin astro-clock -- serve --port 3000
 Get a chart:
 ```bash
 curl "http://localhost:3000/chart?lat=37.7749&lon=-122.4194" > docs/server_chart.png
+curl "http://localhost:3000/chart?lat=37.7749&lon=-122.4194&format=svg" > docs/server_chart.svg
 ```
 
 Check health:
