@@ -689,7 +689,7 @@ components:
       properties:
         planets:
           type: array
-          description: Positions of all planets
+          description: Positions of all planets, or only the seven traditional planets when traditional=true
           items:
             $ref: '#/components/schemas/PlanetPosition'
         houses:
