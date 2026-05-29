@@ -415,6 +415,8 @@ paths:
         Returns structured astrological chart data including planet positions,
         house cusps, aspects, grand trines, and moon void of course information.
         Suitable for display in external applications.
+        Set `traditional=true` to default the house system to Whole Sign unless
+        `house` is provided, and to return only the seven traditional planets.
       operationId: getChartData
       parameters:
         - name: lat
@@ -445,7 +447,7 @@ paths:
         - name: house
           in: query
           required: false
-          description: House system for calculating house cusps. Defaults to Placidus.
+          description: House system for calculating house cusps. Defaults to Placidus, or Whole when traditional=true.
           schema:
             type: string
             enum:
@@ -460,7 +462,18 @@ paths:
               - Alcabitus
               - Topocentric
               - Vehlow
-            default: Placidus
+            example: Placidus
+        - name: traditional
+          in: query
+          required: false
+          description: |
+            When true, defaults the house system to Whole unless `house` is
+            provided, and filters returned planets plus aspect/grand-trine/Moon
+            void-of-course analysis to the seven traditional planets: Sun, Moon,
+            Mercury, Venus, Mars, Jupiter, and Saturn.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Chart data retrieved successfully
@@ -676,7 +689,7 @@ components:
       properties:
         planets:
           type: array
-          description: Positions of all planets
+          description: Positions of all planets, or only the seven traditional planets when traditional=true
           items:
             $ref: '#/components/schemas/PlanetPosition'
         houses:
@@ -872,6 +885,11 @@ components:
           format: double
           description: Location longitude
           example: -74.006
+        time:
+          type: string
+          format: date-time
+          description: Resolved chart time in UTC, including the default current time when omitted
+          example: "2000-01-01T12:00:00Z"
         julian_day:
           type: number
           format: double
