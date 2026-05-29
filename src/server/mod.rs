@@ -12,7 +12,7 @@ use std::net::SocketAddr;
 
 use crate::SwissEphChartCalculator;
 use crate::aspects::{AspectConfig, analyze_aspects};
-use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem};
+use crate::chart::{ChartCalculator, ChartConfig, GeoPos, HouseSystem, planet};
 use crate::errors::Error;
 
 // Import job-related types when database feature is enabled
@@ -255,6 +255,7 @@ struct ChartDataQuery {
     lon: Option<f64>,
     time: Option<String>,
     house: Option<String>,
+    traditional: Option<bool>,
 }
 
 /// Response structure for chart data API
@@ -273,6 +274,7 @@ struct ChartDataResponse {
 struct ChartMetadata {
     latitude: f64,
     longitude: f64,
+    time: String,
     julian_day: f64,
     house_system: String,
 }
@@ -299,7 +301,14 @@ fn chart_data_error(
     )
 }
 
-fn parse_chart_data_time(time: Option<&str>) -> Result<f64, (StatusCode, Json<ErrorResponse>)> {
+struct ResolvedChartTime {
+    julian_day: f64,
+    time: chrono::DateTime<chrono::Utc>,
+}
+
+fn parse_chart_data_time(
+    time: Option<&str>,
+) -> Result<ResolvedChartTime, (StatusCode, Json<ErrorResponse>)> {
     match time {
         Some(time) => {
             let datetime = chrono::DateTime::parse_from_rfc3339(time).map_err(|e| {
@@ -310,8 +319,8 @@ fn parse_chart_data_time(time: Option<&str>) -> Result<f64, (StatusCode, Json<Er
                     format!("Invalid time format: {}", e),
                 )
             })?;
-            let julian_day =
-                crate::ephemeris::julian_day_from_chrono(datetime.with_timezone(&chrono::Utc));
+            let time = datetime.with_timezone(&chrono::Utc);
+            let julian_day = crate::ephemeris::julian_day_from_chrono(time);
             if !julian_day.is_finite() {
                 tracing::warn!("Invalid Julian day calculated from time");
                 return Err(chart_data_error(
@@ -320,10 +329,27 @@ fn parse_chart_data_time(time: Option<&str>) -> Result<f64, (StatusCode, Json<Er
                     "Time produced an invalid Julian day",
                 ));
             }
-            Ok(julian_day)
+            Ok(ResolvedChartTime { julian_day, time })
         }
-        None => Ok(crate::ephemeris::julian_day_from_chrono(chrono::Utc::now())),
+        None => {
+            let time = chrono::Utc::now();
+            let julian_day = crate::ephemeris::julian_day_from_chrono(time);
+            Ok(ResolvedChartTime { julian_day, time })
+        }
     }
+}
+
+fn is_traditional_planet(name: &str) -> bool {
+    matches!(
+        name,
+        planet::SUN
+            | planet::MOON
+            | planet::MERCURY
+            | planet::VENUS
+            | planet::MARS
+            | planet::JUPITER
+            | planet::SATURN
+    )
 }
 
 /// JSON endpoint for chart data (planets, houses, aspects)
@@ -378,7 +404,10 @@ async fn chart_data_handler(
         ));
     }
 
-    let julian_day = parse_chart_data_time(query.time.as_deref())?;
+    let resolved_time = parse_chart_data_time(query.time.as_deref())?;
+    let julian_day = resolved_time.julian_day;
+
+    let traditional = query.traditional.unwrap_or(false);
 
     let house_system = match query.house.as_deref() {
         Some(house) => match house.parse::<HouseSystem>() {
@@ -392,6 +421,7 @@ async fn chart_data_handler(
                 ));
             }
         },
+        None if traditional => HouseSystem::Whole,
         None => HouseSystem::Placidus,
     };
 
@@ -416,7 +446,7 @@ async fn chart_data_handler(
         }
     };
 
-    let chart_data = match calculator.calculate_chart() {
+    let mut chart_data = match calculator.calculate_chart() {
         Ok(data) => data,
         Err(e) => {
             tracing::error!("Failed to calculate chart: {}", e);
@@ -427,6 +457,12 @@ async fn chart_data_handler(
             ));
         }
     };
+
+    if traditional {
+        chart_data
+            .planets
+            .retain(|planet| is_traditional_planet(&planet.name));
+    }
 
     // Perform aspect analysis
     let aspect_config = AspectConfig::new(3.0); // 3 degree default orb
@@ -444,6 +480,9 @@ async fn chart_data_handler(
         metadata: ChartMetadata {
             latitude: lat,
             longitude: lon,
+            time: resolved_time
+                .time
+                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
             julian_day: chart_data.julian_day,
             house_system,
         },
@@ -649,6 +688,7 @@ mod tests {
         assert!(json_value.get("planets").is_some());
         assert!(json_value.get("houses").is_some());
         assert!(json_value.get("aspects").is_some());
+        assert!(json_value.get("parameters").is_none());
         assert!(json_value.get("metadata").is_some());
 
         // Verify metadata
@@ -658,6 +698,7 @@ mod tests {
             metadata.get("longitude").unwrap().as_f64().unwrap(),
             -74.0060
         );
+        assert!(metadata.get("time").unwrap().as_str().is_some());
         assert_eq!(
             metadata.get("house_system").unwrap().as_str().unwrap(),
             "Placidus"
@@ -711,11 +752,123 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn test_chart_data_traditional_defaults_to_whole_house_and_filters_planets() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060&traditional=true")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let metadata = json_value.get("metadata").unwrap();
+        assert_eq!(
+            metadata.get("house_system").unwrap().as_str().unwrap(),
+            "Whole"
+        );
+        assert!(json_value.get("parameters").is_none());
+
+        let planets = json_value.get("planets").unwrap().as_array().unwrap();
+        let planet_names: Vec<&str> = planets
+            .iter()
+            .map(|p| p.get("name").unwrap().as_str().unwrap())
+            .collect();
+        assert_eq!(
+            planet_names,
+            vec![
+                "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn"
+            ]
+        );
+
+        let traditional_planets: std::collections::HashSet<&str> =
+            planet_names.iter().copied().collect();
+        for aspect in json_value.get("aspects").unwrap().as_array().unwrap() {
+            assert!(traditional_planets.contains(aspect.get("planet1").unwrap().as_str().unwrap()));
+            assert!(traditional_planets.contains(aspect.get("planet2").unwrap().as_str().unwrap()));
+        }
+        for grand_trine in json_value.get("grand_trines").unwrap().as_array().unwrap() {
+            assert!(
+                traditional_planets.contains(grand_trine.get("planet1").unwrap().as_str().unwrap())
+            );
+            assert!(
+                traditional_planets.contains(grand_trine.get("planet2").unwrap().as_str().unwrap())
+            );
+            assert!(
+                traditional_planets.contains(grand_trine.get("planet3").unwrap().as_str().unwrap())
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_traditional_allows_explicit_house_override() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060&traditional=true&house=Placidus")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        let metadata = json_value.get("metadata").unwrap();
+        assert_eq!(
+            metadata.get("house_system").unwrap().as_str().unwrap(),
+            "Placidus"
+        );
+    }
+
     #[test]
     fn test_parse_chart_data_time_uses_time_parameter() {
         assert_eq!(
-            parse_chart_data_time(Some("2000-01-01T12:00:00Z")).unwrap(),
+            parse_chart_data_time(Some("2000-01-01T12:00:00Z"))
+                .unwrap()
+                .julian_day,
             2451545.0
+        );
+    }
+
+    #[tokio::test]
+    async fn test_chart_data_metadata_includes_resolved_time() {
+        let app = axum::Router::new().route("/api/v1/chart/data", get(chart_data_handler));
+
+        let response = tower::ServiceBuilder::new()
+            .service(app)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/chart/data?lat=40.7128&lon=-74.0060&time=2000-01-01T07:00:00-05:00")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+
+        let response = response.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let json_value: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json_value.get("parameters").is_none());
+        let metadata = json_value.get("metadata").unwrap();
+        assert_eq!(
+            metadata.get("time").unwrap().as_str().unwrap(),
+            "2000-01-01T12:00:00Z"
         );
     }
 
