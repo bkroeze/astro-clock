@@ -462,7 +462,7 @@ paths:
               - Alcabitus
               - Topocentric
               - Vehlow
-            default: Placidus
+            example: Placidus
         - name: traditional
           in: query
           required: false
